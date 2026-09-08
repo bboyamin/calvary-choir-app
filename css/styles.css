@@ -864,30 +864,34 @@ body {
 .app-tabbar {
   position: fixed;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
   width: 100%;
   max-width: 480px;
-  min-height: 64px;
-  padding-left: 4px;
-  padding-right: 4px;
+  height: calc(62px + env(safe-area-inset-bottom, 0px));
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: calc(4px + env(safe-area-inset-left, 0px));
+  padding-right: calc(4px + env(safe-area-inset-right, 0px));
   box-sizing: border-box;
   background: #FFFFFF;
   border-top: 1px solid var(--border-light);
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
   align-items: center;
-  z-index: 90;
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+  z-index: 999;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  overflow: visible;
 }
 
 .tab-item {
   position: relative;
-  flex: 1;
+  flex: 1 1 0%;
+  width: 20%;
   min-width: 0;
-  height: 60px;
-  padding: 2px 1px;
+  height: 58px;
+  padding: 2px 0;
+  margin: 0;
   background: none;
   border: none;
   display: flex;
@@ -897,27 +901,30 @@ body {
   gap: 2px;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   box-sizing: border-box;
+  overflow: visible;
 }
 
 .tab-badge {
   position: absolute;
-  top: 2px;
-  right: 8%;
+  top: 3px;
+  left: 50%;
+  transform: translateX(6px);
   background: #EF4444;
   color: #FFFFFF;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 800;
-  min-width: 17px;
-  height: 17px;
-  border-radius: 8.5px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
   padding: 0 3px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 5px rgba(239, 68, 68, 0.45);
+  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
   animation: pulseBadge 2s infinite;
+  z-index: 10;
 }
 
 @keyframes pulseBadge {
@@ -927,15 +934,20 @@ body {
 }
 
 .tab-icon {
-  font-size: 20px;
+  font-size: 19px;
   line-height: 1;
+  display: block;
 }
 
 .tab-label {
-  font-size: clamp(11px, 3.1vw, 12.5px);
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: -0.6px;
+  letter-spacing: -0.7px;
   white-space: nowrap;
+  line-height: 1.1;
+  text-align: center;
+  display: block;
+  max-width: 100%;
 }
 
 .tab-item.active {
