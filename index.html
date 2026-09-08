@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1E293B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>갈보리교회 임마누엘 성가대</title>
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css?v=7">
+</head>
+<body>
+  <!-- 메인 앱 콘테이너 -->
+  <div class="app-container">
+    
+    <!-- 상단 브랜드 헤더 (공식 갈보리교회 심볼 로고 단독 적용) -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="church-logo-container">
+          <img src="assets/church-logo.svg" alt="갈보리교회 공식 로고" class="official-header-logo">
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- 앱 추가 가이드 버튼 -->
+        <button id="btnPwaGuide" class="btn-header-install" aria-label="홈 화면에 앱 추가">
+          <span class="btn-icon">📲</span>
+          <span class="btn-text">앱 설치</span>
+        </button>
+
+        <!-- 임원 관리자 인증 버튼 -->
+        <button id="btnOfficerToggle" class="btn-header-admin" aria-label="임원 모드">
+          <span class="admin-badge" id="adminStatusBadge">대원 모드</span>
+          <span class="admin-icon">⚙️</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 임원 모드 안내 배너 (임원 모드 활성화 시 표시) -->
+    <div id="officerBanner" class="officer-active-banner hidden">
+      <span>👑 <strong>임원 관리자 모드</strong> (등록/수정/삭제 가능)</span>
+      <button id="btnExitOfficer" class="btn-exit-officer">종료</button>
+    </div>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="app-content">
+
+      <!-- 1. 📢 공지사항 탭 -->
+      <section id="tab-notice" class="tab-pane active">
+        <div class="pane-header">
+          <h2>📢 성가대 공지사항</h2>
+          <button class="btn-add-content officer-only hidden" onclick="app.openNoticeModal()">
+            ➕ 공지 작성
+          </button>
+        </div>
+        <div id="noticeList" class="card-list">
+          <!-- 공지사항 카드가 동적으로 로드됩니다 -->
+        </div>
+      </section>
+
+      <!-- 2. 🎵 찬양/음원 탭 (성가대 찬양 영상 + 파트별 연습실) -->
+      <section id="tab-praise" class="tab-pane">
+        <div class="pane-header">
+          <h2>🎵 찬양 음원 & 영상</h2>
+          <button class="btn-add-content officer-only hidden" onclick="app.openPraiseModal()">
+            ➕ 찬양 등록
+          </button>
+        </div>
+
+        <!-- 서브 탭: 성가대 찬양 영상 vs 파트별 연습실 -->
+        <div class="sub-tab-bar">
+          <button class="sub-tab-btn active" data-subtab="all" onclick="app.switchPraiseSubtab('all')">
+            🎬 성가대 찬양 영상
+          </button>
+          <button class="sub-tab-btn" data-subtab="part" onclick="app.switchPraiseSubtab('part')">
+            🎼 파트별 연습실 (SATB)
+          </button>
+        </div>
+
+        <!-- 주일/월별 찬양 검색 드롭다운 필터 -->
+        <div class="praise-date-filter-box">
+          <label for="praiseMonthFilter" class="filter-label">📅 찬양 일자 조회:</label>
+          <select id="praiseMonthFilter" onchange="app.filterPraiseByMonth(this.value)">
+            <option value="LATEST">✨ 이번 주 찬양 (최신 주일)</option>
+            <option value="ALL_TIME">📜 전체 지난 찬양 목록 보기</option>
+            <!-- 월별 옵션이 동적으로 로드됩니다 -->
+          </select>
+        </div>
+
+        <!-- 성가대 찬양 영상 서브 뷰 -->
+        <div id="praiseSubtabAll" class="subtab-pane active">
+          <div id="praiseListAll" class="card-list">
+            <!-- 찬양 영상 카드가 로드됩니다 -->
+          </div>
+        </div>
+
+        <!-- 파트별 연습실 서브 뷰 -->
+        <div id="praiseSubtabPart" class="subtab-pane">
+          <!-- 파트 필터 바 (4부 합창이 기본) -->
+          <div class="part-filter-bar">
+            <button class="part-chip active" data-part="ALL_PART" onclick="app.filterPartPraise('ALL_PART')">🎼 4부 합창</button>
+            <button class="part-chip soprano" data-part="S" onclick="app.filterPartPraise('S')">소프라노</button>
+            <button class="part-chip alto" data-part="A" onclick="app.filterPartPraise('A')">알토</button>
+            <button class="part-chip tenor" data-part="T" onclick="app.filterPartPraise('T')">테너</button>
+            <button class="part-chip bass" data-part="B" onclick="app.filterPartPraise('B')">베이스</button>
+          </div>
+          <div id="praiseListPart" class="card-list">
+            <!-- 파트별 음원 카드가 로드됩니다 -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. 📅 주요일정 탭 -->
+      <section id="tab-schedule" class="tab-pane">
+        <div class="pane-header">
+          <h2>📅 주요 일정</h2>
+          <button class="btn-add-content officer-only hidden" onclick="app.openScheduleModal()">
+            ➕ 일정 추가
+          </button>
+        </div>
+
+        <div id="scheduleList" class="card-list">
+          <!-- 일정 카드가 로드됩니다 -->
+        </div>
+      </section>
+
+      <!-- 4. 👥 성가대원 탭 -->
+      <section id="tab-member" class="tab-pane">
+        <div class="pane-header">
+          <h2>👥 대원명단 (가나다순)</h2>
+          <button class="btn-add-content officer-only hidden" onclick="app.openMemberModal()">
+            ➕ 대원 등록
+          </button>
+        </div>
+
+        <!-- 파트 필터 버튼 -->
+        <div class="member-part-bar">
+          <button class="member-chip active" data-mpart="ALL" onclick="app.filterMembers('ALL')">전체보기</button>
+          <button class="member-chip" data-mpart="임원" onclick="app.filterMembers('임원')">👑 임원진</button>
+          <button class="member-chip soprano" data-mpart="소프라노" onclick="app.filterMembers('소프라노')">소프라노</button>
+          <button class="member-chip alto" data-mpart="알토" onclick="app.filterMembers('알토')">알토</button>
+          <button class="member-chip tenor" data-mpart="테너" onclick="app.filterMembers('테너')">테너</button>
+          <button class="member-chip bass" data-mpart="베이스" onclick="app.filterMembers('베이스')">베이스</button>
+        </div>
+
+        <div id="memberList" class="member-grid">
+          <!-- 성가대원 카드가 로드됩니다 -->
+        </div>
+      </section>
+
+      <!-- 5. 🙏 중보기도 탭 -->
+      <section id="tab-prayer" class="tab-pane">
+        <div class="pane-header">
+          <h2>🙏 대원 중보기도방</h2>
+          <button class="btn-add-content member-allowed" onclick="app.openPrayerModal()">
+            ✍️ 기도제목 나누기
+          </button>
+        </div>
+        
+        <div class="prayer-intro-card">
+          <p>❤️ <strong>"서로를 위해 기도할 때 성가대에 은혜가 넘칩니다."</strong><br>대원 누구나 기도제목을 올리고 함께 '아멘'으로 응원할 수 있습니다.</p>
+        </div>
+
+        <div id="prayerList" class="card-list">
+          <!-- 기도 카드 목록이 로드됩니다 -->
+        </div>
+      </section>
+
+    </main>
+
+    <!-- 하단 5대 대형 탭 바 -->
+    <nav class="app-tabbar">
+      <button class="tab-item active" data-tab="notice" onclick="app.switchTab('notice')">
+        <span class="tab-icon">📢</span>
+        <span class="tab-label">공지사항</span>
+        <span id="unread-badge-notice" class="tab-badge hidden">0</span>
+      </button>
+      <button class="tab-item" data-tab="praise" onclick="app.switchTab('praise')">
+        <span class="tab-icon">🎵</span>
+        <span class="tab-label">찬양/음원</span>
+        <span id="unread-badge-praise" class="tab-badge hidden">0</span>
+      </button>
+      <button class="tab-item" data-tab="schedule" onclick="app.switchTab('schedule')">
+        <span class="tab-icon">📅</span>
+        <span class="tab-label">주요일정</span>
+        <span id="unread-badge-schedule" class="tab-badge hidden">0</span>
+      </button>
+      <button class="tab-item" data-tab="member" onclick="app.switchTab('member')">
+        <span class="tab-icon">👥</span>
+        <span class="tab-label">대원소개</span>
+      </button>
+      <button class="tab-item" data-tab="prayer" onclick="app.switchTab('prayer')">
+        <span class="tab-icon">🙏</span>
+        <span class="tab-label">중보기도</span>
+        <span id="unread-badge-prayer" class="tab-badge hidden">0</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- ==================== 모달 레이어 모음 ==================== -->
+
+  <!-- 🔐 1. 임원 PIN 인증 모달 -->
+  <div id="modalPin" class="modal-overlay hidden">
+    <div class="modal-card modal-small">
+      <div class="modal-header">
+        <h3>👑 임원 비밀번호 입력</h3>
+        <button class="btn-close-modal" onclick="app.closeModal('modalPin')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="pin-hint">임원 전용 4자리 비밀번호를 입력해주세요.</p>
+        <div class="pin-input-group">
+          <input type="password" id="pinInput" maxlength="4" placeholder="••••" pattern="[0-9]*" inputmode="numeric">
+        </div>
+        <div id="pinErrorMsg" class="pin-error hidden">비밀번호가 일치하지 않습니다.</div>
+        <div class="pin-keypad">
+          <button onclick="app.appendPin('1')">1</button>
+          <button onclick="app.appendPin('2')">2</button>
+          <button onclick="app.appendPin('3')">3</button>
+          <button onclick="app.appendPin('4')">4</button>
+          <button onclick="app.appendPin('5')">5</button>
+          <button onclick="app.appendPin('6')">6</button>
+          <button onclick="app.appendPin('7')">7</button>
+          <button onclick="app.appendPin('8')">8</button>
+          <button onclick="app.appendPin('9')">9</button>
+          <button onclick="app.clearPin()">C</button>
+          <button onclick="app.appendPin('0')">0</button>
+          <button onclick="app.submitPin()" class="btn-pin-confirm">확인</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📲 2. 홈 화면 앱 추가 안내 모달 -->
+  <div id="modalPwaGuide" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>📲 스마트폰 홈 화면에 앱 추가하기</h3>
+        <button class="btn-close-modal" onclick="app.closeModal('modalPwaGuide')">✕</button>
+      </div>
+      <div class="modal-body pwa-guide-body">
+        
+        <!-- 원터치 자동 설치 버튼 (안드로이드 지원 시) -->
+        <button id="btnNativeInstall" class="btn-primary-large hidden" onclick="app.triggerNativeInstall()">
+          ✨ 바로 바탕화면에 추가하기
+        </button>
+
+        <div class="os-guide-section">
+          <h4>🍎 아이폰 (iPhone / Safari) 가이드</h4>
+          <ol class="guide-steps">
+            <li>화면 하단 중앙의 <strong>[공유 📤]</strong> 아이콘을 누릅니다.</li>
+            <li>메뉴를 위로 올린 후 <strong>[홈 화면에 추가 ➕]</strong>를 선택합니다.</li>
+            <li>우측 상단 <strong>[추가]</strong>를 누르면 바탕화면에 성가대 앱이 생성됩니다!</li>
+          </ol>
+        </div>
+
+        <hr class="modal-divider">
+
+        <div class="os-guide-section">
+          <h4>🤖 안드로이드 (Galaxy / Chrome / 카카오) 가이드</h4>
+          <ol class="guide-steps">
+            <li>인터넷 메뉴 <strong>[더보기 ⫶]</strong> 버튼을 누릅니다.</li>
+            <li><strong>[홈 화면에 추가]</strong> 또는 <strong>[앱 설치]</strong>를 클릭합니다.</li>
+            <li>바탕화면에 아이콘이 생성되어 다음부터 1초 만에 접속됩니다.</li>
+          </ol>
+        </div>
+
+        <button class="btn-secondary-large" onclick="app.closeModal('modalPwaGuide')">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📢 3. 공지사항 작성 모달 -->
+  <div id="modalNotice" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>📢 신규 공지사항 작성</h3>
+        <button class="btn-close-modal" onclick="app.closeModal('modalNotice')">✕</button>
+      </div>
+      <form id="formNotice" onsubmit="app.saveNotice(event)" class="modal-body">
+        <div class="form-group">
+          <label for="noticeTitle">공지 제목 *</label>
+          <input type="text" id="noticeTitle" required placeholder="예: 주일 연습시간 변경 안내">
+        </div>
+        <div class="form-group">
+          <label for="noticeContent">공지 내용 *</label>
+          <textarea id="noticeContent" rows="5" required placeholder="공지할 내용을 작성해주세요."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="noticeYoutube">유튜브 영상 링크 (선택)</label>
+          <input type="url" id="noticeYoutube" placeholder="https://www.youtube.com/watch?v=...">
+        </div>
+        <div class="form-group">
+          <label for="noticeFilePhoto">📷 사진 첨부 (스마트폰 사진 선택 / 카메라 촬영)</label>
+          <input type="file" id="noticeFilePhoto" accept="image/*" class="file-upload-input" onchange="app.handleImageUpload(event, 'noticePhotoPreview', 'noticePhotoData')">
+          <input type="hidden" id="noticePhotoData">
+          <div id="noticePhotoPreview" class="photo-upload-preview hidden"></div>
+          <input type="url" id="noticeImageUrl" placeholder="또는 웹 사진 이미지 URL 직접 입력" style="margin-top: 6px;">
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary-large" onclick="app.closeModal('modalNotice')">취소</button>
+          <button type="submit" class="btn-primary-large">등록하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 🎵 4. 찬양 음원/영상 등록 모달 -->
+  <div id="modalPraise" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🎵 찬양 음원/영상 등록</h3>
+        <button class="btn-close-modal" onclick="app.closeModal('modalPraise')">✕</button>
+      </div>
+      <form id="formPraise" onsubmit="app.savePraise(event)" class="modal-body">
+        <div class="form-group">
+          <label for="praiseType">등록 구분 *</label>
+          <select id="praiseType" required onchange="app.togglePartSelect(this.value)">
+            <option value="all">🎬 성가대 찬양 영상 (예배 찬양)</option>
+            <option value="part">🎼 파트별 연습실 음원 (연습용)</option>
+          </select>
+        </div>
+
+        <div id="groupPartSelect" class="form-group hidden">
+          <label for="praisePartTarget">연습 파트 선택 *</label>
+          <select id="praisePartTarget">
+            <option value="ALL_PART">🎼 4부 전체합창 (전체 파트)</option>
+            <option value="S">소프라노 (Soprano)</option>
+            <option value="A">알토 (Alto)</option>
+            <option value="T">테너 (Tenor)</option>
+            <option value="B">베이스 (Bass)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="praiseTitle">찬양곡 제목 *</label>
+          <input type="text" id="praiseTitle" required placeholder="예: 참 좋으신 주님 (지휘: 000)">
+        </div>
+
+        <div class="form-group">
+          <label for="praiseDate">주일 일자 *</label>
+          <input type="date" id="praiseDate" required>
+        </div>
+
+        <div class="form-group">
+          <label for="praiseYoutube">유튜브 링크주소 *</label>
+          <input type="url" id="praiseYoutube" required placeholder="https://youtu.be/... 또는 https://www.youtube.com/watch?v=...">
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary-large" onclick="app.closeModal('modalPraise')">취소</button>
+          <button type="submit" class="btn-primary-large">등록하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 📅 5. 일정 등록 모달 -->
+  <div id="modalSchedule" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>📅 성가대 일정 등록</h3>
+        <button class="btn-close-modal" onclick="app.closeModal('modalSchedule')">✕</button>
+      </div>
+      <form id="formSchedule" onsubmit="app.saveSchedule(event)" class="modal-body">
+        <div class="form-group">
+          <label for="schedTitle">일정명 *</label>
+          <input type="text" id="schedTitle" required placeholder="예: 지휘자 김은총 독창회 / 부활절 연습">
+        </div>
+        <div class="form-group">
+          <label for="schedDate">일시 *</label>
+          <input type="datetime-local" id="schedDate" required>
+        </div>
+        <div class="form-group">
+          <label for="schedLocation">장소 *</label>
+          <input type="text" id="schedLocation" required value="3층 성가대실">
+        </div>
+        <div class="form-group">
+          <label for="schedNote">상세 메모</label>
+          <textarea id="schedNote" rows="3" placeholder="안내사항이나 관련 정보를 작성해주세요."></textarea>
+        </div>
+
+        <!-- 🎟️ 대원 신청/참석 기능 옵션 체크박스 -->
+        <div class="form-group-checkbox">
+          <label class="checkbox-label">
+            <input type="checkbox" id="schedEnableApply" onchange="app.toggleSchedApplyFields(this.checked)">
+            <span>🎟️ <strong>대원 신청 기능 활성화</strong> (티켓 신청, 참석 조사 등)</span>
+          </label>
+        </div>
+
+        <div id="schedApplyFields" class="sched-apply-fields hidden">
+          <div class="form-group">
+            <label for="schedApplyTitle">신청 항목 이름</label>
+            <input type="text" id="schedApplyTitle" placeholder="예: 🎟️ 연주회 무료 초대권 신청">
+          </div>
+          <div class="form-group">
+            <label for="schedApplyType">신청 옵션 구성</label>
+            <select id="schedApplyType">
+              <option value="ticket">🎟️ 티켓 수량 선택 (1매, 2매, 3매, 4매)</option>
+              <option value="attend">🙋 참석 여부 선택 (참석 / 불참)</option>
+              <option value="custom">✍️ 자유 수량/메모 신청</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary-large" onclick="app.closeModal('modalSchedule')">취소</button>
+          <button type="submit" class="btn-primary-large">등록하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 🎟️ 6. 대원 일정 신청 팝업 모달 -->
+  <div id="modalApplySchedule" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="applyModalHeaderTitle">🎟️ 일정 신청하기</h3>
+        <button class="btn-close-modal" onclick="app.closeModal('modalApplySchedule')">✕</button>
+      </div>
+      <form id="formApplySchedule" onsubmit="app.saveApplication(event)" class="modal-body">
+        <input type="hidden" id="applyTargetSchedId">
+        
+        <div class="apply-sched-summary-box">
+          <h4 id="applySchedName">일정 제목</h4>
+          <p id="applySchedInfo">일시 및 장소</p>
+        </div>
+
+        <div class="form-group">
+          <label for="applyPart">소속 파트 *</label>
+          <select id="applyPart" required>
+            <option value="소프라노">소프라노</option>
+            <option value="알토">알토</option>
+            <option value="테너">테너</option>
+            <option value="베이스">베이스</option>
+            <option value="임원">👑 임원 / 지휘 / 반주</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="applyName">성함 *</label>
+          <input type="text" id="applyName" required placeholder="예: 김영순 권사">
+        </div>
+
+        <div class="form-group" id="groupApplyOption">
+          <label for="applyOptionSelect" id="lblApplyOption">신청 수량 / 선택 *</label>
+          <select id="applyOptionSelect" required>
+            <!-- 동적으로 생성됩니다 -->
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="applyNote">메모 / 한줄 전달사항 (선택)</label>
+          <input type="text" id="applyNote" placeholder="예: 배우자와 함께 갑니다. 감사해요!">
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary-large" onclick="app.closeModal('modalApplySchedule')">취소</button>
+          <button type="submit" class="btn-primary-large">신청 완료하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 📋 7. 신청 현황 목록 모달 -->
+  <div id="modalApplyList" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>📋 신청자 현황 목록</h3>
+        <button class="btn-close-modal" onclick="app.closeModal('modalApplyList')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="apply-list-summary">
+          <h4 id="applyListSchedTitle">일정 제목</h4>
+          <div class="summary-badge-group">
+            <span class="badge-notice" id="applyTotalCountBadge">총 0명 신청</span>
+          </div>
+        </div>
+
+        <div id="applyListContainer" class="apply-table-wrapper">
+          <!-- 신청 현황 테이블이 동적으로 생성됩니다 -->
+        </div>
+
+        <button class="btn-secondary-large" onclick="app.closeModal('modalApplyList')">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 👥 8. 대원 등록 모달 -->
+  <div id="modalMember" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>👥 성가대원 등록/수정</h3>
+        <button class="btn-close-modal" onclick="app.closeModal('modalMember')">✕</button>
+      </div>
+      <form id="formMember" onsubmit="app.saveMember(event)" class="modal-body">
+        <input type="hidden" id="editingMemberId">
+        <div class="form-group">
+          <label for="memName">이름 *</label>
+          <input type="text" id="memName" required placeholder="성함 입력">
+        </div>
+        <div class="form-group">
+          <label for="memPart">소속 파트 *</label>
+          <select id="memPart" required>
+            <option value="소프라노">소프라노</option>
+            <option value="알토">알토</option>
+            <option value="테너">테너</option>
+            <option value="베이스">베이스</option>
+            <option value="임원">👑 임원진 / 지휘 / 반주</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="memRole">직분 / 체계</label>
+          <input type="text" id="memRole" placeholder="예: 권사, 집사, 대장, 지휘자">
+        </div>
+        <div class="form-group">
+          <label for="memPhone">연락처 *</label>
+          <input type="tel" id="memPhone" required placeholder="010-0000-0000">
+        </div>
+        <div class="form-group">
+          <label for="memFilePhoto">📷 프로필 사진 등록 (스마트폰 사진 선택 / 카메라 촬영)</label>
+          <input type="file" id="memFilePhoto" accept="image/*" class="file-upload-input" onchange="app.handleImageUpload(event, 'memPhotoPreview', 'memPhotoData')">
+          <input type="hidden" id="memPhotoData">
+          <div id="memPhotoPreview" class="photo-upload-preview hidden"></div>
+          <input type="url" id="memPhoto" placeholder="또는 웹 이미지 URL 직접 입력" style="margin-top: 6px;">
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary-large" onclick="app.closeModal('modalMember')">취소</button>
+          <button type="submit" class="btn-primary-large">등록하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 🙏 9. 중보기도 작성 모달 -->
+  <div id="modalPrayer" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🙏 기도제목 나누기</h3>
+        <button class="btn-close-modal" onclick="app.closeModal('modalPrayer')">✕</button>
+      </div>
+      <form id="formPrayer" onsubmit="app.savePrayer(event)" class="modal-body">
+        <div class="form-group">
+          <label for="prayAuthor">대원 이름 *</label>
+          <input type="text" id="prayAuthor" required placeholder="예: 김은혜 권사">
+        </div>
+        <div class="form-group">
+          <label for="prayContent">기도할 제목 내용 *</label>
+          <textarea id="prayContent" rows="5" required placeholder="함께 중보기도할 내용을 편안하게 작성해주세요."></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary-large" onclick="app.closeModal('modalPrayer')">취소</button>
+          <button type="submit" class="btn-primary-large">등록하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/storage.js?v=16"></script>
+  <script src="js/app.js?v=16"></script>
+  <script>
+    // 서비스 워커 등록 (PWA)
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js?v=16')
+          .then(reg => console.log('PWA ServiceWorker registered', reg))
+          .catch(err => console.log('PWA ServiceWorker error', err));
+      });
+    }
+  </script>
+</body>
+</html>

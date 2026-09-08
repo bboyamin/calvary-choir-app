@@ -1,0 +1,1139 @@
+/* ==========================================================================
+   갈보리교회 임마누엘 성가대 모바일 PWA 스타일 시트 (Modern Standard UX)
+   - 일정 및 무료 티켓/참석 신청 기능 추가
+   - 갈보리교회 공식 벡터 SVG 로고 단독 적용
+   - 모바일 표준 세련된 가독성 폰트 (16px 기본 본문)
+   - 시원하고 조화로운 딥 네이비 & 웜 골드 시니어 프리미엄 디자인
+   ========================================================================== */
+
+:root {
+  --primary-navy: #0F172A;
+  --primary-navy-light: #1E293B;
+  --gold-accent: #D97706;
+  --gold-hover: #B45309;
+  --gold-soft: #FEF3C7;
+  --bg-app: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --text-main: #1E293B;
+  --text-sub: #475569;
+  --text-muted: #64748B;
+  --border-light: #E2E8F0;
+  
+  --soprano-color: #EC4899;
+  --alto-color: #8B5CF6;
+  --tenor-color: #3B82F6;
+  --bass-color: #10B981;
+  --officer-color: #D97706;
+
+  --font-base: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-base);
+  background-color: #CBD5E1;
+  color: var(--text-main);
+  line-height: 1.6;
+  font-size: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+}
+
+/* 스마트폰 전용 컨테이너 프레임 */
+.app-container {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  background-color: var(--bg-app);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ==========================================
+   상단 브랜드 헤더 (공식 갈보리교회 로고)
+   ========================================== */
+.app-header {
+  background: linear-gradient(135deg, var(--primary-navy) 0%, var(--primary-navy-light) 100%);
+  color: #FFFFFF;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+}
+
+.church-logo-container {
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.official-header-logo {
+  height: 34px;
+  max-width: 180px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 상단 설치 및 관리자 버튼 */
+.btn-header-install, .btn-header-admin {
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-header-install {
+  background: var(--gold-accent);
+  border-color: var(--gold-accent);
+  color: #FFFFFF;
+}
+
+.btn-header-install:active, .btn-header-admin:active {
+  transform: scale(0.96);
+  opacity: 0.9;
+}
+
+.admin-badge {
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* 임원 활성화 배너 */
+.officer-active-banner {
+  background-color: var(--gold-accent);
+  color: #FFFFFF;
+  padding: 10px 16px;
+  font-size: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: inset 0 -2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.btn-exit-officer {
+  background: #FFFFFF;
+  color: var(--gold-hover);
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* ==========================================
+   메인 콘텐츠 및 탭 전환
+   ========================================== */
+.app-content {
+  flex: 1;
+  padding: 14px;
+  padding-bottom: 90px;
+  overflow-y: auto;
+}
+
+.tab-pane {
+  display: none;
+}
+
+.tab-pane.active {
+  display: block;
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pane-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.pane-header h2 {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--primary-navy);
+  letter-spacing: -0.4px;
+}
+
+.btn-add-content {
+  height: 42px;
+  padding: 0 14px;
+  background-color: var(--gold-accent);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(217, 119, 6, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-add-content:active {
+  transform: scale(0.96);
+}
+
+/* ==========================================
+   서브 탭 & 파트 필터 바 & 날짜 필터 (찬양 탭)
+   ========================================== */
+.sub-tab-bar {
+  display: flex;
+  background: #E2E8F0;
+  padding: 3px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+}
+
+.sub-tab-btn {
+  flex: 1;
+  height: 42px;
+  border: none;
+  background: transparent;
+  border-radius: 9px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sub-tab-btn.active {
+  background: #FFFFFF;
+  color: var(--primary-navy);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* 주일/월별 날짜 검색 필터 박스 */
+.praise-date-filter-box {
+  background: #FFFFFF;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.filter-label {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--primary-navy);
+  white-space: nowrap;
+}
+
+.praise-date-filter-box select {
+  flex: 1;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--primary-navy);
+  background: #F8FAFC;
+}
+
+.subtab-pane {
+  display: none;
+}
+
+.subtab-pane.active {
+  display: block;
+}
+
+.part-filter-bar, .member-part-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 12px;
+  scrollbar-width: none;
+}
+
+.part-filter-bar::-webkit-scrollbar, .member-part-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.part-chip, .member-chip {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 19px;
+  border: 1px solid var(--border-light);
+  background: #FFFFFF;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-sub);
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.part-chip.active, .member-chip.active {
+  background: var(--primary-navy);
+  color: #FFFFFF;
+  border-color: var(--primary-navy);
+}
+
+/* ==========================================
+   카드 뷰 시스템 (공지, 찬양, 일정, 기도)
+   ========================================== */
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.item-card {
+  background: var(--bg-card);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  border: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.card-badge {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.badge-notice { background: var(--gold-soft); color: var(--gold-hover); }
+.badge-praise { background: #E0F2FE; color: #0284C7; }
+.badge-past { background: #F1F5F9; color: #64748B; }
+.badge-part-s { background: #FCE7F3; color: var(--soprano-color); }
+.badge-part-a { background: #EDE9FE; color: var(--alto-color); }
+.badge-part-t { background: #DBEAFE; color: var(--tenor-color); }
+.badge-part-b { background: #D1FAE5; color: var(--bass-color); }
+.opacity-80 { opacity: 0.88; }
+
+/* 보관함 (지나간 글/일정 접기/펼치기 폴더) */
+.archive-accordion {
+  margin-top: 16px;
+  background: #F8FAFC;
+  border: 1.5px dashed #CBD5E1;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.archive-accordion[open] {
+  background: #FFFFFF;
+  border-style: solid;
+  border-color: #94A3B8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.archive-summary {
+  padding: 14px 16px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--primary-navy);
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  background: #F1F5F9;
+}
+
+.archive-summary:hover {
+  background: #E2E8F0;
+}
+
+.archive-content {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card-date {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--primary-navy);
+  line-height: 1.35;
+}
+
+/* 사진 보관함/카메라 직접 파일 업로드 스타일 */
+.file-upload-input {
+  width: 100%;
+  padding: 10px;
+  background: #F1F5F9;
+  border: 2.5px dashed var(--gold-accent);
+  border-radius: 10px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--primary-navy);
+  cursor: pointer;
+}
+
+.photo-upload-preview {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #F8FAFC;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+}
+
+.photo-upload-preview img {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid var(--gold-accent);
+}
+
+.btn-remove-photo {
+  padding: 6px 12px;
+  background: #FEE2E2;
+  color: #DC2626;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.card-body-text {
+  font-size: 16px;
+  color: var(--text-main);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.55;
+}
+
+.card-img-preview {
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+}
+
+/* 일정 참하/신청 버튼 스타일 */
+.sched-apply-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-light);
+}
+
+.btn-card-apply {
+  height: 48px;
+  background: var(--gold-accent);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(217, 119, 6, 0.2);
+}
+
+.btn-card-apply:active {
+  transform: scale(0.98);
+}
+
+.btn-card-apply-list {
+  height: 42px;
+  background: #F1F5F9;
+  color: var(--primary-navy);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  font-size: 14.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+/* 유튜브 동영상 프레임 */
+.video-responsive {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  border-radius: 10px;
+  background-color: #000;
+}
+
+.video-responsive iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* 삭제 임원 버튼 */
+.btn-delete-card {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: #FEE2E2;
+  color: #DC2626;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-edit-card {
+  position: absolute;
+  top: 12px;
+  right: 48px;
+  background: #FEF3C7;
+  color: #D97706;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ==========================================
+   대원 명단 카드 및 원클릭 통화/문자
+   ========================================== */
+.member-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.member-card {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-light);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.member-info-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.member-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background-color: var(--primary-navy-light);
+  color: #FFFFFF;
+  font-size: 18px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  object-fit: cover;
+  border: 2px solid var(--gold-accent);
+}
+
+.member-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.member-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.member-name {
+  font-size: 17.5px;
+  font-weight: 800;
+  color: var(--primary-navy);
+}
+
+.member-role {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.part-tag {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 5px;
+  width: fit-content;
+  margin-top: 2px;
+}
+
+.part-tag.소프라노 { background: #FCE7F3; color: var(--soprano-color); }
+.part-tag.알토 { background: #EDE9FE; color: var(--alto-color); }
+.part-tag.테너 { background: #DBEAFE; color: var(--tenor-color); }
+.part-tag.베이스 { background: #D1FAE5; color: var(--bass-color); }
+.part-tag.임원 { background: var(--gold-soft); color: var(--gold-hover); }
+
+/* 통화 / 문자 연동 버튼 */
+.member-contact-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-contact-call, .btn-contact-sms {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.btn-contact-call {
+  background: #10B981;
+  color: #FFFFFF;
+}
+
+.btn-contact-sms {
+  background: #3B82F6;
+  color: #FFFFFF;
+}
+
+.btn-contact-call:active, .btn-contact-sms:active {
+  opacity: 0.85;
+}
+
+/* ==========================================
+   기도방 소통 & 댓글 시스템
+   ========================================== */
+.prayer-intro-card {
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  border: 1px solid #F59E0B;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  color: #78350F;
+  font-size: 15px;
+}
+
+.amen-button {
+  height: 46px;
+  background: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  color: #DC2626;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.amen-button:active {
+  background: #FEE2E2;
+}
+
+.comment-section {
+  background: #F8FAFC;
+  border-radius: 10px;
+  padding: 10px;
+  margin-top: 6px;
+}
+
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.comment-item {
+  font-size: 14.5px;
+  background: #FFFFFF;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-light);
+}
+
+.comment-author {
+  font-weight: 700;
+  color: var(--primary-navy);
+  margin-right: 4px;
+}
+
+.comment-input-row {
+  display: flex;
+  gap: 6px;
+}
+
+.comment-input-row input {
+  flex: 1;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.comment-input-row button {
+  height: 38px;
+  padding: 0 12px;
+  background: var(--primary-navy);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* ==========================================
+   신청자 현황 테이블 스타일
+   ========================================== */
+.apply-sched-summary-box {
+  background: #FEF3C7;
+  border: 1px solid var(--gold-accent);
+  border-radius: 10px;
+  padding: 12px;
+  color: #78350F;
+}
+
+.apply-sched-summary-box h4 {
+  font-size: 17px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.apply-list-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.apply-table-wrapper {
+  max-height: 340px;
+  overflow-y: auto;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+}
+
+.apply-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+  text-align: left;
+}
+
+.apply-table th {
+  background: var(--primary-navy);
+  color: #FFFFFF;
+  padding: 10px;
+  font-weight: 700;
+}
+
+.apply-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.apply-table tr:nth-child(even) {
+  background: #F8FAFC;
+}
+
+.form-group-checkbox {
+  margin: 6px 0;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: var(--primary-navy);
+  cursor: pointer;
+}
+
+.checkbox-label input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--gold-accent);
+}
+
+.sched-apply-fields {
+  background: #F8FAFC;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ==========================================
+   하단 대형 탭 바 (5대 메인 메뉴)
+   ========================================== */
+.app-tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  height: 68px;
+  background: #FFFFFF;
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 90;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.tab-item {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-badge {
+  position: absolute;
+  top: 4px;
+  right: 14%;
+  background: #EF4444;
+  color: #FFFFFF;
+  font-size: 11px;
+  font-weight: 800;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 5px rgba(239, 68, 68, 0.45);
+  animation: pulseBadge 2s infinite;
+}
+
+@keyframes pulseBadge {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+.tab-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.tab-label {
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+.tab-item.active {
+  color: var(--gold-accent);
+}
+
+.tab-item.active .tab-icon {
+  transform: scale(1.1);
+}
+
+/* ==========================================
+   모달 팝업 레이어 시스템
+   ========================================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(3px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.2s ease;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.modal-card {
+  background: #FFFFFF;
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  border-radius: 16px;
+  overflow-y: auto;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-small {
+  max-width: 340px;
+}
+
+.modal-header {
+  background: var(--primary-navy);
+  color: #FFFFFF;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.btn-close-modal {
+  background: none;
+  border: none;
+  color: #FFFFFF;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-group label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--primary-navy);
+}
+
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  font-size: 16px;
+  font-family: var(--font-base);
+  background: #F8FAFC;
+}
+
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none;
+  border-color: var(--gold-accent);
+  background: #FFFFFF;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.btn-primary-large, .btn-secondary-large {
+  flex: 1;
+  min-height: 48px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary-large {
+  background: var(--gold-accent);
+  color: #FFFFFF;
+  box-shadow: 0 3px 10px rgba(217, 119, 6, 0.25);
+}
+
+.btn-secondary-large {
+  background: #E2E8F0;
+  color: var(--text-sub);
+}
+
+/* 4자리 PIN 키패드 */
+.pin-hint {
+  font-size: 15px;
+  text-align: center;
+  color: var(--text-sub);
+}
+
+.pin-input-group input {
+  font-size: 28px;
+  text-align: center;
+  letter-spacing: 10px;
+  border-color: var(--gold-accent);
+}
+
+.pin-error {
+  color: #DC2626;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14.5px;
+}
+
+.pin-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.pin-keypad button {
+  height: 52px;
+  font-size: 20px;
+  font-weight: 800;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: #F8FAFC;
+  color: var(--primary-navy);
+  cursor: pointer;
+}
+
+.pin-keypad button:active {
+  background: #E2E8F0;
+}
+
+.btn-pin-confirm {
+  background: var(--gold-accent) !important;
+  color: #FFFFFF !important;
+  font-size: 16px !important;
+}
+
+/* PWA 설치 가이드 모달 */
+.pwa-guide-body {
+  font-size: 15px;
+}
+
+.os-guide-section h4 {
+  color: var(--primary-navy);
+  font-size: 16.5px;
+  margin-bottom: 6px;
+}
+
+.guide-steps {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.modal-divider {
+  border: none;
+  border-top: 1px solid var(--border-light);
+  margin: 6px 0;
+}
