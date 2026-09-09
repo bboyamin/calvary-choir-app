@@ -8,7 +8,7 @@ class ChoirApp {
     this.storage = window.choirStorage;
     this.currentTab = 'notice';
     this.praiseSubtab = 'all';
-    this.partPraiseFilter = 'ALL_PART'; // 파트별 연습실 기본 4부 합창
+    this.partPraiseFilter = 'ALL'; // 파트별 연습실 기본 전체 (각 파트별 최신 1개씩 총 5개)
     this.praiseMonthFilter = 'LATEST';  // 찬양 날짜 기본 최신 이번 주
     this.memberPartFilter = 'ALL';
     this.enteredPin = '';
@@ -243,6 +243,12 @@ class ChoirApp {
     });
     document.getElementById('praiseSubtabAll').classList.toggle('active', subtab === 'all');
     document.getElementById('praiseSubtabPart').classList.toggle('active', subtab === 'part');
+
+    const dateFilterBox = document.getElementById('praiseDateFilterBox');
+    if (dateFilterBox) {
+      dateFilterBox.style.display = (subtab === 'all') ? 'flex' : 'none';
+    }
+
     this.renderPraises();
   }
 
@@ -273,7 +279,7 @@ class ChoirApp {
     const praises = this.storage.get(STORAGE_KEYS.PRAISES);
 
     const months = new Set();
-    praises.forEach(p => {
+    praises.filter(p => p.type === 'all').forEach(p => {
       // 26년 1월부터만 월별 선택 옵션 추출
       if (p.date && p.date >= '2026-01-01' && p.date.length >= 7) {
         months.add(p.date.substring(0, 7));
@@ -483,6 +489,11 @@ class ChoirApp {
     let praises = this.storage.get(STORAGE_KEYS.PRAISES);
     const isOfficer = this.storage.isOfficer();
 
+    const dateFilterBox = document.getElementById('praiseDateFilterBox');
+    if (dateFilterBox) {
+      dateFilterBox.style.display = (this.praiseSubtab === 'all') ? 'flex' : 'none';
+    }
+
     // 26년 1월부터만 보여지도록 필터링
     praises = praises.filter(p => p.date && p.date >= '2026-01-01');
 
@@ -492,7 +503,7 @@ class ChoirApp {
       return (b.date || '').localeCompare(a.date || '');
     });
 
-    // 1. 성가대 찬양 영상 필터링 (type === 'all')
+    // 1. 성가대 찬양 영상 필터링 (type === 'all') - 월별/최신 주일 필터 적용
     let allPraises = praises.filter(p => p.type === 'all');
     if (this.praiseMonthFilter === 'LATEST') {
       if (allPraises.length > 0) {
@@ -512,20 +523,38 @@ class ChoirApp {
     }
 
     // 2. 파트별 연습실 음원 필터링 (type === 'part')
-    let partPraises = praises.filter(p => p.type === 'part');
-    if (this.praiseMonthFilter && this.praiseMonthFilter !== 'LATEST') {
-      partPraises = partPraises.filter(p => p.date.startsWith(this.praiseMonthFilter));
-    }
+    // 파트별 연습실은 날짜 조회를 사용하지 않으며, 관리자가 등록한 각 파트별(4부합창, 소프라노, 알토, 테너, 베이스) 최신 음원 1개씩만 표시
+    let partPraisesRaw = praises.filter(p => p.type === 'part');
 
-    if (this.partPraiseFilter && this.partPraiseFilter !== 'ALL_PART') {
-      partPraises = partPraises.filter(p => p.partTarget === this.partPraiseFilter);
+    const latestPartMap = {};
+    const partOrder = ['ALL_PART', 'S', 'A', 'T', 'B'];
+
+    partPraisesRaw.forEach(p => {
+      const target = p.partTarget || 'ALL_PART';
+      if (!latestPartMap[target]) {
+        latestPartMap[target] = p;
+      }
+    });
+
+    let displayPartPraises = [];
+    if (this.partPraiseFilter && this.partPraiseFilter !== 'ALL') {
+      if (latestPartMap[this.partPraiseFilter]) {
+        displayPartPraises.push(latestPartMap[this.partPraiseFilter]);
+      }
+    } else {
+      // 'ALL' (전체) 선택 시 4부합창 -> 소프라노 -> 알토 -> 테너 -> 베이스 순서대로 최신 1개씩 나열 (최대 5개)
+      partOrder.forEach(pt => {
+        if (latestPartMap[pt]) {
+          displayPartPraises.push(latestPartMap[pt]);
+        }
+      });
     }
 
     if (listPartEl) {
-      if (partPraises.length === 0) {
+      if (displayPartPraises.length === 0) {
         listPartEl.innerHTML = `<div class="item-card"><p class="card-body-text">등록된 파트별 연습 음원이 없습니다.</p></div>`;
       } else {
-        listPartEl.innerHTML = partPraises.map(p => this.createPraiseCardHtml(p, isOfficer)).join('');
+        listPartEl.innerHTML = displayPartPraises.map(p => this.createPraiseCardHtml(p, isOfficer)).join('');
       }
     }
   }

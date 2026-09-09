@@ -9,13 +9,13 @@
   <meta name="apple-mobile-web-app-title" content="임마누엘성가대">
   <title>갈보리교회 임마누엘성가대</title>
 
-  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=43">
-  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png?v=43">
-  <link rel="manifest" href="manifest.json?v=43">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=44">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png?v=44">
+  <link rel="manifest" href="manifest.json?v=44">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=43">
+  <link rel="stylesheet" href="css/styles.css?v=44">
 </head>
 <body>
   <!-- 메인 앱 콘테이너 -->
@@ -78,8 +78,8 @@
           </button>
         </div>
 
-        <!-- 주일/월별 찬양 검색 드롭다운 필터 -->
-        <div class="praise-date-filter-box">
+        <!-- 주일/월별 찬양 검색 드롭다운 필터 (성가대 찬양 영상 전용) -->
+        <div id="praiseDateFilterBox" class="praise-date-filter-box">
           <label for="praiseMonthFilter" class="filter-label">📅 찬양 일자 조회:</label>
           <select id="praiseMonthFilter" onchange="app.filterPraiseByMonth(this.value)">
             <option value="LATEST">✨ 이번 주 찬양 (최신 주일)</option>
@@ -96,9 +96,10 @@
 
         <!-- 파트별 연습실 서브 뷰 -->
         <div id="praiseSubtabPart" class="subtab-pane">
-          <!-- 파트 필터 바 (4부 합창이 기본) -->
+          <!-- 파트 필터 바 (기본 전체 5개 파트 표시) -->
           <div class="part-filter-bar">
-            <button class="part-chip active" data-part="ALL_PART" onclick="app.filterPartPraise('ALL_PART')">🎼 4부 합창</button>
+            <button class="part-chip active" data-part="ALL" onclick="app.filterPartPraise('ALL')">전체</button>
+            <button class="part-chip" data-part="ALL_PART" onclick="app.filterPartPraise('ALL_PART')">🎼 4부 합창</button>
             <button class="part-chip soprano" data-part="S" onclick="app.filterPartPraise('S')">소프라노</button>
             <button class="part-chip alto" data-part="A" onclick="app.filterPartPraise('A')">알토</button>
             <button class="part-chip tenor" data-part="T" onclick="app.filterPartPraise('T')">테너</button>
@@ -576,8 +577,8 @@
     </div>
   </div>
 
-  <script src="js/storage.js?v=43"></script>
-  <script src="js/app.js?v=43"></script>
+  <script src="js/storage.js?v=44"></script>
+  <script src="js/app.js?v=44"></script>
   <script>
     // 서비스 워커 등록 및 자동 캐시 갱신 (PWA)
     if ('serviceWorker' in navigator) {
@@ -590,7 +591,7 @@
       });
 
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=43')
+        navigator.serviceWorker.register('sw.js?v=44')
           .then(reg => {
             console.log('PWA ServiceWorker registered', reg);
             reg.update();
