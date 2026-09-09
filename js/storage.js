@@ -10,52 +10,12 @@ const STORAGE_KEYS = {
   MEMBERS: 'calvary_choir_members',
   PRAYERS: 'calvary_choir_prayers',
   IS_OFFICER: 'calvary_choir_is_officer',
-  DATA_VERSION: 'calvary_choir_data_v7' // 데이터 버전 v7 (초기 배포용 명단 유지 + 소식 초기화 완료)
+  DATA_VERSION: 'calvary_choir_data_v12' // 데이터 버전 v12 (파트 연습실 임의 생성 더미 제거 및 관리자 수동 등록 전용 유지)
 };
 
 const DEFAULT_DATA = {
   notices: [],
   praises: [
-        {
-            "id": "p_part_juyeo_all",
-            "type": "part",
-            "partTarget": "ALL_PART",
-            "title": "주여 말씀하소서 (4부 합창 연습)",
-            "date": "2026-09-06",
-            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
-        },
-        {
-            "id": "p_part_juyeo_s",
-            "type": "part",
-            "partTarget": "S",
-            "title": "주여 말씀하소서 (소프라노 파트)",
-            "date": "2026-09-06",
-            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
-        },
-        {
-            "id": "p_part_juyeo_a",
-            "type": "part",
-            "partTarget": "A",
-            "title": "주여 말씀하소서 (알토 파트)",
-            "date": "2026-09-06",
-            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
-        },
-        {
-            "id": "p_part_juyeo_t",
-            "type": "part",
-            "partTarget": "T",
-            "title": "주여 말씀하소서 (테너 파트)",
-            "date": "2026-09-06",
-            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
-        },
-        {
-            "id": "p_part_juyeo_b",
-            "type": "part",
-            "partTarget": "B",
-            "title": "주여 말씀하소서 (베이스 파트)",
-            "date": "2026-09-06",
-            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
-        },
         {
             "id": "p_imm_001",
             "type": "all",
@@ -343,46 +303,6 @@ const DEFAULT_DATA = {
             "title": "우리 함께 가리라",
             "date": "2026-01-04",
             "youtubeUrl": "https://www.youtube.com/watch?v=urk6M1hqVTE"
-        },
-        {
-            "id": "p_part_001",
-            "type": "part",
-            "partTarget": "ALL_PART",
-            "title": "나의 피난처 예수 (4부 합창 연습)",
-            "date": "2026-09-06",
-            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
-        },
-        {
-            "id": "p_part_002",
-            "type": "part",
-            "partTarget": "S",
-            "title": "나의 피난처 예수 (소프라노 파트 연습)",
-            "date": "2026-09-06",
-            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
-        },
-        {
-            "id": "p_part_003",
-            "type": "part",
-            "partTarget": "A",
-            "title": "나의 피난처 예수 (알토 파트 연습)",
-            "date": "2026-09-06",
-            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
-        },
-        {
-            "id": "p_part_004",
-            "type": "part",
-            "partTarget": "T",
-            "title": "나의 피난처 예수 (테너 파트 연습)",
-            "date": "2026-09-06",
-            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
-        },
-        {
-            "id": "p_part_005",
-            "type": "part",
-            "partTarget": "B",
-            "title": "나의 피난처 예수 (베이스 파트 연습)",
-            "date": "2026-09-06",
-            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
         }
     ],
   schedules: [],
@@ -482,13 +402,13 @@ class ChoirStorage {
     const currentVer = localStorage.getItem(STORAGE_KEYS.DATA_VERSION);
     
     // 데이터 신규 버전 v7 업데이트 시 최신 데이터 자동 마이그레이션 (대원 명단만 유지)
-    if (currentVer !== 'v11') {
+    if (currentVer !== 'v12') {
       this.saveLocal(STORAGE_KEYS.SCHEDULES, DEFAULT_DATA.schedules);
       this.saveLocal(STORAGE_KEYS.PRAISES, DEFAULT_DATA.praises);
       this.saveLocal(STORAGE_KEYS.NOTICES, DEFAULT_DATA.notices);
       this.saveLocal(STORAGE_KEYS.MEMBERS, DEFAULT_DATA.members);
       this.saveLocal(STORAGE_KEYS.PRAYERS, DEFAULT_DATA.prayers);
-      localStorage.setItem(STORAGE_KEYS.DATA_VERSION, 'v7');
+      localStorage.setItem(STORAGE_KEYS.DATA_VERSION, 'v12');
     } else {
       if (!localStorage.getItem(STORAGE_KEYS.NOTICES)) this.saveLocal(STORAGE_KEYS.NOTICES, DEFAULT_DATA.notices);
       if (!localStorage.getItem(STORAGE_KEYS.PRAISES)) this.saveLocal(STORAGE_KEYS.PRAISES, DEFAULT_DATA.praises);
