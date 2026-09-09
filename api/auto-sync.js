@@ -1,5 +1,5 @@
 /**
- * Vercel Serverless Cron Function: /api/auto-sync-praise
+ * Vercel Serverless Cron Function: /api/auto-sync
  * 매주 일요일 저녁 21:00 KST (12:00 UTC) Vercel Cron에 의해 자동 실행됩니다.
  * 유튜브 플레이리스트에서 새로 업데이트된 '임마누엘 성가대(1부)' 주일 찬양 영상을 감지하여
  * Vercel Cloud DB에 자동으로 즉시 등록합니다.

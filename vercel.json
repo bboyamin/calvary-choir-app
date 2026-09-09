@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/auto-sync-praise",
+      "path": "/api/auto-sync",
       "schedule": "0 12 * * 0"
     }
   ]
