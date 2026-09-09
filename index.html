@@ -9,13 +9,13 @@
   <meta name="apple-mobile-web-app-title" content="임마누엘성가대">
   <title>갈보리교회 임마누엘성가대</title>
 
-  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=51">
-  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png?v=51">
-  <link rel="manifest" href="manifest.json?v=51">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=52">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png?v=52">
+  <link rel="manifest" href="manifest.json?v=52">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=51">
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css?v=52">
 </head>
 <body>
   <!-- 메인 앱 콘테이너 -->
@@ -54,6 +54,10 @@
             ➕ 공지 작성
           </button>
         </div>
+
+        <!-- 📖 오늘의 말씀 카드가 보여집니다 -->
+        <div id="dailyVerseContainer" class="daily-verse-box"></div>
+
         <div id="noticeList" class="card-list">
           <!-- 공지사항 카드가 동적으로 로드됩니다 -->
         </div>
@@ -577,13 +581,13 @@
     </div>
   </div>
 
-  <script src="js/storage.js?v=51"></script>
-  <script src="js/app.js?v=51"></script>
+  <script src="js/storage.js?v=52"></script>
+  <script src="js/app.js?v=52"></script>
   <script>
     // 서비스 워커 등록 및 캐시 관리 (PWA) - 불필요한 새로고침 완전 차단
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=51')
+        navigator.serviceWorker.register('sw.js?v=52')
           .then(reg => {
             console.log('PWA ServiceWorker registered', reg);
           })
