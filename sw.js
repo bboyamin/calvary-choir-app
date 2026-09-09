@@ -1,4 +1,4 @@
-const CACHE_NAME = 'calvary-choir-v23';
+const CACHE_NAME = 'calvary-choir-v24';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -6,7 +6,11 @@ const ASSETS_TO_CACHE = [
   './js/storage.js',
   './js/app.js',
   './manifest.json',
-  './assets/church-logo.svg'
+  './assets/church-logo.svg',
+  './assets/church-symbol.svg',
+  './assets/icon-192.png',
+  './assets/icon-512.png',
+  './assets/apple-touch-icon.png'
 ];
 
 self.addEventListener('install', (event) => {
