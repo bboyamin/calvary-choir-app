@@ -17,6 +17,46 @@ const DEFAULT_DATA = {
   notices: [],
   praises: [
         {
+            "id": "p_part_juyeo_all",
+            "type": "part",
+            "partTarget": "ALL_PART",
+            "title": "주여 말씀하소서 (4부 합창 연습)",
+            "date": "2026-09-06",
+            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
+        },
+        {
+            "id": "p_part_juyeo_s",
+            "type": "part",
+            "partTarget": "S",
+            "title": "주여 말씀하소서 (소프라노 파트)",
+            "date": "2026-09-06",
+            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
+        },
+        {
+            "id": "p_part_juyeo_a",
+            "type": "part",
+            "partTarget": "A",
+            "title": "주여 말씀하소서 (알토 파트)",
+            "date": "2026-09-06",
+            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
+        },
+        {
+            "id": "p_part_juyeo_t",
+            "type": "part",
+            "partTarget": "T",
+            "title": "주여 말씀하소서 (테너 파트)",
+            "date": "2026-09-06",
+            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
+        },
+        {
+            "id": "p_part_juyeo_b",
+            "type": "part",
+            "partTarget": "B",
+            "title": "주여 말씀하소서 (베이스 파트)",
+            "date": "2026-09-06",
+            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
+        },
+        {
             "id": "p_imm_001",
             "type": "all",
             "partTarget": "",
@@ -442,7 +482,7 @@ class ChoirStorage {
     const currentVer = localStorage.getItem(STORAGE_KEYS.DATA_VERSION);
     
     // 데이터 신규 버전 v7 업데이트 시 최신 데이터 자동 마이그레이션 (대원 명단만 유지)
-    if (currentVer !== 'v10') {
+    if (currentVer !== 'v11') {
       this.saveLocal(STORAGE_KEYS.SCHEDULES, DEFAULT_DATA.schedules);
       this.saveLocal(STORAGE_KEYS.PRAISES, DEFAULT_DATA.praises);
       this.saveLocal(STORAGE_KEYS.NOTICES, DEFAULT_DATA.notices);
