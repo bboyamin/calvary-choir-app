@@ -1611,14 +1611,27 @@ class ChoirApp {
     let videoId = '';
     const cleanUrl = url.trim();
 
-    // 11자리 비디오 ID 추출 (Shorts, Live, Mobile, Shared, Standard 모두 지원)
-    const regExp = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/|live\/))([a-zA-Z0-9_-]{11})/;
-    const match = cleanUrl.match(regExp);
+    // 1. URL 쿼리 파라미터 v= 처리 (예: https://www.youtube.com/watch?v=...)
+    if (cleanUrl.includes('v=')) {
+      const match = cleanUrl.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+      if (match) videoId = match[1];
+    }
 
-    if (match && match[1]) {
-      videoId = match[1];
-    } else if (/^[a-zA-Z0-9_-]{11}$/.test(cleanUrl)) {
+    // 2. 경로형 URL 처리 (youtu.be/..., /shorts/..., /live/..., /embed/..., /v/...)
+    if (!videoId) {
+      const match = cleanUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|live\/|watch\/))([a-zA-Z0-9_-]{11})/i);
+      if (match) videoId = match[1];
+    }
+
+    // 3. 11자리 비디오 ID 직접 입력 경우
+    if (!videoId && /^[a-zA-Z0-9_-]{11}$/.test(cleanUrl)) {
       videoId = cleanUrl;
+    }
+
+    // 4. 슬래시(/)나 이퀄(=) 뒤 11자리 고유 토큰 강제 탐색 (모든 변종 URL 커버)
+    if (!videoId) {
+      const match = cleanUrl.match(/[\/=]([a-zA-Z0-9_-]{11})(?:[\/?&#?]|.|$)/);
+      if (match) videoId = match[1];
     }
 
     if (!videoId) return `<p style="padding:10px; color:#DC2626; font-size: 13.5px; text-align: center;">⚠️ 잘못된 유튜브 주소입니다.</p>`;
