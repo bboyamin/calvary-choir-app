@@ -296,6 +296,32 @@ class ChoirApp {
     selectEl.value = this.praiseMonthFilter;
   }
 
+  escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  openImageViewer(url, caption = '') {
+    if (!url) return;
+    const imgEl = document.getElementById('viewerImage');
+    const capEl = document.getElementById('viewerCaption');
+    if (imgEl) imgEl.src = url;
+    if (capEl) {
+      if (caption) {
+        capEl.textContent = caption;
+        capEl.classList.remove('hidden');
+      } else {
+        capEl.classList.add('hidden');
+      }
+    }
+    this.openModal('modalImageViewer');
+  }
+
   getItemTimestamp(item) {
     if (!item) return 0;
     if (item.createdAt) return item.createdAt;
@@ -348,7 +374,7 @@ class ChoirApp {
         </div>
         <h3 class="card-title">${item.title}</h3>
         <p class="card-body-text">${item.content}</p>
-        ${item.imageUrl ? `<img src="${item.imageUrl}" class="card-img-preview" alt="공지 사진">` : ''}
+        ${item.imageUrl ? `<img src="${item.imageUrl}" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${item.imageUrl}', '${this.escapeHtml(item.title)}')" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">` : ''}
         ${item.youtubeUrl ? `<div class="video-responsive">${this.getYoutubeIframe(item.youtubeUrl)}</div>` : ''}
       </div>
     `;
@@ -834,7 +860,7 @@ class ChoirApp {
       return `
         <div class="member-card">
           <div class="member-info-left">
-            ${m.photoUrl ? `<img src="${m.photoUrl}" class="member-avatar" alt="${m.name}">` : `<div class="member-avatar">${m.name.charAt(0)}</div>`}
+            ${m.photoUrl ? `<img src="${m.photoUrl}" class="member-avatar clickable-photo" onclick="app.openImageViewer('${m.photoUrl}', '${this.escapeHtml(m.name)} 대원 프로필')" alt="${m.name}" title="클릭하여 원본 사진 보기">` : `<div class="member-avatar">${m.name.charAt(0)}</div>`}
             <div class="member-details">
               <div class="member-name-row">
                 <span class="member-name">${m.name}</span>
@@ -956,8 +982,8 @@ class ChoirApp {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 400;
-        const MAX_HEIGHT = 400;
+        const MAX_WIDTH = 1600;
+        const MAX_HEIGHT = 1600;
         let width = img.width;
         let height = img.height;
 
@@ -978,11 +1004,11 @@ class ChoirApp {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
 
         document.getElementById(hiddenInputId).value = dataUrl;
         const previewEl = document.getElementById(previewId);
-        previewEl.innerHTML = `<img src="${dataUrl}" alt="미리보기"><button type="button" class="btn-remove-photo" onclick="app.clearUploadedImage('${event.target.id}', '${previewId}', '${hiddenInputId}')">✕ 사진 삭제</button>`;
+        previewEl.innerHTML = `<img src="${dataUrl}" class="clickable-photo" onclick="app.openImageViewer('${dataUrl}', '업로드 이미지 미리보기')" alt="미리보기" title="클릭하여 크게 보기"><button type="button" class="btn-remove-photo" onclick="app.clearUploadedImage('${event.target.id}', '${previewId}', '${hiddenInputId}')">✕ 사진 삭제</button>`;
         previewEl.classList.remove('hidden');
       };
       img.src = e.target.result;

@@ -1191,3 +1191,75 @@ body {
   border-top: 1px solid var(--border-light);
   margin: 6px 0;
 }
+
+/* ==========================================
+   사진 원본 확대 라이트박스 뷰어 (Image Lightbox)
+   ========================================== */
+.clickable-photo {
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.clickable-photo:hover {
+  opacity: 0.92;
+}
+
+.clickable-photo:active {
+  transform: scale(0.98);
+}
+
+.image-viewer-container {
+  position: relative;
+  max-width: 92vw;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.viewer-img {
+  max-width: 100%;
+  max-height: 82vh;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  background-color: #000;
+}
+
+.viewer-caption {
+  margin-top: 10px;
+  color: #FFFFFF;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  background: rgba(15, 23, 42, 0.85);
+  padding: 6px 16px;
+  border-radius: 20px;
+  backdrop-filter: blur(8px);
+}
+
+.btn-close-image-viewer {
+  position: absolute;
+  top: -16px;
+  right: -16px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  color: #0F172A;
+  border: 1.5px solid var(--border-light);
+  font-size: 20px;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  z-index: 20;
+  transition: transform 0.15s ease;
+}
+
+.btn-close-image-viewer:active {
+  transform: scale(0.9);
+}
