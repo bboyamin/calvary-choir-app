@@ -861,35 +861,41 @@ body {
 /* ==========================================
    하단 대형 탭 바 (5대 메인 메뉴)
    ========================================== */
+/* ==========================================
+   하단 플로팅 독 탭 바 (5대 메인 메뉴)
+   - 홈화면 추가(PWA standalone) 실행 시 곡면 모서리 짤림 100% 방지
+   ========================================== */
 .app-tabbar {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: max(10px, env(safe-area-inset-bottom, 10px));
+  left: 10px;
+  right: 10px;
   margin: 0 auto;
-  width: 100vw;
-  max-width: 480px;
-  height: calc(62px + max(4px, env(safe-area-inset-bottom, 0px)));
-  padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
-  padding-left: max(14px, env(safe-area-inset-left, 0px));
-  padding-right: max(14px, env(safe-area-inset-right, 0px));
+  width: calc(100% - 20px);
+  max-width: 460px;
+  height: 60px;
+  padding: 0 4px;
   box-sizing: border-box;
-  background: #FFFFFF;
-  border-top: 1px solid var(--border-light);
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-light);
+  border-radius: 20px;
   display: flex;
-  justify-content: space-between;
+  justify-content: space-around;
   align-items: center;
   z-index: 999;
-  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
 }
 
-/* 홈화면 추가(PWA standalone 모드) 및 모바일 스탠드얼론 실행 시 하단 양쪽 곡면 모서리 짤림 방지 */
+/* 홈화면 추가(PWA standalone 모드) 및 모바일 스탠드얼론 실행 시 여백 강화 */
 @media all and (display-mode: standalone), (display-mode: fullscreen), (-webkit-touch-callout: none) {
   .app-tabbar {
-    padding-left: max(16px, env(safe-area-inset-left, 0px));
-    padding-right: max(16px, env(safe-area-inset-right, 0px));
-    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
-    height: calc(64px + max(8px, env(safe-area-inset-bottom, 0px)));
+    bottom: max(12px, env(safe-area-inset-bottom, 12px));
+    left: 12px;
+    right: 12px;
+    width: calc(100% - 24px);
+    height: 62px;
   }
 }
 
@@ -899,7 +905,7 @@ body {
   width: 20%;
   max-width: 20%;
   min-width: 0;
-  height: 56px;
+  height: 54px;
   padding: 2px 0;
   margin: 0;
   background: none;
@@ -919,7 +925,7 @@ body {
 
 .tab-badge {
   position: absolute;
-  top: 2px;
+  top: 1px;
   left: 50%;
   transform: translateX(4px);
   background: #EF4444;
@@ -945,25 +951,24 @@ body {
 }
 
 .tab-icon {
-  font-size: 18px;
+  font-size: 19px;
   line-height: 1;
   display: block;
   flex-shrink: 0;
 }
 
 .tab-label {
-  font-size: 10px !important;
+  font-size: 10.5px !important;
   font-weight: 700;
-  letter-spacing: -0.4px;
+  letter-spacing: -0.3px;
   white-space: nowrap;
   line-height: 1.1;
   text-align: center;
   display: block;
   width: 100%;
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  -webkit-text-size-adjust: none;
+  overflow: visible;
+  -webkit-text-size-adjust: 100%;
 }
 
 .tab-item.active {
