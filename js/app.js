@@ -1002,9 +1002,12 @@ class ChoirApp {
   renderMembers() {
     const listEl = document.getElementById('memberList');
     if (!listEl) return;
-    let members = this.storage.get(STORAGE_KEYS.MEMBERS);
+    const allMembers = this.storage.get(STORAGE_KEYS.MEMBERS);
     const isOfficer = this.storage.isOfficer();
 
+    this.updateMemberPartChipCounts(allMembers);
+
+    let members = allMembers;
     if (this.memberPartFilter !== 'ALL') {
       members = members.filter(m => m.part === this.memberPartFilter);
     }
@@ -1048,6 +1051,43 @@ class ChoirApp {
     if (listEl.innerHTML !== html) {
       listEl.innerHTML = html;
     }
+  }
+
+  updateMemberPartChipCounts(allMembers) {
+    const counts = {
+      'ALL': allMembers.length,
+      '임원': 0,
+      '소프라노': 0,
+      '알토': 0,
+      '테너': 0,
+      '베이스': 0
+    };
+
+    allMembers.forEach(m => {
+      if (counts[m.part] !== undefined) {
+        counts[m.part]++;
+      }
+    });
+
+    const labels = {
+      'ALL': '전체',
+      '임원': '지휘자/반주자',
+      '소프라노': '소프라노',
+      '알토': '알토',
+      '테너': '테너',
+      '베이스': '베이스'
+    };
+
+    document.querySelectorAll('.member-chip').forEach(chip => {
+      const mpart = chip.dataset.mpart;
+      if (mpart && counts[mpart] !== undefined) {
+        const name = labels[mpart] || mpart;
+        const newText = `${name} (${counts[mpart]}명)`;
+        if (chip.textContent !== newText) {
+          chip.textContent = newText;
+        }
+      }
+    });
   }
 
   openMemberModal() {
