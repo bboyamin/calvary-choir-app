@@ -989,13 +989,16 @@ body {
   right: 0;
   bottom: 0;
   background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(3px);
-  z-index: 1000;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
+  box-sizing: border-box;
   animation: fadeIn 0.2s ease;
+  overflow-y: auto;
 }
 
 .hidden {
@@ -1005,13 +1008,16 @@ body {
 .modal-card {
   background: #FFFFFF;
   width: 100%;
-  max-width: 440px;
-  max-height: 90vh;
+  max-width: 460px;
+  max-height: min(85vh, calc(100dvh - 40px));
   border-radius: 16px;
-  overflow-y: auto;
+  overflow: hidden;
   box-shadow: 0 16px 36px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 10001;
+  margin: auto;
 }
 
 .modal-small {
@@ -1025,6 +1031,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .modal-header h3 {
@@ -1041,10 +1048,13 @@ body {
 }
 
 .modal-body {
-  padding: 16px;
+  padding: 18px 18px 24px 18px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+  overflow-y: auto;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
 }
 
 .form-group {
@@ -1079,7 +1089,10 @@ body {
 .form-actions {
   display: flex;
   gap: 8px;
-  margin-top: 6px;
+  margin-top: 12px;
+  padding-top: 4px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
+  flex-shrink: 0;
 }
 
 .btn-primary-large, .btn-secondary-large {
