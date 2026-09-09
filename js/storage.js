@@ -103,6 +103,8 @@ const DEFAULT_DATA = {
 class ChoirStorage {
   constructor() {
     this.isSyncing = false;
+    this.pendingPushCount = { notices: 0, praises: 0, schedules: 0, members: 0, prayers: 0 };
+    this.lastMutationTime = { notices: 0, praises: 0, schedules: 0, members: 0, prayers: 0 };
     this.init();
     this.startCloudSync();
   }
@@ -159,6 +161,7 @@ class ChoirStorage {
 
       const cloudData = await resp.json();
       let hasChanges = false;
+      const now = Date.now();
 
       const categoryMap = [
         { cat: 'notices', key: STORAGE_KEYS.NOTICES },
@@ -169,6 +172,15 @@ class ChoirStorage {
       ];
 
       for (const item of categoryMap) {
+        // 로컬에서 유저가 최근 4초 이내에 수정한 항목이나 현재 서버 전송 중인 항목은
+        // 이전 응답의 클라우드 GET 데이터로 덮어쓰지 않고 보호합니다 (삭제 부활 & 응답 지연 완벽 방지)
+        const isPendingPush = (this.pendingPushCount[item.cat] || 0) > 0;
+        const isRecentLocalMutation = (now - (this.lastMutationTime[item.cat] || 0)) < 4000;
+
+        if (isPendingPush || isRecentLocalMutation) {
+          continue;
+        }
+
         if (cloudData[item.cat] !== undefined && cloudData[item.cat] !== null && Array.isArray(cloudData[item.cat])) {
           const localStr = localStorage.getItem(item.key) || '[]';
           const cloudStr = JSON.stringify(cloudData[item.cat]);
@@ -199,18 +211,24 @@ class ChoirStorage {
   }
 
   async pushCategoryToCloud(category, data) {
+    this.pendingPushCount[category] = (this.pendingPushCount[category] || 0) + 1;
+    this.lastMutationTime[category] = Date.now();
+
     try {
       const resp = await fetch('./api/storage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category, data })
       });
-      if (resp.ok && window.app) {
-        if (typeof window.app.renderAll === 'function') window.app.renderAll();
-        if (typeof window.app.updateUnreadBadges === 'function') window.app.updateUnreadBadges();
+      if (resp.ok) {
+        this.lastMutationTime[category] = Date.now();
       }
     } catch (e) {
       console.warn('Cloud push error:', e);
+    } finally {
+      if (this.pendingPushCount[category] > 0) {
+        this.pendingPushCount[category]--;
+      }
     }
   }
 
@@ -233,10 +251,6 @@ class ChoirStorage {
   }
 
   save(key, data) {
-    // 1. 로컬 스토리지에 즉시 반응형 저장
-    this.saveLocal(key, data);
-
-    // 2. 전 대원 공유 클라우드 DB로 즉시 전송 동기화
     const categoryKeyMap = {
       [STORAGE_KEYS.NOTICES]: 'notices',
       [STORAGE_KEYS.PRAISES]: 'praises',
@@ -246,6 +260,14 @@ class ChoirStorage {
     };
 
     const category = categoryKeyMap[key];
+    if (category) {
+      this.lastMutationTime[category] = Date.now();
+    }
+
+    // 1. 로컬 스토리지에 즉시 반응형 저장 (0ms)
+    this.saveLocal(key, data);
+
+    // 2. 전 대원 공유 클라우드 DB로 비동기 전송 동기화
     if (category) {
       this.pushCategoryToCloud(category, data);
     }
