@@ -1126,11 +1126,25 @@ body {
   color: var(--text-sub);
 }
 
+.pin-input-group {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .pin-input-group input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 50px;
+  padding: 8px 12px;
+  text-indent: 10px;
   font-size: 28px;
+  font-weight: 800;
   text-align: center;
   letter-spacing: 10px;
-  border-color: var(--gold-accent);
+  border: 2px solid var(--gold-accent);
+  border-radius: 10px;
+  background: #FFFFFF;
+  color: var(--primary-navy);
 }
 
 .pin-error {
