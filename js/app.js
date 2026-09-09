@@ -181,7 +181,7 @@ class ChoirApp {
       this.storage.setOfficer(true);
       this.closeModal('modalPin');
       this.checkOfficerStatus();
-      alert('👑 임원 관리자 모드로 전환되었습니다. 등록/수정이 가능합니다.');
+      alert('임원 관리자 모드로 전환되었습니다. 등록/수정이 가능합니다.');
     } else {
       document.getElementById('pinErrorMsg').classList.remove('hidden');
       this.enteredPin = '';
@@ -641,6 +641,14 @@ class ChoirApp {
 
       const apps = s.applications || [];
       const totalApps = apps.length;
+      let totalTickets = 0;
+      apps.forEach(a => {
+        if (a.option) {
+          const match = a.option.match(/(\d+)매/);
+          if (match) totalTickets += parseInt(match[1], 10);
+        }
+      });
+      const ticketInfoStr = totalTickets > 0 ? ` · 티켓 총 ${totalTickets}매` : '';
 
       return `
         <div class="item-card ${isPast ? 'opacity-80' : ''}">
@@ -660,7 +668,7 @@ class ChoirApp {
               </button>
               
               <button class="btn-card-apply-list" onclick="app.openApplyListModal('${s.id}')">
-                📋 신청 현황 보기 (총 ${totalApps}명 신청)
+                📋 신청 현황 보기 (총 ${totalApps}명 신청${ticketInfoStr})
               </button>
             </div>
           ` : ''}
@@ -830,7 +838,18 @@ class ChoirApp {
 
     document.getElementById('applyListSchedTitle').textContent = sched.title;
     const apps = sched.applications || [];
-    document.getElementById('applyTotalCountBadge').textContent = `총 ${apps.length}명 신청 완료`;
+    let totalTickets = 0;
+    apps.forEach(a => {
+      if (a.option) {
+        const match = a.option.match(/(\d+)매/);
+        if (match) totalTickets += parseInt(match[1], 10);
+      }
+    });
+
+    const totalText = totalTickets > 0 
+      ? `총 ${apps.length}명 신청 완료 (티켓 총 ${totalTickets}매)` 
+      : `총 ${apps.length}명 신청 완료`;
+    document.getElementById('applyTotalCountBadge').textContent = totalText;
 
     const container = document.getElementById('applyListContainer');
     const isOfficer = this.storage.isOfficer();
