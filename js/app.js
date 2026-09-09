@@ -19,6 +19,9 @@ class ChoirApp {
     this.lastBatchDate = '';
     this.lastNextPartTarget = '';
 
+    // 지연 렌더링(Lazy rendering) 관리용 셋
+    this.renderedTabs = new Set();
+
     this.init();
   }
 
@@ -27,7 +30,7 @@ class ChoirApp {
     this.setupPwaInstall();
     this.checkOfficerStatus();
     this.populatePraiseMonthDropdown();
-    this.renderAll();
+    this.renderCurrentTab();
     this.updateUnreadBadges();
     this.requestNotificationPermission();
     this.markTabAsRead(this.currentTab);
@@ -233,12 +236,25 @@ class ChoirApp {
     this.markTabAsRead(tabId);
   }
 
+  renderCurrentTab() {
+    this.renderTab(this.currentTab);
+  }
+
   renderTab(tabId) {
+    this.renderedTabs.add(tabId);
     if (tabId === 'notice') this.renderNotices();
     else if (tabId === 'praise') this.renderPraises();
     else if (tabId === 'schedule') this.renderSchedules();
     else if (tabId === 'member') this.renderMembers();
     else if (tabId === 'prayer') this.renderPrayers();
+  }
+
+  renderAll() {
+    if (this.renderedTabs.size === 0) {
+      this.renderCurrentTab();
+    } else {
+      this.renderedTabs.forEach(tabId => this.renderTab(tabId));
+    }
   }
 
   switchPraiseSubtab(subtab) {
@@ -1414,7 +1430,7 @@ class ChoirApp {
 
     if (!videoId) return `<p style="padding:10px; color:red;">잘못된 유튜브 주소입니다.</p>`;
 
-    return `<iframe src="https://www.youtube.com/embed/${videoId}?rel=0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`;
+    return `<iframe src="https://www.youtube.com/embed/${videoId}?rel=0" loading="lazy" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`;
   }
 
   openModal(modalId) {
