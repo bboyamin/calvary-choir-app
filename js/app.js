@@ -224,7 +224,16 @@ class ChoirApp {
       pane.classList.toggle('active', pane.id === `tab-${tabId}`);
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.renderTab(tabId);
     this.markTabAsRead(tabId);
+  }
+
+  renderTab(tabId) {
+    if (tabId === 'notice') this.renderNotices();
+    else if (tabId === 'praise') this.renderPraises();
+    else if (tabId === 'schedule') this.renderSchedules();
+    else if (tabId === 'member') this.renderMembers();
+    else if (tabId === 'prayer') this.renderPrayers();
   }
 
   switchPraiseSubtab(subtab) {
@@ -287,6 +296,16 @@ class ChoirApp {
     selectEl.value = this.praiseMonthFilter;
   }
 
+  getItemTimestamp(item) {
+    if (!item) return 0;
+    if (item.createdAt) return item.createdAt;
+    if (item.id) {
+      const match = String(item.id).match(/\d{10,}/);
+      if (match) return parseInt(match[0], 10);
+    }
+    return 0;
+  }
+
   renderAll() {
     this.renderNotices();
     this.renderPraises();
@@ -309,8 +328,12 @@ class ChoirApp {
       return;
     }
 
-    // 최신순 (날짜 내림차순) 정렬
-    notices.sort((a, b) => b.date.localeCompare(a.date));
+    // 최신 생성 시각(Timestamp) 내림차순 1차 정렬 -> 날짜 내림차순 2차 정렬 (신규 작성글 최상단 배치 보장)
+    notices.sort((a, b) => {
+      const timeDiff = this.getItemTimestamp(b) - this.getItemTimestamp(a);
+      if (timeDiff !== 0) return timeDiff;
+      return (b.date || '').localeCompare(a.date || '');
+    });
 
     const MAX_RECENT = 4;
     const recentNotices = notices.slice(0, MAX_RECENT);
@@ -398,7 +421,11 @@ class ChoirApp {
     let praises = this.storage.get(STORAGE_KEYS.PRAISES);
     const isOfficer = this.storage.isOfficer();
 
-    praises.sort((a, b) => b.date.localeCompare(a.date));
+    praises.sort((a, b) => {
+      const timeDiff = this.getItemTimestamp(b) - this.getItemTimestamp(a);
+      if (timeDiff !== 0) return timeDiff;
+      return (b.date || '').localeCompare(a.date || '');
+    });
 
     if (this.praiseMonthFilter === 'LATEST') {
       if (praises.length > 0) {
@@ -997,8 +1024,12 @@ class ChoirApp {
       return;
     }
 
-    // 최신순 (날짜 내림차순) 정렬
-    prayers.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    // 최신순 (생성시각 내림차순 > 날짜 내림차순) 정렬
+    prayers.sort((a, b) => {
+      const timeDiff = this.getItemTimestamp(b) - this.getItemTimestamp(a);
+      if (timeDiff !== 0) return timeDiff;
+      return (b.date || '').localeCompare(a.date || '');
+    });
 
     const MAX_RECENT = 4;
     const recentPrayers = prayers.slice(0, MAX_RECENT);

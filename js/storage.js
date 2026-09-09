@@ -131,13 +131,14 @@ class ChoirStorage {
     // 앱 진입 즉시 클라우드 실시간 데이터 동기화
     this.syncFromCloud();
 
-    // 5초 주기 실시간 자동 동기화 (전 대원 기기 실시간 갱신)
+    // 3초 주기 실시간 자동 동기화 (전 대원 기기 초고속 갱신)
     setInterval(() => {
       this.syncFromCloud();
-    }, 5000);
+    }, 3000);
 
-    // 앱 화면 다시 활성화(포커스) 시 즉시 클라우드 동기화
+    // 앱 화면 다시 활성화(포커스) 및 온라인 복구 시 즉시 클라우드 동기화
     window.addEventListener('focus', () => this.syncFromCloud());
+    window.addEventListener('online', () => this.syncFromCloud());
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
         this.syncFromCloud();
