@@ -869,10 +869,10 @@ body {
   margin: 0 auto;
   width: 100vw;
   max-width: 480px;
-  height: calc(62px + env(safe-area-inset-bottom, 0px));
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  padding-left: 2px;
-  padding-right: 2px;
+  height: calc(62px + max(4px, env(safe-area-inset-bottom, 0px)));
+  padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(14px, env(safe-area-inset-left, 0px));
+  padding-right: max(14px, env(safe-area-inset-right, 0px));
   box-sizing: border-box;
   background: #FFFFFF;
   border-top: 1px solid var(--border-light);
@@ -881,7 +881,16 @@ body {
   align-items: center;
   z-index: 999;
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
+}
+
+/* 홈화면 추가(PWA standalone 모드) 및 모바일 스탠드얼론 실행 시 하단 양쪽 곡면 모서리 짤림 방지 */
+@media all and (display-mode: standalone), (display-mode: fullscreen), (-webkit-touch-callout: none) {
+  .app-tabbar {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+    height: calc(64px + max(8px, env(safe-area-inset-bottom, 0px)));
+  }
 }
 
 .tab-item {
@@ -890,7 +899,7 @@ body {
   width: 20%;
   max-width: 20%;
   min-width: 0;
-  height: 58px;
+  height: 56px;
   padding: 2px 0;
   margin: 0;
   background: none;
@@ -904,15 +913,15 @@ body {
   cursor: pointer;
   transition: all 0.15s ease;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
   -webkit-text-size-adjust: none;
 }
 
 .tab-badge {
   position: absolute;
-  top: 3px;
+  top: 2px;
   left: 50%;
-  transform: translateX(5px);
+  transform: translateX(4px);
   background: #EF4444;
   color: #FFFFFF;
   font-size: 10px;
@@ -936,16 +945,16 @@ body {
 }
 
 .tab-icon {
-  font-size: 18.5px;
+  font-size: 18px;
   line-height: 1;
   display: block;
   flex-shrink: 0;
 }
 
 .tab-label {
-  font-size: 10.5px !important;
+  font-size: 10px !important;
   font-weight: 700;
-  letter-spacing: -0.8px;
+  letter-spacing: -0.4px;
   white-space: nowrap;
   line-height: 1.1;
   text-align: center;
