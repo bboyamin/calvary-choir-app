@@ -181,7 +181,7 @@ class ChoirApp {
       this.storage.setOfficer(true);
       this.closeModal('modalPin');
       this.checkOfficerStatus();
-      alert('임원 관리자 모드로 전환되었습니다. 등록/수정이 가능합니다.');
+      alert('관리자 모드로 전환되었습니다. 게시글 등록 및 관리가 가능합니다.');
     } else {
       document.getElementById('pinErrorMsg').classList.remove('hidden');
       this.enteredPin = '';
@@ -196,11 +196,11 @@ class ChoirApp {
 
     if (isOfficer) {
       banner.classList.remove('hidden');
-      if (badge) badge.textContent = '임원 모드';
+      if (badge) badge.textContent = '편집 모드 중';
       document.querySelectorAll('.officer-only').forEach(el => el.classList.remove('hidden'));
     } else {
       banner.classList.add('hidden');
-      if (badge) badge.textContent = '대원 모드';
+      if (badge) badge.textContent = '관리자';
       document.querySelectorAll('.officer-only').forEach(el => el.classList.add('hidden'));
     }
     this.renderAll();
@@ -209,7 +209,7 @@ class ChoirApp {
   exitOfficerMode() {
     this.storage.setOfficer(false);
     this.checkOfficerStatus();
-    alert('대원 일반 모드로 전환되었습니다.');
+    alert('관리자 모드가 종료되었습니다. 일반 화면으로 돌아갑니다.');
   }
 
   // ----------------------------------------------------
