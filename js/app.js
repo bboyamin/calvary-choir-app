@@ -274,7 +274,8 @@ class ChoirApp {
 
     const months = new Set();
     praises.forEach(p => {
-      if (p.date && p.date.length >= 7) {
+      // 26년 1월부터만 월별 선택 옵션 추출
+      if (p.date && p.date >= '2026-01-01' && p.date.length >= 7) {
         months.add(p.date.substring(0, 7));
       }
     });
@@ -289,8 +290,6 @@ class ChoirApp {
       const [year, month] = m.split('-');
       html += `<option value="${m}">📅 ${year}년 ${parseInt(month, 10)}월 찬양 모음</option>`;
     });
-
-    html += `<option value="ALL_TIME">📜 전체 지난 찬양 전체보기</option>`;
 
     selectEl.innerHTML = html;
     selectEl.value = this.praiseMonthFilter;
@@ -484,6 +483,9 @@ class ChoirApp {
     let praises = this.storage.get(STORAGE_KEYS.PRAISES);
     const isOfficer = this.storage.isOfficer();
 
+    // 26년 1월부터만 보여지도록 필터링
+    praises = praises.filter(p => p.date && p.date >= '2026-01-01');
+
     praises.sort((a, b) => {
       const timeDiff = this.getItemTimestamp(b) - this.getItemTimestamp(a);
       if (timeDiff !== 0) return timeDiff;
@@ -495,7 +497,7 @@ class ChoirApp {
         const latestDate = praises[0].date;
         praises = praises.filter(p => p.date === latestDate);
       }
-    } else if (this.praiseMonthFilter !== 'ALL_TIME') {
+    } else if (this.praiseMonthFilter) {
       praises = praises.filter(p => p.date.startsWith(this.praiseMonthFilter));
     }
 
