@@ -1609,16 +1609,19 @@ class ChoirApp {
   getYoutubeIframe(url) {
     if (!url) return '';
     let videoId = '';
-    if (url.includes('youtu.be/')) {
-      videoId = url.split('youtu.be/')[1].split('?')[0];
-    } else if (url.includes('youtube.com/watch')) {
-      const urlParams = new URLSearchParams(url.split('?')[1]);
-      videoId = urlParams.get('v');
-    } else if (url.includes('youtube.com/embed/')) {
-      videoId = url.split('youtube.com/embed/')[1].split('?')[0];
+    const cleanUrl = url.trim();
+
+    // 11자리 비디오 ID 추출 (Shorts, Live, Mobile, Shared, Standard 모두 지원)
+    const regExp = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/|live\/))([a-zA-Z0-9_-]{11})/;
+    const match = cleanUrl.match(regExp);
+
+    if (match && match[1]) {
+      videoId = match[1];
+    } else if (/^[a-zA-Z0-9_-]{11}$/.test(cleanUrl)) {
+      videoId = cleanUrl;
     }
 
-    if (!videoId) return `<p style="padding:10px; color:red;">잘못된 유튜브 주소입니다.</p>`;
+    if (!videoId) return `<p style="padding:10px; color:#DC2626; font-size: 13.5px; text-align: center;">⚠️ 잘못된 유튜브 주소입니다.</p>`;
 
     return `<iframe src="https://www.youtube.com/embed/${videoId}?rel=0" loading="lazy" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`;
   }
