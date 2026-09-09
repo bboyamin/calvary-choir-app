@@ -571,6 +571,22 @@ class ChoirStorage {
   setOfficer(isOfficer) {
     localStorage.setItem(STORAGE_KEYS.IS_OFFICER, isOfficer ? 'true' : 'false');
   }
+
+  getMemberPin() {
+    return localStorage.getItem('calvary_choir_member_pin') || '1004';
+  }
+
+  setMemberPin(pin) {
+    localStorage.setItem('calvary_choir_member_pin', pin);
+  }
+
+  isMemberUnlocked() {
+    return localStorage.getItem('calvary_choir_member_unlocked') === 'true';
+  }
+
+  setMemberUnlocked(status) {
+    localStorage.setItem('calvary_choir_member_unlocked', status ? 'true' : 'false');
+  }
 }
 
 window.choirStorage = new ChoirStorage();

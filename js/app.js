@@ -271,6 +271,10 @@ class ChoirApp {
   // 2. 탭 전환 및 화면 렌더링
   // ----------------------------------------------------
   switchTab(tabId) {
+    if (tabId === 'member' && !this.storage.isMemberUnlocked() && !this.storage.isOfficer()) {
+      this.openMemberPinModal();
+      return;
+    }
     this.currentTab = tabId;
     document.querySelectorAll('.tab-item').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.tab === tabId);
@@ -1400,6 +1404,49 @@ class ChoirApp {
         this.renderMembers();
       });
     });
+  }
+
+  openMemberPinModal() {
+    const input = document.getElementById('inputMemberPin');
+    if (input) input.value = '';
+    this.openModal('modalMemberPin');
+    setTimeout(() => { if (input) input.focus(); }, 200);
+  }
+
+  verifyMemberPin(e) {
+    e.preventDefault();
+    const input = document.getElementById('inputMemberPin');
+    const pin = input ? input.value.trim() : '';
+    if (pin === this.storage.getMemberPin()) {
+      this.storage.setMemberUnlocked(true);
+      this.closeModal('modalMemberPin');
+      this.switchTab('member');
+    } else {
+      alert('🔒 비밀번호가 올바르지 않습니다. 다시 입력해주세요.');
+      if (input) {
+        input.value = '';
+        input.focus();
+      }
+    }
+  }
+
+  openChangeMemberPinModal() {
+    const input = document.getElementById('inputNewMemberPin');
+    if (input) input.value = '';
+    this.openModal('modalChangeMemberPin');
+  }
+
+  saveNewMemberPin(e) {
+    e.preventDefault();
+    const input = document.getElementById('inputNewMemberPin');
+    const newPin = input ? input.value.trim() : '';
+    if (!/^\d{4}$/.test(newPin)) {
+      alert('비밀번호는 숫자 4자리로 입력해주세요.');
+      return;
+    }
+    this.storage.setMemberPin(newPin);
+    this.closeModal('modalChangeMemberPin');
+    alert(`🔑 대원명단 접근 비밀번호가 [ ${newPin} ](으)로 변경되었습니다.`);
   }
 
   // ----------------------------------------------------
