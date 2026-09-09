@@ -471,8 +471,10 @@ class ChoirStorage {
         }
 
         if (cloudData[item.cat] !== undefined && cloudData[item.cat] !== null && Array.isArray(cloudData[item.cat])) {
-          const localStr = localStorage.getItem(item.key) || '[]';
-          const cloudStr = JSON.stringify(cloudData[item.cat]);
+          const localObj = this.get(item.key);
+          const cloudObj = cloudData[item.cat];
+          const localStr = JSON.stringify(localObj);
+          const cloudStr = JSON.stringify(cloudObj);
 
           if (localStr !== cloudStr) {
             localStorage.setItem(item.key, cloudStr);

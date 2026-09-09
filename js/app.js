@@ -436,7 +436,9 @@ class ChoirApp {
       `;
     }
 
-    listEl.innerHTML = html;
+    if (listEl.innerHTML !== html) {
+      listEl.innerHTML = html;
+    }
   }
 
   openNoticeModal() {
@@ -520,10 +522,11 @@ class ChoirApp {
     }
 
     if (listAllEl) {
-      if (allPraises.length === 0) {
-        listAllEl.innerHTML = `<div class="item-card"><p class="card-body-text">선택하신 일자의 성가대 찬양 영상이 없습니다.</p></div>`;
-      } else {
-        listAllEl.innerHTML = allPraises.map(p => this.createPraiseCardHtml(p, isOfficer)).join('');
+      const htmlAll = allPraises.length === 0
+        ? `<div class="item-card"><p class="card-body-text">선택하신 일자의 성가대 찬양 영상이 없습니다.</p></div>`
+        : allPraises.map(p => this.createPraiseCardHtml(p, isOfficer)).join('');
+      if (listAllEl.innerHTML !== htmlAll) {
+        listAllEl.innerHTML = htmlAll;
       }
     }
 
@@ -556,10 +559,11 @@ class ChoirApp {
     }
 
     if (listPartEl) {
-      if (displayPartPraises.length === 0) {
-        listPartEl.innerHTML = `<div class="item-card"><p class="card-body-text">등록된 파트별 연습 음원이 없습니다.</p></div>`;
-      } else {
-        listPartEl.innerHTML = displayPartPraises.map(p => this.createPraiseCardHtml(p, isOfficer)).join('');
+      const htmlPart = displayPartPraises.length === 0
+        ? `<div class="item-card"><p class="card-body-text">등록된 파트별 연습 음원이 없습니다.</p></div>`
+        : displayPartPraises.map(p => this.createPraiseCardHtml(p, isOfficer)).join('');
+      if (listPartEl.innerHTML !== htmlPart) {
+        listPartEl.innerHTML = htmlPart;
       }
     }
   }
@@ -781,7 +785,9 @@ class ChoirApp {
       `;
     }
 
-    listEl.innerHTML = html;
+    if (listEl.innerHTML !== html) {
+      listEl.innerHTML = html;
+    }
   }
 
   openScheduleModal() {
@@ -1005,12 +1011,9 @@ class ChoirApp {
 
     members.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
-    if (members.length === 0) {
-      listEl.innerHTML = `<div class="item-card"><p class="card-body-text">등록된 대원이 없습니다.</p></div>`;
-      return;
-    }
-
-    listEl.innerHTML = members.map(m => {
+    const html = members.length === 0
+      ? `<div class="item-card"><p class="card-body-text">등록된 대원이 없습니다.</p></div>`
+      : members.map(m => {
       const cleanPhone = (m.phone || '').replace(/[^0-9+]/g, '');
 
       return `
@@ -1041,6 +1044,10 @@ class ChoirApp {
         </div>
       `;
     }).join('');
+
+    if (listEl.innerHTML !== html) {
+      listEl.innerHTML = html;
+    }
   }
 
   openMemberModal() {
@@ -1269,7 +1276,9 @@ class ChoirApp {
       `;
     }
 
-    listEl.innerHTML = html;
+    if (listEl.innerHTML !== html) {
+      listEl.innerHTML = html;
+    }
   }
 
   deletePrayer(id, btn) {
