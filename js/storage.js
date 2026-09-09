@@ -131,10 +131,10 @@ class ChoirStorage {
     // 앱 진입 즉시 클라우드 실시간 데이터 동기화
     this.syncFromCloud();
 
-    // 10초 주기 실시간 자동 동기화 (전 대원 기기 실시간 갱신)
+    // 5초 주기 실시간 자동 동기화 (전 대원 기기 실시간 갱신)
     setInterval(() => {
       this.syncFromCloud();
-    }, 10000);
+    }, 5000);
 
     // 앱 화면 다시 활성화(포커스) 시 즉시 클라우드 동기화
     window.addEventListener('focus', () => this.syncFromCloud());
@@ -168,7 +168,7 @@ class ChoirStorage {
       ];
 
       for (const item of categoryMap) {
-        if (cloudData[item.cat] && Array.isArray(cloudData[item.cat])) {
+        if (cloudData[item.cat] !== undefined && cloudData[item.cat] !== null && Array.isArray(cloudData[item.cat])) {
           const localStr = localStorage.getItem(item.key) || '[]';
           const cloudStr = JSON.stringify(cloudData[item.cat]);
 
@@ -176,8 +176,8 @@ class ChoirStorage {
             localStorage.setItem(item.key, cloudStr);
             hasChanges = true;
           }
-        } else if (!cloudData[item.cat] || (Array.isArray(cloudData[item.cat]) && cloudData[item.cat].length === 0)) {
-          // 클라우드 DB가 비어있는 경우 현재 로컬 초기 데이터를 클라우드로 전송 업로드
+        } else if (cloudData[item.cat] === null || cloudData[item.cat] === undefined) {
+          // 클라우드 DB에 카테고리가 생성되지 않은 최초 상태에서만 로컬 초기 데이터 전송
           const localData = this.get(item.key);
           if (localData && localData.length > 0) {
             this.pushCategoryToCloud(item.cat, localData);
@@ -185,9 +185,9 @@ class ChoirStorage {
         }
       }
 
-      // 변경사항이 감지되면 UI 및 안읽은 배포 건수 실시간 갱신
+      // 변경사항이 감지되면 UI 및 안읽은 배포 건수 즉시 갱신
       if (hasChanges && window.app) {
-        if (typeof window.app.renderActiveTab === 'function') window.app.renderActiveTab();
+        if (typeof window.app.renderAll === 'function') window.app.renderAll();
         if (typeof window.app.updateUnreadBadges === 'function') window.app.updateUnreadBadges();
       }
     } catch (e) {
@@ -199,11 +199,15 @@ class ChoirStorage {
 
   async pushCategoryToCloud(category, data) {
     try {
-      await fetch('./api/storage', {
+      const resp = await fetch('./api/storage', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category, data })
       });
+      if (resp.ok && window.app) {
+        if (typeof window.app.renderAll === 'function') window.app.renderAll();
+        if (typeof window.app.updateUnreadBadges === 'function') window.app.updateUnreadBadges();
+      }
     } catch (e) {
       console.warn('Cloud push error:', e);
     }

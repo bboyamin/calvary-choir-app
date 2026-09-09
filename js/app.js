@@ -1004,8 +1004,11 @@ class ChoirApp {
     const recentPrayers = prayers.slice(0, MAX_RECENT);
     const olderPrayers = prayers.slice(MAX_RECENT);
 
+    const isOfficer = this.storage.isOfficer();
+
     const renderPrayerCard = (p) => `
-      <div class="item-card">
+      <div class="item-card" style="position: relative;">
+        ${isOfficer ? `<button class="btn-delete-card" onclick="app.deletePrayer('${p.id}')" title="삭제">✕</button>` : ''}
         <div class="card-top">
           <span class="card-badge badge-notice">🙏 ${p.author} 대원</span>
           <span class="card-date">${p.date}</span>
@@ -1051,6 +1054,15 @@ class ChoirApp {
     }
 
     listEl.innerHTML = html;
+  }
+
+  deletePrayer(id) {
+    if (!confirm('해당 중보기도제목을 삭제하시겠습니까?')) return;
+    let prayers = this.storage.get(STORAGE_KEYS.PRAYERS);
+    prayers = prayers.filter(p => p.id !== id);
+    this.storage.save(STORAGE_KEYS.PRAYERS, prayers);
+    this.renderPrayers();
+    this.updateUnreadBadges();
   }
 
   addAmen(id) {
