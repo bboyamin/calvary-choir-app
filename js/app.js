@@ -966,7 +966,7 @@ class ChoirApp {
           <tbody>
             ${apps.map(a => `
               <tr>
-                <td><span class="part-tag ${a.part}">${a.part}</span></td>
+                <td><span class="part-tag ${a.part}">${this.formatPartTag(a.part)}</span></td>
                 <td><strong>${a.name}</strong></td>
                 <td>${a.option}</td>
                 <td>${a.note || '-'}</td>
@@ -1025,7 +1025,7 @@ class ChoirApp {
                 <span class="member-name">${m.name}</span>
                 ${m.role ? `<span class="member-role">(${m.role})</span>` : ''}
               </div>
-              <span class="part-tag ${m.part}">${m.part}</span>
+              <span class="part-tag ${m.part}">${this.formatPartTag(m.part)}</span>
             </div>
           </div>
 
@@ -1350,6 +1350,11 @@ class ChoirApp {
       this.storage.save(STORAGE_KEYS.PRAYERS, prayers);
       this.renderPrayers();
     }
+  }
+
+  formatPartTag(part) {
+    if (part === '임원') return '지휘/반주';
+    return part || '';
   }
 
   // ----------------------------------------------------
