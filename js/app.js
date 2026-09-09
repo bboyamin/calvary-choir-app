@@ -492,16 +492,17 @@ class ChoirApp {
       return (b.date || '').localeCompare(a.date || '');
     });
 
+    // 1. 성가대 찬양 영상 필터링 (type === 'all')
+    let allPraises = praises.filter(p => p.type === 'all');
     if (this.praiseMonthFilter === 'LATEST') {
-      if (praises.length > 0) {
-        const latestDate = praises[0].date;
-        praises = praises.filter(p => p.date === latestDate);
+      if (allPraises.length > 0) {
+        const latestDate = allPraises[0].date;
+        allPraises = allPraises.filter(p => p.date === latestDate);
       }
     } else if (this.praiseMonthFilter) {
-      praises = praises.filter(p => p.date.startsWith(this.praiseMonthFilter));
+      allPraises = allPraises.filter(p => p.date.startsWith(this.praiseMonthFilter));
     }
 
-    const allPraises = praises.filter(p => p.type === 'all');
     if (listAllEl) {
       if (allPraises.length === 0) {
         listAllEl.innerHTML = `<div class="item-card"><p class="card-body-text">선택하신 일자의 성가대 찬양 영상이 없습니다.</p></div>`;
@@ -510,13 +511,19 @@ class ChoirApp {
       }
     }
 
+    // 2. 파트별 연습실 음원 필터링 (type === 'part')
     let partPraises = praises.filter(p => p.type === 'part');
-    if (this.partPraiseFilter) {
+    if (this.praiseMonthFilter && this.praiseMonthFilter !== 'LATEST') {
+      partPraises = partPraises.filter(p => p.date.startsWith(this.praiseMonthFilter));
+    }
+
+    if (this.partPraiseFilter && this.partPraiseFilter !== 'ALL_PART') {
       partPraises = partPraises.filter(p => p.partTarget === this.partPraiseFilter);
     }
+
     if (listPartEl) {
       if (partPraises.length === 0) {
-        listPartEl.innerHTML = `<div class="item-card"><p class="card-body-text">선택하신 일자 및 파트에 등록된 연습 음원이 없습니다.</p></div>`;
+        listPartEl.innerHTML = `<div class="item-card"><p class="card-body-text">등록된 파트별 연습 음원이 없습니다.</p></div>`;
       } else {
         listPartEl.innerHTML = partPraises.map(p => this.createPraiseCardHtml(p, isOfficer)).join('');
       }

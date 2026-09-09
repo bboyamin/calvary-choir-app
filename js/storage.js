@@ -303,6 +303,46 @@ const DEFAULT_DATA = {
             "title": "우리 함께 가리라",
             "date": "2026-01-04",
             "youtubeUrl": "https://www.youtube.com/watch?v=urk6M1hqVTE"
+        },
+        {
+            "id": "p_part_001",
+            "type": "part",
+            "partTarget": "ALL_PART",
+            "title": "나의 피난처 예수 (4부 합창 연습)",
+            "date": "2026-09-06",
+            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
+        },
+        {
+            "id": "p_part_002",
+            "type": "part",
+            "partTarget": "S",
+            "title": "나의 피난처 예수 (소프라노 파트 연습)",
+            "date": "2026-09-06",
+            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
+        },
+        {
+            "id": "p_part_003",
+            "type": "part",
+            "partTarget": "A",
+            "title": "나의 피난처 예수 (알토 파트 연습)",
+            "date": "2026-09-06",
+            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
+        },
+        {
+            "id": "p_part_004",
+            "type": "part",
+            "partTarget": "T",
+            "title": "나의 피난처 예수 (테너 파트 연습)",
+            "date": "2026-09-06",
+            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
+        },
+        {
+            "id": "p_part_005",
+            "type": "part",
+            "partTarget": "B",
+            "title": "나의 피난처 예수 (베이스 파트 연습)",
+            "date": "2026-09-06",
+            "youtubeUrl": "https://www.youtube.com/watch?v=uKX9VJFPcI4"
         }
     ],
   schedules: [],
@@ -402,7 +442,7 @@ class ChoirStorage {
     const currentVer = localStorage.getItem(STORAGE_KEYS.DATA_VERSION);
     
     // 데이터 신규 버전 v7 업데이트 시 최신 데이터 자동 마이그레이션 (대원 명단만 유지)
-    if (currentVer !== 'v9') {
+    if (currentVer !== 'v10') {
       this.saveLocal(STORAGE_KEYS.SCHEDULES, DEFAULT_DATA.schedules);
       this.saveLocal(STORAGE_KEYS.PRAISES, DEFAULT_DATA.praises);
       this.saveLocal(STORAGE_KEYS.NOTICES, DEFAULT_DATA.notices);
