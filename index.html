@@ -9,13 +9,13 @@
   <meta name="apple-mobile-web-app-title" content="임마누엘성가대">
   <title>갈보리교회 임마누엘성가대</title>
 
-  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=46">
-  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png?v=46">
-  <link rel="manifest" href="manifest.json?v=46">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png?v=47">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png?v=47">
+  <link rel="manifest" href="manifest.json?v=47">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=46">
+  <link rel="stylesheet" href="css/styles.css?v=47">
 </head>
 <body>
   <!-- 메인 앱 콘테이너 -->
@@ -281,7 +281,7 @@
       <form id="formNotice" onsubmit="app.saveNotice(event)" class="modal-body">
         <div class="form-group">
           <label for="noticeTitle">공지 제목 *</label>
-          <input type="text" id="noticeTitle" required placeholder="예: 주일 연습시간 변경 안내">
+          <input type="text" id="noticeTitle" required placeholder="공지 제목 입력">
         </div>
         <div class="form-group">
           <label for="noticeContent">공지 내용 *</label>
@@ -335,7 +335,7 @@
 
         <div class="form-group">
           <label for="praiseTitle">찬양곡 제목 *</label>
-          <input type="text" id="praiseTitle" required placeholder="예: 참 좋으신 주님 (지휘: 000)">
+          <input type="text" id="praiseTitle" required placeholder="찬양곡 제목 입력">
         </div>
 
         <div class="form-group">
@@ -366,7 +366,7 @@
       <form id="formSchedule" onsubmit="app.saveSchedule(event)" class="modal-body">
         <div class="form-group">
           <label for="schedTitle">일정명 *</label>
-          <input type="text" id="schedTitle" required placeholder="예: 지휘자 김은총 독창회 / 부활절 연습">
+          <input type="text" id="schedTitle" required placeholder="일정명 입력">
         </div>
         <div class="form-group">
           <label for="schedDate">일시 *</label>
@@ -392,7 +392,7 @@
         <div id="schedApplyFields" class="sched-apply-fields hidden">
           <div class="form-group">
             <label for="schedApplyTitle">신청 항목 이름</label>
-            <input type="text" id="schedApplyTitle" placeholder="예: 🎟️ 연주회 무료 초대권 신청">
+            <input type="text" id="schedApplyTitle" placeholder="신청 항목 이름 입력">
           </div>
           <div class="form-group">
             <label for="schedApplyType">신청 옵션 구성</label>
@@ -439,7 +439,7 @@
 
         <div class="form-group">
           <label for="applyName">성함 *</label>
-          <input type="text" id="applyName" required placeholder="예: 김영순 권사">
+          <input type="text" id="applyName" required placeholder="성함 입력">
         </div>
 
         <div class="form-group" id="groupApplyOption">
@@ -511,7 +511,7 @@
         </div>
         <div class="form-group">
           <label for="memRole">직분 / 체계</label>
-          <input type="text" id="memRole" placeholder="예: 권사, 집사, 대장, 지휘자">
+          <input type="text" id="memRole" placeholder="직분 입력 (권사, 집사 등)">
         </div>
         <div class="form-group">
           <label for="memPhone">연락처 *</label>
@@ -542,7 +542,7 @@
       <form id="formPrayer" onsubmit="app.savePrayer(event)" class="modal-body">
         <div class="form-group">
           <label for="prayAuthor">대원 이름 *</label>
-          <input type="text" id="prayAuthor" required placeholder="예: 김은혜 권사">
+          <input type="text" id="prayAuthor" required placeholder="성함 입력">
         </div>
         <div class="form-group">
           <label for="prayContent">기도할 제목 내용 *</label>
@@ -577,8 +577,8 @@
     </div>
   </div>
 
-  <script src="js/storage.js?v=46"></script>
-  <script src="js/app.js?v=46"></script>
+  <script src="js/storage.js?v=47"></script>
+  <script src="js/app.js?v=47"></script>
   <script>
     // 서비스 워커 등록 및 자동 캐시 갱신 (PWA) - 최초 방문 및 불필요한 새로고침 깜박임 완전 차단
     if ('serviceWorker' in navigator) {
@@ -592,7 +592,7 @@
       });
 
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=46')
+        navigator.serviceWorker.register('sw.js?v=47')
           .then(reg => {
             console.log('PWA ServiceWorker registered', reg);
             reg.update();

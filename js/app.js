@@ -1339,7 +1339,7 @@ class ChoirApp {
     const text = inputEl.value.trim();
     if (!text) return;
 
-    const author = prompt('작성자 성함을 입력해주세요 (예: 김은혜 권사):', '익명 대원');
+    const author = prompt('작성자 성함을 입력해주세요:', '익명 대원');
     if (!author) return;
 
     const prayers = this.storage.get(STORAGE_KEYS.PRAYERS);
