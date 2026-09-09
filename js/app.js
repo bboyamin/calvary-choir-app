@@ -306,6 +306,40 @@ class ChoirApp {
       .replace(/>/g, '&gt;');
   }
 
+  confirmAction(message, onConfirm) {
+    const msgEl = document.getElementById('confirmModalMsg');
+    const btnExec = document.getElementById('btnConfirmExecute');
+    if (msgEl) msgEl.textContent = message;
+    if (btnExec) {
+      btnExec.onclick = () => {
+        this.closeModal('modalConfirm');
+        if (typeof onConfirm === 'function') onConfirm();
+      };
+    }
+    this.openModal('modalConfirm');
+  }
+
+  animateRemoveCard(btnElement, callback) {
+    const cardEl = btnElement ? (btnElement.closest('.item-card') || btnElement.closest('.member-card') || btnElement.closest('tr')) : null;
+    if (cardEl) {
+      cardEl.style.transition = 'all 0.22s cubic-bezier(0.4, 0, 0.2, 1)';
+      cardEl.style.opacity = '0';
+      cardEl.style.transform = 'scale(0.92) translateY(-6px)';
+      cardEl.style.maxHeight = '0px';
+      cardEl.style.paddingTop = '0px';
+      cardEl.style.paddingBottom = '0px';
+      cardEl.style.marginTop = '0px';
+      cardEl.style.marginBottom = '0px';
+      cardEl.style.overflow = 'hidden';
+
+      setTimeout(() => {
+        if (typeof callback === 'function') callback();
+      }, 230);
+    } else {
+      if (typeof callback === 'function') callback();
+    }
+  }
+
   openImageViewer(url, caption = '') {
     if (!url) return;
     const imgEl = document.getElementById('viewerImage');
@@ -367,7 +401,7 @@ class ChoirApp {
 
     const renderNoticeCard = (item) => `
       <div class="item-card">
-        ${isOfficer ? `<button class="btn-delete-card" onclick="app.deleteNotice('${item.id}')" title="삭제">✕</button>` : ''}
+        ${isOfficer ? `<button class="btn-delete-card" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>` : ''}
         <div class="card-top">
           <span class="card-badge badge-notice">📢 성가대 공지</span>
           <span class="card-date">${item.date}</span>
@@ -430,12 +464,15 @@ class ChoirApp {
     alert('📢 새로운 공지사항이 등록되었습니다.');
   }
 
-  deleteNotice(id) {
-    if (!confirm('해당 공지사항을 삭제하시겠습니까?')) return;
-    let notices = this.storage.get(STORAGE_KEYS.NOTICES);
-    notices = notices.filter(n => n.id !== id);
-    this.storage.save(STORAGE_KEYS.NOTICES, notices);
-    this.renderNotices();
+  deleteNotice(id, btn) {
+    this.confirmAction('📢 이 공지사항을 삭제하시겠습니까?', () => {
+      this.animateRemoveCard(btn, () => {
+        let notices = this.storage.get(STORAGE_KEYS.NOTICES);
+        notices = notices.filter(n => n.id !== id);
+        this.storage.save(STORAGE_KEYS.NOTICES, notices);
+        this.renderNotices();
+      });
+    });
   }
 
   // ----------------------------------------------------
@@ -493,7 +530,7 @@ class ChoirApp {
 
     return `
       <div class="item-card">
-        ${isOfficer ? `<button class="btn-delete-card" onclick="app.deletePraise('${item.id}')" title="삭제">✕</button>` : ''}
+        ${isOfficer ? `<button class="btn-delete-card" onclick="app.deletePraise('${item.id}', this)" title="삭제">✕</button>` : ''}
         <div class="card-top">
           <span class="card-badge ${badgeClass}">${badgeText}</span>
           <span class="card-date">🗓️ ${item.date}</span>
@@ -548,13 +585,16 @@ class ChoirApp {
     alert('🎵 새로운 찬양 항목이 성공적으로 등록되었습니다.');
   }
 
-  deletePraise(id) {
-    if (!confirm('해당 찬양 항목을 삭제하시겠습니까?')) return;
-    let praises = this.storage.get(STORAGE_KEYS.PRAISES);
-    praises = praises.filter(p => p.id !== id);
-    this.storage.save(STORAGE_KEYS.PRAISES, praises);
-    this.populatePraiseMonthDropdown();
-    this.renderPraises();
+  deletePraise(id, btn) {
+    this.confirmAction('🎵 이 찬양 항목을 삭제하시겠습니까?', () => {
+      this.animateRemoveCard(btn, () => {
+        let praises = this.storage.get(STORAGE_KEYS.PRAISES);
+        praises = praises.filter(p => p.id !== id);
+        this.storage.save(STORAGE_KEYS.PRAISES, praises);
+        this.populatePraiseMonthDropdown();
+        this.renderPraises();
+      });
+    });
   }
 
   // ----------------------------------------------------
@@ -602,7 +642,7 @@ class ChoirApp {
 
       return `
         <div class="item-card ${isPast ? 'opacity-80' : ''}">
-          ${isOfficer ? `<button class="btn-delete-card" onclick="app.deleteSchedule('${s.id}')" title="삭제">✕</button>` : ''}
+          ${isOfficer ? `<button class="btn-delete-card" onclick="app.deleteSchedule('${s.id}', this)" title="삭제">✕</button>` : ''}
           <div class="card-top">
             <span class="card-badge ${isPast ? 'badge-past' : 'badge-praise'}">${isPast ? '📜 지난 일정' : '📅 주요 일정'} · ${dateStr} ${timeStr}</span>
           </div>
@@ -696,12 +736,15 @@ class ChoirApp {
     alert('📅 신규 일정이 등록되었습니다.');
   }
 
-  deleteSchedule(id) {
-    if (!confirm('해당 일정을 삭제하시겠습니까?')) return;
-    let schedules = this.storage.get(STORAGE_KEYS.SCHEDULES);
-    schedules = schedules.filter(s => s.id !== id);
-    this.storage.save(STORAGE_KEYS.SCHEDULES, schedules);
-    this.renderSchedules();
+  deleteSchedule(id, btn) {
+    this.confirmAction('📅 이 일정을 삭제하시겠습니까?', () => {
+      this.animateRemoveCard(btn, () => {
+        let schedules = this.storage.get(STORAGE_KEYS.SCHEDULES);
+        schedules = schedules.filter(s => s.id !== id);
+        this.storage.save(STORAGE_KEYS.SCHEDULES, schedules);
+        this.renderSchedules();
+      });
+    });
   }
 
   // ----------------------------------------------------
@@ -811,7 +854,7 @@ class ChoirApp {
                 <td><strong>${a.name}</strong></td>
                 <td>${a.option}</td>
                 <td>${a.note || '-'}</td>
-                ${isOfficer ? `<td><button style="color:red; background:none; border:none; cursor:pointer;" onclick="app.deleteApplication('${schedId}', '${a.id}')">삭제</button></td>` : ''}
+                ${isOfficer ? `<td><button style="color:red; background:none; border:none; cursor:pointer;" onclick="app.deleteApplication('${schedId}', '${a.id}', this)">삭제</button></td>` : ''}
               </tr>
             `).join('')}
           </tbody>
@@ -822,16 +865,19 @@ class ChoirApp {
     this.openModal('modalApplyList');
   }
 
-  deleteApplication(schedId, appId) {
-    if (!confirm('해당 대원의 신청을 취소/삭제하시겠습니까?')) return;
-    const schedules = this.storage.get(STORAGE_KEYS.SCHEDULES);
-    const sched = schedules.find(s => s.id === schedId);
-    if (sched && sched.applications) {
-      sched.applications = sched.applications.filter(a => a.id !== appId);
-      this.storage.save(STORAGE_KEYS.SCHEDULES, schedules);
-      this.openApplyListModal(schedId);
-      this.renderSchedules();
-    }
+  deleteApplication(schedId, appId, btn) {
+    this.confirmAction('🎟️ 해당 대원의 신청을 삭제하시겠습니까?', () => {
+      this.animateRemoveCard(btn, () => {
+        const schedules = this.storage.get(STORAGE_KEYS.SCHEDULES);
+        const sched = schedules.find(s => s.id === schedId);
+        if (sched && sched.applications) {
+          sched.applications = sched.applications.filter(a => a.id !== appId);
+          this.storage.save(STORAGE_KEYS.SCHEDULES, schedules);
+          this.openApplyListModal(schedId);
+          this.renderSchedules();
+        }
+      });
+    });
   }
 
   // ----------------------------------------------------
@@ -879,7 +925,7 @@ class ChoirApp {
             </a>
             ${isOfficer ? `
               <button class="btn-edit-card" style="position:static; margin-right:4px;" onclick="app.editMember('${m.id}')" title="수정">✏️</button>
-              <button class="btn-delete-card" style="position:static;" onclick="app.deleteMember('${m.id}')" title="삭제">✕</button>
+              <button class="btn-delete-card" style="position:static;" onclick="app.deleteMember('${m.id}', this)" title="삭제">✕</button>
             ` : ''}
           </div>
         </div>
@@ -1029,12 +1075,15 @@ class ChoirApp {
     }
   }
 
-  deleteMember(id) {
-    if (!confirm('해당 대원을 삭제하시겠습니까?')) return;
-    let members = this.storage.get(STORAGE_KEYS.MEMBERS);
-    members = members.filter(m => m.id !== id);
-    this.storage.save(STORAGE_KEYS.MEMBERS, members);
-    this.renderMembers();
+  deleteMember(id, btn) {
+    this.confirmAction('👥 해당 대원을 삭제하시겠습니까?', () => {
+      this.animateRemoveCard(btn, () => {
+        let members = this.storage.get(STORAGE_KEYS.MEMBERS);
+        members = members.filter(m => m.id !== id);
+        this.storage.save(STORAGE_KEYS.MEMBERS, members);
+        this.renderMembers();
+      });
+    });
   }
 
   // ----------------------------------------------------
@@ -1065,7 +1114,7 @@ class ChoirApp {
 
     const renderPrayerCard = (p) => `
       <div class="item-card" style="position: relative;">
-        ${isOfficer ? `<button class="btn-delete-card" onclick="app.deletePrayer('${p.id}')" title="삭제">✕</button>` : ''}
+        ${isOfficer ? `<button class="btn-delete-card" onclick="app.deletePrayer('${p.id}', this)" title="삭제">✕</button>` : ''}
         <div class="card-top">
           <span class="card-badge badge-notice">🙏 ${p.author} 대원</span>
           <span class="card-date">${p.date}</span>
@@ -1113,13 +1162,16 @@ class ChoirApp {
     listEl.innerHTML = html;
   }
 
-  deletePrayer(id) {
-    if (!confirm('해당 중보기도제목을 삭제하시겠습니까?')) return;
-    let prayers = this.storage.get(STORAGE_KEYS.PRAYERS);
-    prayers = prayers.filter(p => p.id !== id);
-    this.storage.save(STORAGE_KEYS.PRAYERS, prayers);
-    this.renderPrayers();
-    this.updateUnreadBadges();
+  deletePrayer(id, btn) {
+    this.confirmAction('🙏 이 중보기도제목을 삭제하시겠습니까?', () => {
+      this.animateRemoveCard(btn, () => {
+        let prayers = this.storage.get(STORAGE_KEYS.PRAYERS);
+        prayers = prayers.filter(p => p.id !== id);
+        this.storage.save(STORAGE_KEYS.PRAYERS, prayers);
+        this.renderPrayers();
+        this.updateUnreadBadges();
+      });
+    });
   }
 
   addAmen(id) {
