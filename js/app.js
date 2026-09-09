@@ -474,19 +474,54 @@ class ChoirApp {
     const recentNotices = notices.slice(0, MAX_RECENT);
     const olderNotices = notices.slice(MAX_RECENT);
 
-    const renderNoticeCard = (item) => `
-      <div class="item-card">
-        ${isOfficer ? `<button class="btn-delete-card" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>` : ''}
-        <div class="card-top">
-          <span class="card-badge badge-notice">📢 성가대 공지</span>
-          <span class="card-date">${item.date}</span>
+    const renderNoticeCard = (item) => {
+      const content = item.content || '';
+      const isLong = content.length > 120 || (content.match(/\n/g) || []).length >= 3;
+      const isExpanded = this.expandedNoticeIds && this.expandedNoticeIds.has(item.id);
+
+      if (!isLong) {
+        return `
+          <div class="item-card" id="notice_card_${item.id}">
+            ${isOfficer ? `<button class="btn-delete-card" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>` : ''}
+            <div class="card-top">
+              <span class="card-badge badge-notice">📢 성가대 공지</span>
+              <span class="card-date">${item.date}</span>
+            </div>
+            <h3 class="card-title">${item.title}</h3>
+            <p class="card-body-text">${content}</p>
+            ${item.imageUrl ? `<img src="${item.imageUrl}" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${item.imageUrl}', '${this.escapeHtml(item.title)}')" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">` : ''}
+            ${item.youtubeUrl ? `<div class="video-responsive">${this.getYoutubeIframe(item.youtubeUrl)}</div>` : ''}
+          </div>
+        `;
+      }
+
+      const previewText = content.slice(0, 120).replace(/\r?\n/g, ' ').trim() + '...';
+
+      return `
+        <div class="item-card notice-card-collapsible ${isExpanded ? 'is-expanded' : ''}" id="notice_card_${item.id}">
+          ${isOfficer ? `<button class="btn-delete-card" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>` : ''}
+          <div class="card-top">
+            <span class="card-badge badge-notice">📢 성가대 공지</span>
+            <span class="card-date">${item.date}</span>
+          </div>
+          <h3 class="card-title">${item.title}</h3>
+
+          <div class="notice-preview-box" style="display: ${isExpanded ? 'none' : 'block'};">
+            <p class="card-body-text notice-text-preview">${previewText}</p>
+          </div>
+
+          <div class="notice-full-box" style="display: ${isExpanded ? 'block' : 'none'};">
+            <p class="card-body-text notice-text-full">${content}</p>
+            ${item.imageUrl ? `<img src="${item.imageUrl}" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${item.imageUrl}', '${this.escapeHtml(item.title)}')" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">` : ''}
+            ${item.youtubeUrl ? `<div class="video-responsive">${this.getYoutubeIframe(item.youtubeUrl)}</div>` : ''}
+          </div>
+
+          <button type="button" class="btn-toggle-expand" onclick="app.toggleNoticeExpand('${item.id}', this)">
+            ${isExpanded ? '🔼 내용 접기' : '🔽 자세히 보기'}
+          </button>
         </div>
-        <h3 class="card-title">${item.title}</h3>
-        <p class="card-body-text">${item.content}</p>
-        ${item.imageUrl ? `<img src="${item.imageUrl}" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${item.imageUrl}', '${this.escapeHtml(item.title)}')" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">` : ''}
-        ${item.youtubeUrl ? `<div class="video-responsive">${this.getYoutubeIframe(item.youtubeUrl)}</div>` : ''}
-      </div>
-    `;
+      `;
+    };
 
     let html = recentNotices.map(renderNoticeCard).join('');
 
@@ -582,6 +617,33 @@ class ChoirApp {
         this.renderNotices();
       });
     });
+  }
+
+  toggleNoticeExpand(id, btn) {
+    if (!this.expandedNoticeIds) {
+      this.expandedNoticeIds = new Set();
+    }
+    if (this.expandedNoticeIds.has(id)) {
+      this.expandedNoticeIds.delete(id);
+    } else {
+      this.expandedNoticeIds.add(id);
+    }
+
+    const cardEl = document.getElementById(`notice_card_${id}`);
+    if (cardEl) {
+      const previewBox = cardEl.querySelector('.notice-preview-box');
+      const fullBox = cardEl.querySelector('.notice-full-box');
+      const isExpanded = this.expandedNoticeIds.has(id);
+
+      if (previewBox && fullBox && btn) {
+        previewBox.style.display = isExpanded ? 'none' : 'block';
+        fullBox.style.display = isExpanded ? 'block' : 'none';
+        btn.innerHTML = isExpanded ? '🔼 내용 접기' : '🔽 자세히 보기';
+        cardEl.classList.toggle('is-expanded', isExpanded);
+        return;
+      }
+    }
+    this.renderNotices();
   }
 
   // ----------------------------------------------------
