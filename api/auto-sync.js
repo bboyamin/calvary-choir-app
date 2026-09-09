@@ -167,12 +167,20 @@ export default async function handler(req, res) {
     // 3. 기존 DB 데이터와 비교하여 신규 찬양 자동 추가
     let currentPraises = (await kvGet('calvary_praises')) || [];
 
-    const existingUrls = new Set(currentPraises.map(p => p.youtubeUrl));
-    const addedItems = [];
+    const existingUrls = new Set();
+    const existingKeys = new Set();
 
+    currentPraises.forEach(p => {
+      if (p.youtubeUrl) existingUrls.add(p.youtubeUrl);
+      if (p.date && p.title) existingKeys.add(`${p.date}_${p.title.trim()}`);
+    });
+
+    const addedItems = [];
     for (const np of newPraises) {
-      if (!existingUrls.has(np.youtubeUrl)) {
+      const key = `${np.date}_${np.title.trim()}`;
+      if (!existingUrls.has(np.youtubeUrl) && !existingKeys.has(key)) {
         existingUrls.add(np.youtubeUrl);
+        existingKeys.add(key);
         addedItems.push(np);
       }
     }
