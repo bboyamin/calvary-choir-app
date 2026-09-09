@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/auto-sync-praise",
+      "schedule": "0 12 * * 0"
+    }
+  ]
+}
