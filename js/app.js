@@ -785,8 +785,11 @@ class ChoirApp {
         <option value="불참">불참합니다</option>
       `;
     } else {
-      lblEl.textContent = '✍️ 신청 구문 *';
-      selectEl.innerHTML = `<option value="신청함">신청함</option>`;
+      lblEl.textContent = '🙋 참석 여부 선택 *';
+      selectEl.innerHTML = `
+        <option value="참석">참석합니다</option>
+        <option value="불참">불참합니다</option>
+      `;
     }
 
     this.openModal('modalApplySchedule');
