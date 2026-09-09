@@ -14,6 +14,11 @@ class ChoirApp {
     this.enteredPin = '';
     this.deferredPrompt = null;
 
+    // 파트별 음원 5개 연속 등록 시 제목 및 주일 일자 자동 입력용 상태
+    this.lastBatchTitle = '';
+    this.lastBatchDate = '';
+    this.lastNextPartTarget = '';
+
     this.init();
   }
 
@@ -584,8 +589,30 @@ class ChoirApp {
 
   openPraiseModal() {
     document.getElementById('formPraise').reset();
-    this.togglePartSelect('all');
+
+    if (this.lastBatchTitle && this.lastBatchDate && this.lastNextPartTarget) {
+      document.getElementById('praiseType').value = 'part';
+      this.togglePartSelect('part');
+      document.getElementById('praisePartTarget').value = this.lastNextPartTarget;
+      document.getElementById('praiseTitle').value = this.lastBatchTitle;
+      document.getElementById('praiseDate').value = this.lastBatchDate;
+      document.getElementById('praiseYoutube').value = '';
+    } else {
+      if (this.praiseSubtab === 'part') {
+        document.getElementById('praiseType').value = 'part';
+        this.togglePartSelect('part');
+        document.getElementById('praisePartTarget').value = 'ALL_PART';
+      } else {
+        document.getElementById('praiseType').value = 'all';
+        this.togglePartSelect('all');
+      }
+    }
     this.openModal('modalPraise');
+
+    setTimeout(() => {
+      const ytInput = document.getElementById('praiseYoutube');
+      if (ytInput) ytInput.focus();
+    }, 150);
   }
 
   togglePartSelect(val) {
@@ -620,7 +647,30 @@ class ChoirApp {
     this.closeModal('modalPraise');
     this.populatePraiseMonthDropdown();
     this.renderPraises();
-    alert('🎵 새로운 찬양 항목이 성공적으로 등록되었습니다.');
+
+    if (type === 'part') {
+      const partOrder = ['ALL_PART', 'S', 'A', 'T', 'B'];
+      const partNames = { 'ALL_PART': '4부 합창', 'S': '소프라노', 'A': '알토', 'T': '테너', 'B': '베이스' };
+      const currentIndex = partOrder.indexOf(partTarget);
+
+      this.lastBatchTitle = title;
+      this.lastBatchDate = date;
+
+      if (currentIndex >= 0 && currentIndex < partOrder.length - 1) {
+        const nextTarget = partOrder[currentIndex + 1];
+        this.lastNextPartTarget = nextTarget;
+        const nextPartName = partNames[nextTarget] || '다음 파트';
+        alert(`🎵 [${partNames[partTarget] || '파트'}] 음원이 등록되었습니다!\n다음 [${nextPartName}] 음원 등록 시 곡 제목과 일자가 자동 입력됩니다.`);
+      } else {
+        // 베이스(B) 또는 마지막 파트까지 등록 완료 시 자동 입력 배치 리셋
+        this.lastBatchTitle = '';
+        this.lastBatchDate = '';
+        this.lastNextPartTarget = '';
+        alert('🎉 [베이스 파트]까지 5개 파트 연습 음원 등록이 모두 완료되었습니다!');
+      }
+    } else {
+      alert('🎵 새로운 성가대 찬양 영상이 성공적으로 등록되었습니다.');
+    }
   }
 
   deletePraise(id, btn) {
