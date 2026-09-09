@@ -102,7 +102,9 @@ const DEFAULT_DATA = {
 
 class ChoirStorage {
   constructor() {
+    this.isSyncing = false;
     this.init();
+    this.startCloudSync();
   }
 
   init() {
@@ -110,29 +112,100 @@ class ChoirStorage {
     
     // 데이터 신규 버전 v7 업데이트 시 최신 데이터 자동 마이그레이션 (대원 명단만 유지)
     if (currentVer !== 'v7') {
-      this.save(STORAGE_KEYS.SCHEDULES, DEFAULT_DATA.schedules);
-      this.save(STORAGE_KEYS.PRAISES, DEFAULT_DATA.praises);
-      this.save(STORAGE_KEYS.NOTICES, DEFAULT_DATA.notices);
-      this.save(STORAGE_KEYS.MEMBERS, DEFAULT_DATA.members);
-      this.save(STORAGE_KEYS.PRAYERS, DEFAULT_DATA.prayers);
+      this.saveLocal(STORAGE_KEYS.SCHEDULES, DEFAULT_DATA.schedules);
+      this.saveLocal(STORAGE_KEYS.PRAISES, DEFAULT_DATA.praises);
+      this.saveLocal(STORAGE_KEYS.NOTICES, DEFAULT_DATA.notices);
+      this.saveLocal(STORAGE_KEYS.MEMBERS, DEFAULT_DATA.members);
+      this.saveLocal(STORAGE_KEYS.PRAYERS, DEFAULT_DATA.prayers);
       localStorage.setItem(STORAGE_KEYS.DATA_VERSION, 'v7');
-      return;
+    } else {
+      if (!localStorage.getItem(STORAGE_KEYS.NOTICES)) this.saveLocal(STORAGE_KEYS.NOTICES, DEFAULT_DATA.notices);
+      if (!localStorage.getItem(STORAGE_KEYS.PRAISES)) this.saveLocal(STORAGE_KEYS.PRAISES, DEFAULT_DATA.praises);
+      if (!localStorage.getItem(STORAGE_KEYS.SCHEDULES)) this.saveLocal(STORAGE_KEYS.SCHEDULES, DEFAULT_DATA.schedules);
+      if (!localStorage.getItem(STORAGE_KEYS.MEMBERS)) this.saveLocal(STORAGE_KEYS.MEMBERS, DEFAULT_DATA.members);
+      if (!localStorage.getItem(STORAGE_KEYS.PRAYERS)) this.saveLocal(STORAGE_KEYS.PRAYERS, DEFAULT_DATA.prayers);
     }
+  }
 
-    if (!localStorage.getItem(STORAGE_KEYS.NOTICES)) {
-      this.save(STORAGE_KEYS.NOTICES, DEFAULT_DATA.notices);
+  startCloudSync() {
+    // 앱 진입 즉시 클라우드 실시간 데이터 동기화
+    this.syncFromCloud();
+
+    // 10초 주기 실시간 자동 동기화 (전 대원 기기 실시간 갱신)
+    setInterval(() => {
+      this.syncFromCloud();
+    }, 10000);
+
+    // 앱 화면 다시 활성화(포커스) 시 즉시 클라우드 동기화
+    window.addEventListener('focus', () => this.syncFromCloud());
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        this.syncFromCloud();
+      }
+    });
+  }
+
+  async syncFromCloud() {
+    if (this.isSyncing) return;
+    this.isSyncing = true;
+
+    try {
+      const resp = await fetch('./api/storage?key=all');
+      if (!resp.ok) {
+        this.isSyncing = false;
+        return;
+      }
+
+      const cloudData = await resp.json();
+      let hasChanges = false;
+
+      const categoryMap = [
+        { cat: 'notices', key: STORAGE_KEYS.NOTICES },
+        { cat: 'praises', key: STORAGE_KEYS.PRAISES },
+        { cat: 'schedules', key: STORAGE_KEYS.SCHEDULES },
+        { cat: 'members', key: STORAGE_KEYS.MEMBERS },
+        { cat: 'prayers', key: STORAGE_KEYS.PRAYERS }
+      ];
+
+      for (const item of categoryMap) {
+        if (cloudData[item.cat] && Array.isArray(cloudData[item.cat])) {
+          const localStr = localStorage.getItem(item.key) || '[]';
+          const cloudStr = JSON.stringify(cloudData[item.cat]);
+
+          if (localStr !== cloudStr) {
+            localStorage.setItem(item.key, cloudStr);
+            hasChanges = true;
+          }
+        } else if (!cloudData[item.cat] || (Array.isArray(cloudData[item.cat]) && cloudData[item.cat].length === 0)) {
+          // 클라우드 DB가 비어있는 경우 현재 로컬 초기 데이터를 클라우드로 전송 업로드
+          const localData = this.get(item.key);
+          if (localData && localData.length > 0) {
+            this.pushCategoryToCloud(item.cat, localData);
+          }
+        }
+      }
+
+      // 변경사항이 감지되면 UI 및 안읽은 배포 건수 실시간 갱신
+      if (hasChanges && window.app) {
+        if (typeof window.app.renderActiveTab === 'function') window.app.renderActiveTab();
+        if (typeof window.app.updateUnreadBadges === 'function') window.app.updateUnreadBadges();
+      }
+    } catch (e) {
+      console.warn('Cloud sync offline or error:', e);
+    } finally {
+      this.isSyncing = false;
     }
-    if (!localStorage.getItem(STORAGE_KEYS.PRAISES)) {
-      this.save(STORAGE_KEYS.PRAISES, DEFAULT_DATA.praises);
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.SCHEDULES)) {
-      this.save(STORAGE_KEYS.SCHEDULES, DEFAULT_DATA.schedules);
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.MEMBERS)) {
-      this.save(STORAGE_KEYS.MEMBERS, DEFAULT_DATA.members);
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.PRAYERS)) {
-      this.save(STORAGE_KEYS.PRAYERS, DEFAULT_DATA.prayers);
+  }
+
+  async pushCategoryToCloud(category, data) {
+    try {
+      await fetch('./api/storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category, data })
+      });
+    } catch (e) {
+      console.warn('Cloud push error:', e);
     }
   }
 
@@ -146,11 +219,30 @@ class ChoirStorage {
     }
   }
 
-  save(key, data) {
+  saveLocal(key, data) {
     try {
       localStorage.setItem(key, JSON.stringify(data));
     } catch (e) {
       console.error('Storage save error:', e);
+    }
+  }
+
+  save(key, data) {
+    // 1. 로컬 스토리지에 즉시 반응형 저장
+    this.saveLocal(key, data);
+
+    // 2. 전 대원 공유 클라우드 DB로 즉시 전송 동기화
+    const categoryKeyMap = {
+      [STORAGE_KEYS.NOTICES]: 'notices',
+      [STORAGE_KEYS.PRAISES]: 'praises',
+      [STORAGE_KEYS.SCHEDULES]: 'schedules',
+      [STORAGE_KEYS.MEMBERS]: 'members',
+      [STORAGE_KEYS.PRAYERS]: 'prayers'
+    };
+
+    const category = categoryKeyMap[key];
+    if (category) {
+      this.pushCategoryToCloud(category, data);
     }
   }
 
