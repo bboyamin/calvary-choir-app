@@ -10,7 +10,7 @@ const STORAGE_KEYS = {
   MEMBERS: 'calvary_choir_members',
   PRAYERS: 'calvary_choir_prayers',
   IS_OFFICER: 'calvary_choir_is_officer',
-  DATA_VERSION: 'calvary_choir_data_v30' // 데이터 버전 v12 (파트 연습실 임의 생성 더미 제거 및 관리자 수동 등록 전용 유지)
+  DATA_VERSION: 'calvary_choir_data_v999' // 데이터 버전 v12 (파트 연습실 임의 생성 더미 제거 및 관리자 수동 등록 전용 유지)
 };
 
 const DEFAULT_DATA = {
@@ -808,36 +808,24 @@ class ChoirStorage {
     this.startCloudSync();
   }
 
-      init() {
+        init() {
     const currentVer = localStorage.getItem(STORAGE_KEYS.DATA_VERSION);
     
-    // v30 마이그레이션: exact 53명 대원 명단(사진 52명) & 파트별 연습실 음원 '주여 말씀하소서' 100% 강제 동기화
-    if (currentVer !== 'v30') {
+    // 어제 원본 상태(v999)로 스마트폰/브라우저 로컬 데이터 100% 완전 원복 리셋
+    if (currentVer !== 'v999') {
+      this.saveLocal(STORAGE_KEYS.SCHEDULES, DEFAULT_DATA.schedules);
+      this.saveLocal(STORAGE_KEYS.PRAISES, DEFAULT_DATA.praises);
+      this.saveLocal(STORAGE_KEYS.NOTICES, DEFAULT_DATA.notices);
       this.saveLocal(STORAGE_KEYS.MEMBERS, DEFAULT_DATA.members);
+      this.saveLocal(STORAGE_KEYS.PRAYERS, DEFAULT_DATA.prayers);
+
+      this.pushCategoryToCloud('schedules', DEFAULT_DATA.schedules);
+      this.pushCategoryToCloud('praises', DEFAULT_DATA.praises);
+      this.pushCategoryToCloud('notices', DEFAULT_DATA.notices);
       this.pushCategoryToCloud('members', DEFAULT_DATA.members);
+      this.pushCategoryToCloud('prayers', DEFAULT_DATA.prayers);
 
-      // 파트별 연습실 음원 '주여 말씀하소서' 보충
-      let praises = this.get(STORAGE_KEYS.PRAISES);
-      if (!praises || praises.length === 0) {
-        praises = DEFAULT_DATA.praises;
-      } else {
-        const juyeoItems = DEFAULT_DATA.praises.filter(p => p.id && p.id.startsWith('p_juyeo_'));
-        // 중복 제거 후 탑재
-        const existingIds = new Set(praises.map(p => p.id));
-        juyeoItems.forEach(item => {
-          if (!existingIds.has(item.id)) {
-            praises.unshift(item);
-          }
-        });
-      }
-      this.saveLocal(STORAGE_KEYS.PRAISES, praises);
-      this.pushCategoryToCloud('praises', praises);
-
-      if (!localStorage.getItem(STORAGE_KEYS.NOTICES)) this.saveLocal(STORAGE_KEYS.NOTICES, DEFAULT_DATA.notices);
-      if (!localStorage.getItem(STORAGE_KEYS.SCHEDULES)) this.saveLocal(STORAGE_KEYS.SCHEDULES, DEFAULT_DATA.schedules);
-      if (!localStorage.getItem(STORAGE_KEYS.PRAYERS)) this.saveLocal(STORAGE_KEYS.PRAYERS, DEFAULT_DATA.prayers);
-
-      localStorage.setItem(STORAGE_KEYS.DATA_VERSION, 'v30');
+      localStorage.setItem(STORAGE_KEYS.DATA_VERSION, 'v999');
     } else {
       if (!localStorage.getItem(STORAGE_KEYS.NOTICES)) this.saveLocal(STORAGE_KEYS.NOTICES, DEFAULT_DATA.notices);
       if (!localStorage.getItem(STORAGE_KEYS.PRAISES)) this.saveLocal(STORAGE_KEYS.PRAISES, DEFAULT_DATA.praises);
