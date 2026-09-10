@@ -4,6 +4,14 @@
  * - 전 대원이 어느 기기(아이폰, 안드로이드, PC)에서 접속하든 실시간으로 공지, 찬양음원, 일정, 중보기도, 대원 명단을 공유합니다.
  */
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb'
+    }
+  }
+};
+
 // 메모리 기반 전역 캐시 (서버리스 인스턴스 간 고속 응답용)
 let globalData = {
   notices: null,
@@ -30,16 +38,21 @@ export default async function handler(req, res) {
   }
 
   const { KV_REST_API_URL, KV_REST_API_TOKEN } = process.env;
+  const baseUrl = KV_REST_API_URL ? KV_REST_API_URL.replace(/\/$/, '') : null;
 
   // Vercel KV / Upstash Redis 연동 지원
   const kvGet = async (key) => {
-    if (!KV_REST_API_URL || !KV_REST_API_TOKEN) return null;
+    if (!baseUrl || !KV_REST_API_TOKEN) return null;
     try {
-      const resp = await fetch(`${KV_REST_API_URL}/get/${key}`, {
+      const resp = await fetch(`${baseUrl}/get/${key}`, {
         headers: { Authorization: `Bearer ${KV_REST_API_TOKEN}` }
       });
+      if (!resp.ok) return null;
       const data = await resp.json();
-      return data.result ? JSON.parse(data.result) : null;
+      if (data.result !== undefined && data.result !== null) {
+        return typeof data.result === 'string' ? JSON.parse(data.result) : data.result;
+      }
+      return null;
     } catch (e) {
       console.error('KV get error:', e);
       return null;
@@ -47,13 +60,21 @@ export default async function handler(req, res) {
   };
 
   const kvSet = async (key, val) => {
-    if (!KV_REST_API_URL || !KV_REST_API_TOKEN) return;
+    if (!baseUrl || !KV_REST_API_TOKEN) return;
     try {
-      await fetch(`${KV_REST_API_URL}/set/${key}`, {
+      const stringifiedVal = JSON.stringify(val);
+      const resp = await fetch(baseUrl, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${KV_REST_API_TOKEN}` },
-        body: JSON.stringify(val)
+        headers: {
+          Authorization: `Bearer ${KV_REST_API_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(['SET', key, stringifiedVal])
       });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        console.error('KV set error response:', resp.status, errText);
+      }
     } catch (e) {
       console.error('KV set error:', e);
     }
@@ -69,13 +90,13 @@ export default async function handler(req, res) {
 
       for (const cat of categories) {
         const kvVal = await kvGet(`calvary_${cat}`);
-        result[cat] = kvVal !== null ? kvVal : (globalData[cat] || null);
+        result[cat] = kvVal !== null ? kvVal : (globalData[cat] !== null ? globalData[cat] : []);
       }
 
       return res.status(200).json(result);
     } else {
       const kvVal = await kvGet(`calvary_${key}`);
-      const val = kvVal !== null ? kvVal : (globalData[key] || null);
+      const val = kvVal !== null ? kvVal : (globalData[key] !== null ? globalData[key] : []);
       return res.status(200).json({ [key]: val, lastUpdated: globalData.lastUpdated });
     }
   }

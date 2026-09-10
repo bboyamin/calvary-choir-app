@@ -1211,9 +1211,7 @@ class ChoirApp {
       `;
     }).join('');
 
-    if (listEl.innerHTML !== html) {
-      listEl.innerHTML = html;
-    }
+    listEl.innerHTML = html;
   }
 
   updateMemberPartChipCounts(allMembers) {
@@ -1253,11 +1251,129 @@ class ChoirApp {
     });
   }
 
+  // ----------------------------------------------------
+  // 👥 대원 사진 전용 핸들러 (원점 재설계)
+  // ----------------------------------------------------
+  clearMemberPhoto(clearUrlInput = true) {
+    const fileEl = document.getElementById('memFilePhoto');
+    const dataEl = document.getElementById('memPhotoData');
+    const previewEl = document.getElementById('memPhotoPreview');
+    const urlEl = document.getElementById('memPhoto');
+
+    if (fileEl) fileEl.value = '';
+    if (dataEl) dataEl.value = '';
+    if (clearUrlInput && urlEl) urlEl.value = '';
+    if (previewEl) {
+      previewEl.innerHTML = '';
+      previewEl.classList.add('hidden');
+    }
+  }
+
+  handleMemberPhotoUpload(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+
+    // 1. 기존 폼 사진 데이터 0ms 즉시 리셋
+    const dataEl = document.getElementById('memPhotoData');
+    if (dataEl) dataEl.value = '';
+
+    const previewEl = document.getElementById('memPhotoPreview');
+    if (previewEl) {
+      previewEl.innerHTML = `<div style="padding:10px; font-size:13px; color:#38BDF8; background:rgba(56,189,248,0.1); border-radius:8px; text-align:center;">⏳ 사진을 분석하여 압축하는 중입니다...</div>`;
+      previewEl.classList.remove('hidden');
+    }
+
+    // 📷 대용량/모든 확장자 전천후 초고속 Canvas 압축 처리기
+    const processImageObject = (imgObj, cleanupFn) => {
+      try {
+        const canvas = document.createElement('canvas');
+        const MAX = 500;
+        let w = imgObj.width || 500;
+        let h = imgObj.height || 500;
+
+        if (w > h) {
+          if (w > MAX) { h = Math.round(h * (MAX / w)); w = MAX; }
+        } else {
+          if (h > MAX) { w = Math.round(w * (MAX / h)); h = MAX; }
+        }
+
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(imgObj, 0, 0, canvas.width, canvas.height);
+
+        // 500px 고화질 크롭 (20~30KB 내외 완벽 보장)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+
+        if (dataEl) dataEl.value = dataUrl;
+
+        // URL 입력창 비움 (업로드 파일 최우선)
+        const urlEl = document.getElementById('memPhoto');
+        if (urlEl) urlEl.value = '';
+
+        if (previewEl) {
+          previewEl.innerHTML = `<img src="${dataUrl}" class="clickable-photo" onclick="app.openImageViewer('${dataUrl}', '대원 프로필 사진 미리보기')" alt="미리보기" title="클릭하여 크게 보기"><button type="button" class="btn-remove-photo" onclick="app.clearMemberPhoto(true)">✕ 사진 삭제</button>`;
+          previewEl.classList.remove('hidden');
+        }
+      } catch (err) {
+        console.error('Image canvas processing error:', err);
+        alert('⚠️ 이미지 처리 중 오류가 발생했습니다. 다른 사진으로 선택해 주세요.');
+        this.clearMemberPhoto(true);
+      } finally {
+        if (typeof cleanupFn === 'function') cleanupFn();
+      }
+    };
+
+    // 1차 시도: 초고속 객체 메모리 URL (URL.createObjectURL - 20MB 이상 대용량 사진 및 모든 이미지 파일 지원)
+    try {
+      const objectUrl = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        processImageObject(img, () => URL.revokeObjectURL(objectUrl));
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        // 2차 시도 Fallback: FileReader 방식
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const fallbackImg = new Image();
+          fallbackImg.onload = () => processImageObject(fallbackImg);
+          fallbackImg.onerror = () => {
+            alert('⚠️ 선택하신 사진 파일(포맷)은 읽을 수 없습니다.\n스마트폰 카메라로 찍은 JPG/PNG 사진을 선택해 주세요.');
+            this.clearMemberPhoto(true);
+          };
+          fallbackImg.src = e.target.result;
+        };
+        reader.onerror = () => {
+          alert('⚠️ 사진 파일 읽기에 실패했습니다.');
+          this.clearMemberPhoto(true);
+        };
+        reader.readAsDataURL(file);
+      };
+      img.src = objectUrl;
+    } catch (e) {
+      // 3차 시도: 표준 FileReader
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => processImageObject(img);
+        img.onerror = () => {
+          alert('⚠️ 선택하신 사진 파일 형식은 지원되지 않습니다.');
+          this.clearMemberPhoto(true);
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
   openMemberModal() {
     document.getElementById('formMember').reset();
     const editingIdEl = document.getElementById('editingMemberId');
     if (editingIdEl) editingIdEl.value = '';
-    this.clearUploadedImage('memFilePhoto', 'memPhotoPreview', 'memPhotoData');
+    this.clearMemberPhoto(true);
     this.openModal('modalMember');
   }
 
@@ -1267,7 +1383,7 @@ class ChoirApp {
     if (!member) return;
 
     document.getElementById('formMember').reset();
-    this.clearUploadedImage('memFilePhoto', 'memPhotoPreview', 'memPhotoData');
+    this.clearMemberPhoto(true);
 
     const editingIdEl = document.getElementById('editingMemberId');
     if (editingIdEl) editingIdEl.value = member.id;
@@ -1281,7 +1397,7 @@ class ChoirApp {
       if (member.photoUrl.startsWith('data:image')) {
         document.getElementById('memPhotoData').value = member.photoUrl;
         const previewEl = document.getElementById('memPhotoPreview');
-        previewEl.innerHTML = `<img src="${member.photoUrl}" alt="미리보기"><button type="button" class="btn-remove-photo" onclick="app.clearUploadedImage('memFilePhoto', 'memPhotoPreview', 'memPhotoData')">✕ 사진 삭제</button>`;
+        previewEl.innerHTML = `<img src="${member.photoUrl}" class="clickable-photo" onclick="app.openImageViewer('${member.photoUrl}', '${this.escapeHtml(member.name)} 대원 프로필')" alt="미리보기" title="클릭하여 크게 보기"><button type="button" class="btn-remove-photo" onclick="app.clearMemberPhoto(true)">✕ 사진 삭제</button>`;
         previewEl.classList.remove('hidden');
       } else {
         document.getElementById('memPhoto').value = member.photoUrl;
@@ -1298,6 +1414,7 @@ class ChoirApp {
     const part = document.getElementById('memPart').value;
     const role = document.getElementById('memRole').value.trim();
     const phone = document.getElementById('memPhone').value.trim();
+
     const uploadedDataUrl = document.getElementById('memPhotoData').value.trim();
     const inputUrl = document.getElementById('memPhoto').value.trim();
     const photoUrl = uploadedDataUrl || inputUrl;
@@ -1305,8 +1422,12 @@ class ChoirApp {
     let members = this.storage.get(STORAGE_KEYS.MEMBERS);
 
     if (editingId) {
-      // 대원 정보 수정 모드
-      const index = members.findIndex(m => m.id === editingId);
+      // 대원 정보 수정 모드 (ID 매칭 -> 이름 2차 매칭 -> 자동 신규 등록 3차 보장)
+      let index = members.findIndex(m => m.id === editingId);
+      if (index === -1 && name) {
+        index = members.findIndex(m => m.name === name);
+      }
+
       if (index !== -1) {
         members[index] = {
           ...members[index],
@@ -1314,8 +1435,19 @@ class ChoirApp {
           part,
           role,
           phone,
-          photoUrl
+          photoUrl,
+          photoUpdatedAt: Date.now()
         };
+      } else {
+        members.push({
+          id: editingId || ('m_' + Date.now()),
+          name,
+          part,
+          role,
+          phone,
+          photoUrl,
+          photoUpdatedAt: Date.now()
+        });
       }
       alert(`👥 ${name} 대원의 정보가 수정되었습니다.`);
     } else {
@@ -1326,32 +1458,58 @@ class ChoirApp {
         part,
         role,
         phone,
-        photoUrl
+        photoUrl,
+        photoUpdatedAt: Date.now()
       });
       alert(`👥 ${name} 대원이 성공적으로 등록되었습니다.`);
     }
 
     this.storage.save(STORAGE_KEYS.MEMBERS, members);
     this.closeModal('modalMember');
+    this.clearMemberPhoto(true);
+
+    const memberListEl = document.getElementById('memberList');
+    if (memberListEl) memberListEl.innerHTML = '';
     this.renderMembers();
   }
 
   // ----------------------------------------------------
-  // 📷 스마트폰 이미지 파일 업로드 & 캔버스 압축 헬퍼
+  // 📷 스마트폰 이미지 파일 업로드 & 캔버스 선명 스마트 압축 헬퍼
   // ----------------------------------------------------
-  handleImageUpload(event, previewId, hiddenInputId) {
+  handleImageUpload(event, previewId, hiddenInputId, urlInputId) {
     const file = event.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
+    // 💥 핵심 Fix 1: 새 파일을 선택하는 즉시 이전 구 사진 Base64를 0ms 만에 즉각 비웁니다.
+    const hiddenEl = document.getElementById(hiddenInputId);
+    if (hiddenEl) hiddenEl.value = '';
+
+    if (urlInputId) {
+      const urlEl = document.getElementById(urlInputId);
+      if (urlEl) urlEl.value = '';
+    }
+
+    // 💥 핵심 Fix 2: 비동기 사진 캔버스 변환 중 로딩 상태 표시 및 폼 제출 버튼 일시 잠금
+    const previewEl = document.getElementById(previewId);
+    if (previewEl) {
+      previewEl.innerHTML = `<div style="padding: 10px; font-size: 13px; color: #38BDF8; background: rgba(56, 189, 248, 0.1); border-radius: 8px; text-align: center;">⏳ 새로운 사진을 변환 중입니다...</div>`;
+      previewEl.classList.remove('hidden');
+    }
+
+    const formEl = event.target.form;
+    const submitBtn = formEl ? formEl.querySelector('button[type="submit"]') : null;
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = '0.5';
+    }
+
+    const processCanvas = (imgObj, cleanupCallback) => {
+      try {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1600;
-        const MAX_HEIGHT = 1600;
-        let width = img.width;
-        let height = img.height;
+        const MAX_WIDTH = 650;
+        const MAX_HEIGHT = 650;
+        let width = imgObj.width;
+        let height = imgObj.height;
 
         if (width > height) {
           if (width > MAX_WIDTH) {
@@ -1368,16 +1526,75 @@ class ChoirApp {
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
+        // 투명 PNG/HEIC/WebP 이미지도 흰색 배경으로 깨끗하게 채움
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(imgObj, 0, 0, width, height);
 
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        // 크게 보아도 선명하면서 용량은 30~50KB로 철저히 통제되는 650px 규격 (품질 0.75)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
 
-        document.getElementById(hiddenInputId).value = dataUrl;
-        const previewEl = document.getElementById(previewId);
-        previewEl.innerHTML = `<img src="${dataUrl}" class="clickable-photo" onclick="app.openImageViewer('${dataUrl}', '업로드 이미지 미리보기')" alt="미리보기" title="클릭하여 크게 보기"><button type="button" class="btn-remove-photo" onclick="app.clearUploadedImage('${event.target.id}', '${previewId}', '${hiddenInputId}')">✕ 사진 삭제</button>`;
-        previewEl.classList.remove('hidden');
+        if (hiddenEl) hiddenEl.value = dataUrl;
+
+        if (previewEl) {
+          previewEl.innerHTML = `<img src="${dataUrl}" class="clickable-photo" onclick="app.openImageViewer('${dataUrl}', '업로드 이미지 미리보기')" alt="미리보기" title="클릭하여 크게 보기"><button type="button" class="btn-remove-photo" onclick="app.clearUploadedImage('${event.target.id}', '${previewId}', '${hiddenInputId}')">✕ 사진 삭제</button>`;
+          previewEl.classList.remove('hidden');
+        }
+
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.style.opacity = '1';
+        }
+      } catch (err) {
+        console.error('Canvas process error:', err);
+        alert('⚠️ 이미지 변환 중 오류가 발생했습니다. 다른 일반 사진(JPG, PNG)으로 선택해 주세요.');
+        this.clearUploadedImage(event.target.id, previewId, hiddenInputId);
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.style.opacity = '1';
+        }
+      } finally {
+        if (typeof cleanupCallback === 'function') cleanupCallback();
+      }
+    };
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => processCanvas(img);
+      img.onerror = () => {
+        // Fallback 1: FileReader 실패 시 URL.createObjectURL 2중 시도 (아이폰 HEIC 및 특수 이미지 대응)
+        try {
+          const blobUrl = URL.createObjectURL(file);
+          const fallbackImg = new Image();
+          fallbackImg.onload = () => processCanvas(fallbackImg, () => URL.revokeObjectURL(blobUrl));
+          fallbackImg.onerror = () => {
+            URL.revokeObjectURL(blobUrl);
+            alert('⚠️ 선택하신 사진 형식을 스마트폰/브라우저에서 읽을 수 없습니다.\n카메라로 직접 다시 찍거나 다른 일반 이미지(JPG, PNG)를 선택해 주세요.');
+            this.clearUploadedImage(event.target.id, previewId, hiddenInputId);
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.style.opacity = '1';
+            }
+          };
+          fallbackImg.src = blobUrl;
+        } catch (err) {
+          alert('⚠️ 사진 읽기 오류입니다. 다른 일반 이미지 파일로 선택해 주세요.');
+          this.clearUploadedImage(event.target.id, previewId, hiddenInputId);
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+          }
+        }
       };
       img.src = e.target.result;
+    };
+    reader.onerror = () => {
+      alert('⚠️ 파일을 읽을 수 없습니다. 다른 사진으로 시도해 주세요.');
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+      }
     };
     reader.readAsDataURL(file);
   }
@@ -1386,6 +1603,15 @@ class ChoirApp {
     const fileEl = document.getElementById(fileInputId);
     const hiddenEl = document.getElementById(hiddenInputId);
     const previewEl = document.getElementById(previewId);
+
+    if (fileInputId === 'memFilePhoto' || hiddenInputId === 'memPhotoData') {
+      const memUrlEl = document.getElementById('memPhoto');
+      if (memUrlEl) memUrlEl.value = '';
+    }
+    if (fileInputId === 'noticeFilePhoto' || hiddenInputId === 'noticePhotoData') {
+      const noticeUrlEl = document.getElementById('noticeImageUrl');
+      if (noticeUrlEl) noticeUrlEl.value = '';
+    }
 
     if (fileEl) fileEl.value = '';
     if (hiddenEl) hiddenEl.value = '';

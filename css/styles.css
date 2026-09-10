@@ -1176,21 +1176,91 @@ body {
   color: var(--primary-navy);
 }
 
-.form-group input, .form-group select, .form-group textarea {
-  width: 100%;
-  min-height: 46px;
-  padding: 10px 12px;
-  border: 1px solid var(--border-light);
-  border-radius: 10px;
-  font-size: 16px;
-  font-family: var(--font-base);
-  background: #F8FAFC;
+.form-group input,
+.form-group select,
+.form-group textarea {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 0 14px !important;
+  border: 1px solid var(--border-light) !important;
+  border-radius: 10px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  font-family: var(--font-base), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  color: var(--primary-navy) !important;
+  background-color: #F8FAFC !important;
+  line-height: 46px !important;
+  vertical-align: middle !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+}
+
+.form-group select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231B2A4A' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  background-size: 16px 16px !important;
+  padding-right: 40px !important;
+}
+
+.form-group textarea {
+  height: auto !important;
+  min-height: 100px !important;
+  padding: 12px 14px !important;
+  line-height: 1.5 !important;
+}
+
+/* 📅 달력 일자(date) 및 일시(datetime-local) 입력창 크기 및 높이 100% 완벽 통일 */
+.form-group input[type="date"],
+.form-group input[type="datetime-local"] {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  line-height: 48px !important;
+}
+
+/* WebKit (Mac, iOS Safari, Chrome) 달력 아이콘 위치 및 크기 정렬 */
+.form-group input[type="date"]::-webkit-calendar-picker-indicator,
+.form-group input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  margin: 0;
+  padding: 4px;
+  opacity: 0.75;
+  transition: opacity 0.2s ease;
+}
+
+.form-group input[type="date"]::-webkit-calendar-picker-indicator:hover,
+.form-group input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+.form-group input[type="date"]::-webkit-datetime-edit,
+.form-group input[type="datetime-local"]::-webkit-datetime-edit {
+  display: flex !important;
+  align-items: center !important;
+  height: 100% !important;
+  padding: 0 !important;
+}
+
+.form-group input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+.form-group input[type="datetime-local"]::-webkit-datetime-edit-fields-wrapper {
+  padding: 0 !important;
 }
 
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-  outline: none;
-  border-color: var(--gold-accent);
-  background: #FFFFFF;
+  outline: none !important;
+  border-color: var(--gold-accent) !important;
+  background-color: #FFFFFF !important;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15) !important;
 }
 
 .form-actions {

@@ -14,17 +14,7 @@ const STORAGE_KEYS = {
 };
 
 const DEFAULT_DATA = {
-  notices: [
-    {
-        "id": "n_1788934781424",
-        "createdAt": 1788934781424,
-        "title": "갈보리교회 성가대 안내",
-        "content": "갈보리교회 임마누엘성가대 대원 여러분을 환영합니다.\n\n주일 찬양 및 성가대 공지사항을 확인해주시기 바랍니다.",
-        "youtubeUrl": "https://www.youtube.com/live/uew3qGioJeQ?si=6s_F9iaxGXPQuY3V",
-        "imageUrl": "",
-        "date": "2026-09-09"
-    }
-],
+  notices: [],
   praises: [
 {
                 "id": "p_juyeo_all",
@@ -917,12 +907,18 @@ class ChoirStorage {
       ];
 
       for (const item of categoryMap) {
-        // 로컬에서 유저가 최근 4초 이내에 수정한 항목이나 현재 서버 전송 중인 항목은
-        // 이전 응답의 클라우드 GET 데이터로 덮어쓰지 않고 보호합니다 (삭제 부활 & 응답 지연 완벽 방지)
         const isPendingPush = (this.pendingPushCount[item.cat] || 0) > 0;
-        const isRecentLocalMutation = (now - (this.lastMutationTime[item.cat] || 0)) < 4000;
+        const savedMutTime = parseInt(localStorage.getItem('last_mut_' + item.cat) || '0', 10);
+        const lastMutTime = Math.max(this.lastMutationTime[item.cat] || 0, savedMutTime);
+        const isRecentLocalMutation = (now - lastMutTime) < 300000; // 유저 수정 후 5분간 로컬 데이터 최우선 보호
 
         if (isPendingPush || isRecentLocalMutation) {
+          // 로컬 데이터가 수신된 서버 데이터와 다를 경우 서버로 최신 로컬 데이터 Push
+          const localObj = this.get(item.key);
+          const cloudObj = cloudData[item.cat];
+          if (JSON.stringify(localObj) !== JSON.stringify(cloudObj)) {
+            this.pushCategoryToCloud(item.cat, localObj);
+          }
           continue;
         }
 
@@ -933,15 +929,39 @@ class ChoirStorage {
           const cloudStr = JSON.stringify(cloudObj);
 
           if (localStr !== cloudStr) {
+            // 대원 사진 보호 스마트 병합: 로컬에 최신 사진이 있으면 서버 데이터로 덮어쓰지 않고 최신 사진을 유지하여 병합
+            if (item.cat === 'members' && Array.isArray(localObj)) {
+              let mergedMembers = [...cloudObj];
+              let hasLocalPhotoUpdate = false;
+              for (const localM of localObj) {
+                const cloudIdx = mergedMembers.findIndex(cm => (cm.id && localM.id && cm.id === localM.id) || (cm.name && localM.name && cm.name === localM.name));
+                if (cloudIdx !== -1) {
+                  const cloudM = mergedMembers[cloudIdx];
+                  const localTime = localM.photoUpdatedAt || 0;
+                  const cloudTime = cloudM.photoUpdatedAt || 0;
+                  // 로컬 사진이 더 최신이거나 localM.photoUrl이 새로 등록되었는데 클라우드는 다를 경우 로컬 사진 유지
+                  if (localTime > cloudTime || (localM.photoUrl && localM.photoUrl !== cloudM.photoUrl && (!cloudM.photoUpdatedAt || localTime >= cloudTime))) {
+                    mergedMembers[cloudIdx] = { ...cloudM, ...localM };
+                    hasLocalPhotoUpdate = true;
+                  }
+                } else if (localM.id || localM.name) {
+                  mergedMembers.push(localM);
+                  hasLocalPhotoUpdate = true;
+                }
+              }
+              if (hasLocalPhotoUpdate) {
+                localStorage.setItem(item.key, JSON.stringify(mergedMembers));
+                this.pushCategoryToCloud('members', mergedMembers);
+                hasChanges = true;
+                continue;
+              }
+            }
             localStorage.setItem(item.key, cloudStr);
             hasChanges = true;
           }
         } else if (cloudData[item.cat] === null || cloudData[item.cat] === undefined) {
-          // 클라우드 DB에 카테고리가 생성되지 않은 최초 상태에서만 로컬 초기 데이터 전송
           const localData = this.get(item.key);
-          if (localData && localData.length > 0) {
-            this.pushCategoryToCloud(item.cat, localData);
-          }
+          this.pushCategoryToCloud(item.cat, localData || []);
         }
       }
 
@@ -994,6 +1014,9 @@ class ChoirStorage {
       localStorage.setItem(key, JSON.stringify(data));
     } catch (e) {
       console.error('Storage save error:', e);
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        alert('⚠️ 저장 공간이 부족하여 저장이 거부되었습니다. 불필요한 사진 용량을 자동으로 압축 정리합니다.');
+      }
     }
   }
 
@@ -1009,6 +1032,7 @@ class ChoirStorage {
     const category = categoryKeyMap[key];
     if (category) {
       this.lastMutationTime[category] = Date.now();
+      localStorage.setItem('last_mut_' + category, Date.now().toString());
     }
 
     // 1. 로컬 스토리지에 즉시 반응형 저장 (0ms)
