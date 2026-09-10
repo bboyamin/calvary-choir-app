@@ -16,46 +16,6 @@ const STORAGE_KEYS = {
 const DEFAULT_DATA = {
   notices: [],
   praises: [
-{
-                "id": "p_juyeo_all",
-                "type": "part",
-                "partTarget": "ALL_PART",
-                "title": "주여 말씀하소서 (4부 전체합창 연습)",
-                "date": "2026-09-13",
-                "youtubeUrl": "https://www.youtube.com/watch?v=-Wr5g0af0Ww"
-        },
-        {
-                "id": "p_juyeo_s",
-                "type": "part",
-                "partTarget": "S",
-                "title": "주여 말씀하소서 (소프라노 파트 연습)",
-                "date": "2026-09-13",
-                "youtubeUrl": "https://www.youtube.com/watch?v=2SPhr4UXijE"
-        },
-        {
-                "id": "p_juyeo_a",
-                "type": "part",
-                "partTarget": "A",
-                "title": "주여 말씀하소서 (알토 파트 연습)",
-                "date": "2026-09-13",
-                "youtubeUrl": "https://www.youtube.com/watch?v=-Wr5g0af0Ww"
-        },
-        {
-                "id": "p_juyeo_t",
-                "type": "part",
-                "partTarget": "T",
-                "title": "주여 말씀하소서 (테너 파트 연습)",
-                "date": "2026-09-13",
-                "youtubeUrl": "https://www.youtube.com/watch?v=-Wr5g0af0Ww"
-        },
-        {
-                "id": "p_juyeo_b",
-                "type": "part",
-                "partTarget": "B",
-                "title": "주여 말씀하소서 (베이스 파트 연습)",
-                "date": "2026-09-13",
-                "youtubeUrl": "https://www.youtube.com/watch?v=-Wr5g0af0Ww"
-        },
         {
             "id": "p_imm_001",
             "type": "all",
@@ -840,15 +800,20 @@ class ChoirStorage {
           init() {
     const currentVer = localStorage.getItem(STORAGE_KEYS.DATA_VERSION);
     
-    // v1001 데이터 안전 복구: 찬양음원, 주요일정, 중보기도제목, 대원명단 100% 원복 및 클라우드 DB 자동 재동기화
-    if (currentVer !== 'v1001') {
+    // v1002 데이터 정화: 더미 연습실 영상(p_juyeo_*) 100% 제거 및 실데이터 정제
+    if (currentVer !== 'v1002') {
       const existingNotices = this.get(STORAGE_KEYS.NOTICES);
       const existingPraises = this.get(STORAGE_KEYS.PRAISES);
       const existingSchedules = this.get(STORAGE_KEYS.SCHEDULES);
       const existingMembers = this.get(STORAGE_KEYS.MEMBERS);
       const existingPrayers = this.get(STORAGE_KEYS.PRAYERS);
 
-      const praises = (existingPraises && existingPraises.length > 0) ? existingPraises : DEFAULT_DATA.praises;
+      // 더미 영상(p_juyeo_*) 필터링 제거
+      const cleanedPraises = (existingPraises && existingPraises.length > 0)
+        ? existingPraises.filter(p => !p.id.startsWith('p_juyeo_'))
+        : DEFAULT_DATA.praises;
+
+      const praises = cleanedPraises.length > 0 ? cleanedPraises : DEFAULT_DATA.praises;
       const schedules = (existingSchedules && existingSchedules.length > 0) ? existingSchedules : DEFAULT_DATA.schedules;
       const members = (existingMembers && existingMembers.length > 0) ? existingMembers : DEFAULT_DATA.members;
       const prayers = (existingPrayers && existingPrayers.length > 0) ? existingPrayers : DEFAULT_DATA.prayers;
@@ -866,7 +831,7 @@ class ChoirStorage {
       this.pushCategoryToCloud('prayers', prayers);
       if (notices.length > 0) this.pushCategoryToCloud('notices', notices);
 
-      localStorage.setItem(STORAGE_KEYS.DATA_VERSION, 'v1001');
+      localStorage.setItem(STORAGE_KEYS.DATA_VERSION, 'v1002');
     } else {
       if (!this.get(STORAGE_KEYS.PRAISES).length) {
         this.saveLocal(STORAGE_KEYS.PRAISES, DEFAULT_DATA.praises);
