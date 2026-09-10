@@ -840,27 +840,50 @@ class ChoirStorage {
           init() {
     const currentVer = localStorage.getItem(STORAGE_KEYS.DATA_VERSION);
     
-    // v1000 마이그레이션: 유저 등록 실데이터(공지글, 중보기도제목, 댓글, 찬양음원) 100% 무사 복구
-    if (currentVer !== 'v1000') {
-      this.saveLocal(STORAGE_KEYS.NOTICES, DEFAULT_DATA.notices);
-      this.saveLocal(STORAGE_KEYS.PRAISES, DEFAULT_DATA.praises);
-      this.saveLocal(STORAGE_KEYS.SCHEDULES, DEFAULT_DATA.schedules);
-      this.saveLocal(STORAGE_KEYS.MEMBERS, DEFAULT_DATA.members);
-      this.saveLocal(STORAGE_KEYS.PRAYERS, DEFAULT_DATA.prayers);
+    // v1001 데이터 안전 복구: 찬양음원, 주요일정, 중보기도제목, 대원명단 100% 원복 및 클라우드 DB 자동 재동기화
+    if (currentVer !== 'v1001') {
+      const existingNotices = this.get(STORAGE_KEYS.NOTICES);
+      const existingPraises = this.get(STORAGE_KEYS.PRAISES);
+      const existingSchedules = this.get(STORAGE_KEYS.SCHEDULES);
+      const existingMembers = this.get(STORAGE_KEYS.MEMBERS);
+      const existingPrayers = this.get(STORAGE_KEYS.PRAYERS);
 
-      this.pushCategoryToCloud('notices', DEFAULT_DATA.notices);
-      this.pushCategoryToCloud('praises', DEFAULT_DATA.praises);
-      this.pushCategoryToCloud('schedules', DEFAULT_DATA.schedules);
-      this.pushCategoryToCloud('members', DEFAULT_DATA.members);
-      this.pushCategoryToCloud('prayers', DEFAULT_DATA.prayers);
+      const praises = (existingPraises && existingPraises.length > 0) ? existingPraises : DEFAULT_DATA.praises;
+      const schedules = (existingSchedules && existingSchedules.length > 0) ? existingSchedules : DEFAULT_DATA.schedules;
+      const members = (existingMembers && existingMembers.length > 0) ? existingMembers : DEFAULT_DATA.members;
+      const prayers = (existingPrayers && existingPrayers.length > 0) ? existingPrayers : DEFAULT_DATA.prayers;
+      const notices = existingNotices || [];
 
-      localStorage.setItem(STORAGE_KEYS.DATA_VERSION, 'v1000');
+      this.saveLocal(STORAGE_KEYS.NOTICES, notices);
+      this.saveLocal(STORAGE_KEYS.PRAISES, praises);
+      this.saveLocal(STORAGE_KEYS.SCHEDULES, schedules);
+      this.saveLocal(STORAGE_KEYS.MEMBERS, members);
+      this.saveLocal(STORAGE_KEYS.PRAYERS, prayers);
+
+      this.pushCategoryToCloud('praises', praises);
+      this.pushCategoryToCloud('schedules', schedules);
+      this.pushCategoryToCloud('members', members);
+      this.pushCategoryToCloud('prayers', prayers);
+      if (notices.length > 0) this.pushCategoryToCloud('notices', notices);
+
+      localStorage.setItem(STORAGE_KEYS.DATA_VERSION, 'v1001');
     } else {
-      if (!localStorage.getItem(STORAGE_KEYS.NOTICES)) this.saveLocal(STORAGE_KEYS.NOTICES, DEFAULT_DATA.notices);
-      if (!localStorage.getItem(STORAGE_KEYS.PRAISES)) this.saveLocal(STORAGE_KEYS.PRAISES, DEFAULT_DATA.praises);
-      if (!localStorage.getItem(STORAGE_KEYS.SCHEDULES)) this.saveLocal(STORAGE_KEYS.SCHEDULES, DEFAULT_DATA.schedules);
-      if (!localStorage.getItem(STORAGE_KEYS.MEMBERS)) this.saveLocal(STORAGE_KEYS.MEMBERS, DEFAULT_DATA.members);
-      if (!localStorage.getItem(STORAGE_KEYS.PRAYERS)) this.saveLocal(STORAGE_KEYS.PRAYERS, DEFAULT_DATA.prayers);
+      if (!this.get(STORAGE_KEYS.PRAISES).length) {
+        this.saveLocal(STORAGE_KEYS.PRAISES, DEFAULT_DATA.praises);
+        this.pushCategoryToCloud('praises', DEFAULT_DATA.praises);
+      }
+      if (!this.get(STORAGE_KEYS.SCHEDULES).length) {
+        this.saveLocal(STORAGE_KEYS.SCHEDULES, DEFAULT_DATA.schedules);
+        this.pushCategoryToCloud('schedules', DEFAULT_DATA.schedules);
+      }
+      if (!this.get(STORAGE_KEYS.MEMBERS).length) {
+        this.saveLocal(STORAGE_KEYS.MEMBERS, DEFAULT_DATA.members);
+        this.pushCategoryToCloud('members', DEFAULT_DATA.members);
+      }
+      if (!this.get(STORAGE_KEYS.PRAYERS).length) {
+        this.saveLocal(STORAGE_KEYS.PRAYERS, DEFAULT_DATA.prayers);
+        this.pushCategoryToCloud('prayers', DEFAULT_DATA.prayers);
+      }
     }
   }
 
