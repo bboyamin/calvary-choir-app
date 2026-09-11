@@ -29,7 +29,11 @@
         </div>
       </div>
 
-      <div class="header-actions">
+      <div class="header-actions" style="display: flex; align-items: center; gap: 8px;">
+        <button type="button" class="btn-force-sync-header" onclick="app.forceRefreshAndClearCache()" style="padding: 6px 10px; font-size: 13px; font-weight: 700; background: #0EA5E9; color: #FFFFFF; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(14, 165, 233, 0.3);" title="클라우드 최신 데이터 강제 동기화">
+          <span>🔄</span>
+          <span>최신 동기화</span>
+        </button>
         <!-- 관리자 모드 접속 버튼 -->
         <button id="btnOfficerToggle" class="btn-header-admin" aria-label="관리자 접속">
           <span class="admin-icon">⚙️</span>

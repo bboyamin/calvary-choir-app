@@ -1872,6 +1872,26 @@ class ChoirApp {
   closeModal(modalId) {
     document.getElementById(modalId)?.classList.add('hidden');
   }
+
+  forceRefreshAndClearCache() {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        for (let name of names) {
+          caches.delete(name);
+        }
+      });
+    }
+    localStorage.removeItem(STORAGE_KEYS.DATA_VERSION);
+    alert('🔄 스마트폰 찌꺼기 캐시를 삭제하고 클라우드 최신 데이터를 즉시 불러옵니다!');
+    window.location.reload(true);
+  }
 }
 
 // 글로벌 앱 인스턴스 가동

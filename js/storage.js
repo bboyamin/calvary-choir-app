@@ -799,8 +799,15 @@ class ChoirStorage {
 
   init() {
     const currentVer = localStorage.getItem(STORAGE_KEYS.DATA_VERSION);
-    if (currentVer !== 'v1003') {
-      localStorage.setItem(STORAGE_KEYS.DATA_VERSION, 'v1003');
+    if (currentVer !== 'v1005') {
+      if ('caches' in window) {
+        caches.keys().then(names => {
+          for (let name of names) {
+            caches.delete(name);
+          }
+        });
+      }
+      localStorage.setItem(STORAGE_KEYS.DATA_VERSION, 'v1005');
     }
   }
 
