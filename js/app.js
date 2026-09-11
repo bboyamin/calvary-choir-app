@@ -1195,7 +1195,7 @@ class ChoirApp {
       : members.map(m => {
       const cleanPhone = (m.phone || '').replace(/[^0-9+]/g, '');
 
-      const photoUrl = this.formatMemberPhotoUrl(m.photoUrl, m.id);
+      const photoUrl = this.formatMemberPhotoUrl(m.photoUrl);
 
       return `
         <div class="member-card">
@@ -1903,10 +1903,7 @@ class ChoirApp {
     return url;
   }
 
-  formatMemberPhotoUrl(url, memberId) {
-    if (!url && memberId) {
-      return `assets/members/${memberId}.jpg`;
-    }
+  formatMemberPhotoUrl(url) {
     if (!url) return '';
     url = url.trim();
     if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
