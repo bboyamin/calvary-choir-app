@@ -39,8 +39,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // API 요청은 절대로 서비스 워커 캐시에 보관하지 않고 100% 라이브 네트워크 동기화
-  if (url.pathname.includes('/api/')) {
+  // API 및 버전 체크 파일은 절대로 서비스 워커 캐시에 보관하지 않고 100% 라이브 네트워크 동기화
+  if (url.pathname.includes('/api/') || url.pathname.includes('version.json')) {
     event.respondWith(
       fetch(event.request).catch((err) => {
         console.warn('API network fetch failed:', err);

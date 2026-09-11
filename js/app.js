@@ -81,6 +81,41 @@ class ChoirApp {
     this.updateUnreadBadges();
     this.requestNotificationPermission();
     this.markTabAsRead(this.currentTab);
+    this.startAutoUpdateChecker();
+  }
+
+  startAutoUpdateChecker() {
+    const checkVersion = async () => {
+      try {
+        const resp = await fetch('./version.json?t=' + Date.now());
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const serverVer = data.version;
+        const localVer = localStorage.getItem('calvary_app_code_ver');
+        if (localVer && localVer !== serverVer) {
+          localStorage.setItem('calvary_app_code_ver', serverVer);
+          if ('caches' in window) {
+            caches.keys().then(names => {
+              for (let name of names) {
+                caches.delete(name);
+              }
+            });
+          }
+          window.location.reload(true);
+        } else if (!localVer) {
+          localStorage.setItem('calvary_app_code_ver', serverVer);
+        }
+      } catch (e) {
+        // silent catch
+      }
+    };
+
+    checkVersion();
+    setInterval(checkVersion, 30000);
+    window.addEventListener('focus', checkVersion);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') checkVersion();
+    });
   }
 
   initReadTimestamps() {
