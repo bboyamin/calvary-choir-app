@@ -90,13 +90,13 @@ export default async function handler(req, res) {
 
       for (const cat of categories) {
         const kvVal = await kvGet(`calvary_${cat}`);
-        result[cat] = kvVal !== null ? kvVal : (globalData[cat] !== null ? globalData[cat] : null);
+        result[cat] = (kvVal !== null && kvVal !== undefined) ? kvVal : (globalData[cat] !== null ? globalData[cat] : []);
       }
 
       return res.status(200).json(result);
     } else {
       const kvVal = await kvGet(`calvary_${key}`);
-      const val = kvVal !== null ? kvVal : (globalData[key] !== null ? globalData[key] : null);
+      const val = (kvVal !== null && kvVal !== undefined) ? kvVal : (globalData[key] !== null ? globalData[key] : []);
       return res.status(200).json({ [key]: val, lastUpdated: globalData.lastUpdated });
     }
   }
