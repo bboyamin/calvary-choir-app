@@ -870,11 +870,24 @@ class ChoirApp {
     // 당일 자정 기준 (오늘 일정까지는 진행 중인 일정으로 포함)
     const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
+    const parseScheduleDate = (s) => {
+      if (s.datetime) {
+        const dt = new Date(s.datetime);
+        if (!isNaN(dt.getTime())) return dt;
+      }
+      if (s.date) {
+        const timePart = s.time ? (s.time.length === 5 ? s.time : s.time + ':00') : '00:00';
+        const dt = new Date(`${s.date}T${timePart}`);
+        if (!isNaN(dt.getTime())) return dt;
+      }
+      return new Date();
+    };
+
     const upcoming = [];
     const past = [];
 
     schedules.forEach(s => {
-      const sDate = new Date(s.datetime);
+      const sDate = parseScheduleDate(s);
       if (sDate >= todayMidnight) {
         upcoming.push(s);
       } else {
@@ -883,12 +896,12 @@ class ChoirApp {
     });
 
     // 예정된 일정: 빠르게 다가오는 날짜순 정렬
-    upcoming.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+    upcoming.sort((a, b) => parseScheduleDate(a) - parseScheduleDate(b));
     // 지나간 일정: 최근 지난 날짜가 맨 위로 오도록 내림차순 정렬
-    past.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+    past.sort((a, b) => parseScheduleDate(b) - parseScheduleDate(a));
 
     const renderScheduleCard = (s, isPast = false) => {
-      const dt = new Date(s.datetime);
+      const dt = parseScheduleDate(s);
       const dateStr = `${dt.getFullYear()}년 ${dt.getMonth() + 1}월 ${dt.getDate()}일 (${['일','월','화','수','목','금','토'][dt.getDay()]})`;
       const timeStr = `${dt.getHours().toString().padStart(2, '0')}:${dt.getMinutes().toString().padStart(2, '0')}`;
 
