@@ -1408,18 +1408,58 @@ class ChoirApp {
     document.getElementById('memRole').value = member.role || '';
     document.getElementById('memPhone').value = member.phone || '';
 
-    if (member.photoUrl) {
-      if (member.photoUrl.startsWith('data:image')) {
-        document.getElementById('memPhotoData').value = member.photoUrl;
-        const previewEl = document.getElementById('memPhotoPreview');
-        previewEl.innerHTML = `<img src="${member.photoUrl}" class="clickable-photo" onclick="app.openImageViewer('${member.photoUrl}', '${this.escapeHtml(member.name)} 대원 프로필')" alt="미리보기" title="클릭하여 크게 보기"><button type="button" class="btn-remove-photo" onclick="app.clearMemberPhoto(true)">✕ 사진 삭제</button>`;
+    const currentPhoto = this.formatMemberPhotoUrl(member.photoUrl, member.id);
+    const previewEl = document.getElementById('memPhotoPreview');
+
+    if (member.photoUrl === 'none') {
+      document.getElementById('memPhoto').value = 'none';
+      if (previewEl) {
+        previewEl.innerHTML = `<span style="color:#EF4444; font-weight:700; font-size:13px;">🚫 프로필 사진 삭제됨 (기본 이니셜 아이콘 표시 중)</span> <button type="button" class="btn-secondary-sm" style="margin-left:8px;" onclick="app.restoreDefaultMemberPhoto()">🔄 사진 복원</button>`;
         previewEl.classList.remove('hidden');
-      } else {
-        document.getElementById('memPhoto').value = member.photoUrl;
+      }
+    } else if (currentPhoto) {
+      document.getElementById('memPhoto').value = member.photoUrl || '';
+      if (previewEl) {
+        previewEl.innerHTML = `<img src="${currentPhoto}" class="clickable-photo" onclick="app.openImageViewer('${currentPhoto}', '${this.escapeHtml(member.name)} 대원 프로필')" alt="미리보기" title="클릭하여 크게 보기"><button type="button" class="btn-remove-photo" style="background:#EF4444; color:#FFF; font-weight:700; padding:4px 8px; border-radius:6px; border:none; margin-left:8px; cursor:pointer;" onclick="app.removeMemberPhoto()">🗑️ 사진 삭제 (기본 이니셜 아이콘 사용)</button>`;
+        previewEl.classList.remove('hidden');
       }
     }
 
     this.openModal('modalMember');
+  }
+
+  removeMemberPhoto() {
+    const photoInput = document.getElementById('memPhoto');
+    const dataInput = document.getElementById('memPhotoData');
+    const fileInput = document.getElementById('memFilePhoto');
+    const previewEl = document.getElementById('memPhotoPreview');
+
+    if (photoInput) photoInput.value = 'none';
+    if (dataInput) dataInput.value = '';
+    if (fileInput) fileInput.value = '';
+
+    if (previewEl) {
+      previewEl.innerHTML = `<span style="color:#EF4444; font-weight:700; font-size:13px;">🚫 프로필 사진 삭제 선택됨 (저장 시 기본 이니셜 아이콘으로 표시됩니다)</span> <button type="button" class="btn-secondary-sm" style="margin-left:8px;" onclick="app.restoreDefaultMemberPhoto()">🔄 취소 (사진 유지)</button>`;
+      previewEl.classList.remove('hidden');
+    }
+  }
+
+  restoreDefaultMemberPhoto() {
+    const photoInput = document.getElementById('memPhoto');
+    const editingIdEl = document.getElementById('editingMemberId');
+    const memberId = editingIdEl ? editingIdEl.value : '';
+
+    if (photoInput) photoInput.value = '';
+    this.clearMemberPhoto(true);
+
+    if (memberId) {
+      const currentPhoto = this.formatMemberPhotoUrl('', memberId);
+      const previewEl = document.getElementById('memPhotoPreview');
+      if (previewEl && currentPhoto) {
+        previewEl.innerHTML = `<img src="${currentPhoto}" class="clickable-photo" onclick="app.openImageViewer('${currentPhoto}', '대원 프로필')" alt="미리보기" title="클릭하여 크게 보기"><button type="button" class="btn-remove-photo" style="background:#EF4444; color:#FFF; font-weight:700; padding:4px 8px; border-radius:6px; border:none; margin-left:8px; cursor:pointer;" onclick="app.removeMemberPhoto()">🗑️ 사진 삭제 (기본 이니셜 아이콘 사용)</button>`;
+        previewEl.classList.remove('hidden');
+      }
+    }
   }
 
   saveMember(e) {
@@ -1904,6 +1944,9 @@ class ChoirApp {
   }
 
   formatMemberPhotoUrl(url, memberId) {
+    if (url === 'none') {
+      return '';
+    }
     if (!url && memberId) {
       return `assets/members/${memberId}.jpg`;
     }
