@@ -111,7 +111,7 @@ class ChoirApp {
     };
 
     checkVersion();
-    setInterval(checkVersion, 30000);
+    setInterval(checkVersion, 300000); // 5분 주기 여유 있는 체크
     window.addEventListener('focus', checkVersion);
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') checkVersion();
