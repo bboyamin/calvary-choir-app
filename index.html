@@ -301,7 +301,7 @@
           <input type="file" id="noticeFilePhoto" accept="image/*" class="file-upload-input" onclick="this.value=''" onchange="app.handleImageUpload(event, 'noticePhotoPreview', 'noticePhotoData', 'noticeImageUrl')">
           <input type="hidden" id="noticePhotoData">
           <div id="noticePhotoPreview" class="photo-upload-preview hidden"></div>
-          <input type="url" id="noticeImageUrl" placeholder="또는 웹 사진 이미지 URL 직접 입력" style="margin-top: 6px;" oninput="app.clearUploadedImage('noticeFilePhoto', 'noticePhotoPreview', 'noticePhotoData')">
+          <input type="text" id="noticeImageUrl" placeholder="또는 웹/구글드라이브 사진 이미지 URL 직접 입력" style="margin-top: 6px;" oninput="app.clearUploadedImage('noticeFilePhoto', 'noticePhotoPreview', 'noticePhotoData')">
         </div>
         <div class="form-actions">
           <button type="button" class="btn-secondary-large" onclick="app.closeModal('modalNotice')">취소</button>
@@ -527,7 +527,7 @@
           <input type="file" id="memFilePhoto" accept="image/*" class="file-upload-input" onclick="this.value=''" onchange="app.handleMemberPhotoUpload(event)">
           <input type="hidden" id="memPhotoData">
           <div id="memPhotoPreview" class="photo-upload-preview hidden"></div>
-          <input type="url" id="memPhoto" placeholder="또는 웹 이미지 URL 직접 입력" style="margin-top: 6px;" oninput="document.getElementById('memPhotoData').value=''; document.getElementById('memPhotoPreview').classList.add('hidden');">
+          <input type="text" id="memPhoto" placeholder="또는 웹/구글드라이브 이미지 URL 직접 입력" style="margin-top: 6px;" oninput="document.getElementById('memPhotoData').value=''; document.getElementById('memPhotoPreview').classList.add('hidden');">
         </div>
         <div class="form-actions">
           <button type="button" class="btn-secondary-large" onclick="app.closeModal('modalMember')">취소</button>

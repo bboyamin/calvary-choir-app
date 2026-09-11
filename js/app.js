@@ -590,7 +590,7 @@ class ChoirApp {
     const youtubeUrl = document.getElementById('noticeYoutube').value.trim();
     const uploadedDataUrl = document.getElementById('noticePhotoData').value.trim();
     const inputUrl = document.getElementById('noticeImageUrl').value.trim();
-    const imageUrl = uploadedDataUrl || inputUrl;
+    const imageUrl = uploadedDataUrl || this.convertGoogleDriveUrl(inputUrl);
 
     const notices = this.storage.get(STORAGE_KEYS.NOTICES);
     const now = Date.now();
@@ -1430,7 +1430,7 @@ class ChoirApp {
 
     const uploadedDataUrl = document.getElementById('memPhotoData').value.trim();
     const inputUrl = document.getElementById('memPhoto').value.trim();
-    const photoUrl = uploadedDataUrl || inputUrl;
+    const photoUrl = uploadedDataUrl || this.convertGoogleDriveUrl(inputUrl);
 
     let members = this.storage.get(STORAGE_KEYS.MEMBERS);
 
@@ -1876,6 +1876,16 @@ class ChoirApp {
     if (!videoId) return `<p style="padding:10px; color:#DC2626; font-size: 13.5px; text-align: center;">⚠️ 잘못된 유튜브 주소입니다.</p>`;
 
     return `<iframe src="https://www.youtube.com/embed/${videoId}?rel=0" loading="lazy" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`;
+  }
+
+  convertGoogleDriveUrl(url) {
+    if (!url) return '';
+    url = url.trim();
+    const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/) || url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (fileIdMatch && fileIdMatch[1]) {
+      return 'https://lh3.googleusercontent.com/d/' + fileIdMatch[1];
+    }
+    return url;
   }
 
   openModal(modalId) {
