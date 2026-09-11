@@ -1195,10 +1195,12 @@ class ChoirApp {
       : members.map(m => {
       const cleanPhone = (m.phone || '').replace(/[^0-9+]/g, '');
 
+      const photoUrl = this.formatMemberPhotoUrl(m.photoUrl);
+
       return `
         <div class="member-card">
           <div class="member-info-left">
-            ${m.photoUrl ? `<img src="${m.photoUrl}" class="member-avatar clickable-photo" onclick="app.openImageViewer('${m.photoUrl}', '${this.escapeHtml(m.name)} 대원 프로필')" alt="${m.name}" title="클릭하여 원본 사진 보기">` : `<div class="member-avatar">${m.name.charAt(0)}</div>`}
+            ${photoUrl ? `<img src="${photoUrl}" class="member-avatar clickable-photo" onclick="app.openImageViewer('${photoUrl}', '${this.escapeHtml(m.name)} 대원 프로필')" alt="${m.name}" title="클릭하여 원본 사진 보기">` : `<div class="member-avatar">${m.name.charAt(0)}</div>`}
             <div class="member-details">
               <div class="member-name-row">
                 <span class="member-name">${m.name}</span>
@@ -1897,6 +1899,18 @@ class ChoirApp {
     const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/) || url.match(/\/d\/([a-zA-Z0-9_-]+)/);
     if (fileIdMatch && fileIdMatch[1]) {
       return 'https://lh3.googleusercontent.com/d/' + fileIdMatch[1];
+    }
+    return url;
+  }
+
+  formatMemberPhotoUrl(url) {
+    if (!url) return '';
+    url = url.trim();
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('/')) {
+      return url;
+    }
+    if (!url.startsWith('assets/')) {
+      return 'assets/members/' + url;
     }
     return url;
   }
