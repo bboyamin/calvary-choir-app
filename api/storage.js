@@ -37,15 +37,16 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { KV_REST_API_URL, KV_REST_API_TOKEN } = process.env;
-  const baseUrl = KV_REST_API_URL ? KV_REST_API_URL.replace(/\/$/, '') : null;
+  const urlRaw = process.env.KV_REST_API_URL || process.env.STORAGE_REST_API_URL || process.env.UPSTASH_REST_API_URL || process.env.KV_URL;
+  const token = process.env.KV_REST_API_TOKEN || process.env.STORAGE_REST_API_TOKEN || process.env.UPSTASH_REST_API_TOKEN || process.env.KV_TOKEN;
+  const baseUrl = urlRaw ? urlRaw.replace(/\/$/, '') : null;
 
   // Vercel KV / Upstash Redis 연동 지원
   const kvGet = async (key) => {
-    if (!baseUrl || !KV_REST_API_TOKEN) return null;
+    if (!baseUrl || !token) return null;
     try {
       const resp = await fetch(`${baseUrl}/get/${key}`, {
-        headers: { Authorization: `Bearer ${KV_REST_API_TOKEN}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (!resp.ok) return null;
       const data = await resp.json();
@@ -60,13 +61,13 @@ export default async function handler(req, res) {
   };
 
   const kvSet = async (key, val) => {
-    if (!baseUrl || !KV_REST_API_TOKEN) return;
+    if (!baseUrl || !token) return;
     try {
       const stringifiedVal = JSON.stringify(val);
       const resp = await fetch(baseUrl, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${KV_REST_API_TOKEN}`,
+          Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(['SET', key, stringifiedVal])
