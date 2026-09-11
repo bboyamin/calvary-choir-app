@@ -1200,7 +1200,7 @@ class ChoirApp {
         return `
         <div class="member-card">
           <div class="member-info-left">
-            ${photoUrl ? `<img src="${photoUrl}" class="member-avatar clickable-photo" onclick="app.openImageViewer('${photoUrl}', '${this.escapeHtml(m.name)} 대원 프로필')" alt="${m.name}" title="클릭하여 원본 사진 보기">` : `<div class="member-avatar">${m.name.charAt(0)}</div>`}
+            ${photoUrl ? `<img src="${photoUrl}" class="member-avatar clickable-photo" onclick="app.openImageViewer('${photoUrl}', '${this.escapeHtml(m.name)}')" alt="${m.name}" title="클릭하여 원본 사진 보기">` : `<div class="member-avatar">${m.name.charAt(0)}</div>`}
             <div class="member-details">
               <div class="member-name-row">
                 <span class="member-name">${m.name}</span>
@@ -1420,7 +1420,7 @@ class ChoirApp {
     } else if (currentPhoto) {
       document.getElementById('memPhoto').value = member.photoUrl || '';
       if (previewEl) {
-        previewEl.innerHTML = `<img src="${currentPhoto}" class="clickable-photo" onclick="app.openImageViewer('${currentPhoto}', '${this.escapeHtml(member.name)} 대원 프로필')" alt="미리보기" title="클릭하여 크게 보기"><button type="button" class="btn-remove-photo" style="background:#EF4444; color:#FFF; font-weight:700; padding:4px 8px; border-radius:6px; border:none; margin-left:8px; cursor:pointer;" onclick="app.removeMemberPhoto()">🗑️ 사진 삭제 (기본 이니셜 아이콘 사용)</button>`;
+        previewEl.innerHTML = `<img src="${currentPhoto}" class="clickable-photo" onclick="app.openImageViewer('${currentPhoto}', '${this.escapeHtml(member.name)}')" alt="미리보기" title="클릭하여 크게 보기"><button type="button" class="btn-remove-photo" style="background:#EF4444; color:#FFF; font-weight:700; padding:4px 8px; border-radius:6px; border:none; margin-left:8px; cursor:pointer;" onclick="app.removeMemberPhoto()">🗑️ 사진 삭제 (기본 이니셜 아이콘 사용)</button>`;
         previewEl.classList.remove('hidden');
       }
     }
@@ -1456,7 +1456,7 @@ class ChoirApp {
       const currentPhoto = this.formatMemberPhotoUrl('', memberId);
       const previewEl = document.getElementById('memPhotoPreview');
       if (previewEl && currentPhoto) {
-        previewEl.innerHTML = `<img src="${currentPhoto}" class="clickable-photo" onclick="app.openImageViewer('${currentPhoto}', '대원 프로필')" alt="미리보기" title="클릭하여 크게 보기"><button type="button" class="btn-remove-photo" style="background:#EF4444; color:#FFF; font-weight:700; padding:4px 8px; border-radius:6px; border:none; margin-left:8px; cursor:pointer;" onclick="app.removeMemberPhoto()">🗑️ 사진 삭제 (기본 이니셜 아이콘 사용)</button>`;
+        previewEl.innerHTML = `<img src="${currentPhoto}" class="clickable-photo" onclick="app.openImageViewer('${currentPhoto}', '${this.escapeHtml(document.getElementById('memName').value.trim())}')" alt="미리보기" title="클릭하여 크게 보기"><button type="button" class="btn-remove-photo" style="background:#EF4444; color:#FFF; font-weight:700; padding:4px 8px; border-radius:6px; border:none; margin-left:8px; cursor:pointer;" onclick="app.removeMemberPhoto()">🗑️ 사진 삭제 (기본 이니셜 아이콘 사용)</button>`;
         previewEl.classList.remove('hidden');
       }
     }
