@@ -902,7 +902,7 @@ class ChoirApp {
 
     const renderScheduleCard = (s, isPast = false) => {
       const dt = parseScheduleDate(s);
-      const dateStr = `${dt.getFullYear()}년 ${dt.getMonth() + 1}월 ${dt.getDate()}일 (${['일','월','화','수','목','금','토'][dt.getDay()]})`;
+      const dateStr = `${dt.getFullYear()}년 ${dt.getMonth() + 1}월 ${dt.getDate()}일 (${['일', '월', '화', '수', '목', '금', '토'][dt.getDay()]})`;
       const timeStr = `${dt.getHours().toString().padStart(2, '0')}:${dt.getMinutes().toString().padStart(2, '0')}`;
 
       const apps = s.applications || [];
@@ -1039,7 +1039,7 @@ class ChoirApp {
     document.getElementById('applySchedName').textContent = sched.title;
 
     const dt = new Date(sched.datetime);
-    const dateStr = `${dt.getFullYear()}년 ${dt.getMonth() + 1}월 ${dt.getDate()}일 (${['일','월','화','수','목','금','토'][dt.getDay()]})`;
+    const dateStr = `${dt.getFullYear()}년 ${dt.getMonth() + 1}월 ${dt.getDate()}일 (${['일', '월', '화', '수', '목', '금', '토'][dt.getDay()]})`;
     document.getElementById('applySchedInfo').textContent = `📍 장소: ${sched.location} | 일시: ${dateStr}`;
 
     // 신청 옵션 생성
@@ -1114,8 +1114,8 @@ class ChoirApp {
       }
     });
 
-    const totalText = totalTickets > 0 
-      ? `총 ${apps.length}명 신청 완료 (티켓 총 ${totalTickets}매)` 
+    const totalText = totalTickets > 0
+      ? `총 ${apps.length}명 신청 완료 (티켓 총 ${totalTickets}매)`
       : `총 ${apps.length}명 신청 완료`;
     document.getElementById('applyTotalCountBadge').textContent = totalText;
 
@@ -1193,11 +1193,11 @@ class ChoirApp {
     const html = members.length === 0
       ? `<div class="item-card"><p class="card-body-text">등록된 대원이 없습니다.</p></div>`
       : members.map(m => {
-      const cleanPhone = (m.phone || '').replace(/[^0-9+]/g, '');
+        const cleanPhone = (m.phone || '').replace(/[^0-9+]/g, '');
 
-      const photoUrl = this.formatMemberPhotoUrl(m.photoUrl);
+        const photoUrl = this.formatMemberPhotoUrl(m.photoUrl, m.id);
 
-      return `
+        return `
         <div class="member-card">
           <div class="member-info-left">
             ${photoUrl ? `<img src="${photoUrl}" class="member-avatar clickable-photo" onclick="app.openImageViewer('${photoUrl}', '${this.escapeHtml(m.name)} 대원 프로필')" alt="${m.name}" title="클릭하여 원본 사진 보기">` : `<div class="member-avatar">${m.name.charAt(0)}</div>`}
@@ -1224,7 +1224,7 @@ class ChoirApp {
           </div>
         </div>
       `;
-    }).join('');
+      }).join('');
 
     listEl.innerHTML = html;
   }
@@ -1903,7 +1903,10 @@ class ChoirApp {
     return url;
   }
 
-  formatMemberPhotoUrl(url) {
+  formatMemberPhotoUrl(url, memberId) {
+    if (!url && memberId) {
+      return `assets/members/${memberId}.jpg`;
+    }
     if (!url) return '';
     url = url.trim();
     if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
