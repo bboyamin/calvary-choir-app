@@ -627,15 +627,16 @@
     </div>
   </div>
 
-  <script src="js/storage.js?v=1000"></script>
-  <script src="js/app.js?v=1000"></script>
+  <script src="js/storage.js?v=1005"></script>
+  <script src="js/app.js?v=1005"></script>
   <script>
-    // 서비스 워커 등록 및 캐시 관리 (PWA) - 불필요한 새로고침 완전 차단
+    // 서비스 워커 등록 및 실시간 캐시 갱신 (PWA)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=1000')
+        navigator.serviceWorker.register('sw.js?v=1005')
           .then(reg => {
             console.log('PWA ServiceWorker registered', reg);
+            reg.update(); // 강제 SW 최신버전 업데이트 검사
           })
           .catch(err => console.log('PWA ServiceWorker error', err));
       });

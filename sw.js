@@ -1,4 +1,4 @@
-const CACHE_NAME = 'calvary-choir-v1000';
+const CACHE_NAME = 'calvary-choir-v1005';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -37,10 +37,27 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // API 요청은 절대로 서비스 워커 캐시에 보관하지 않고 100% 라이브 네트워크 동기화
+  if (url.pathname.includes('/api/')) {
+    event.respondWith(
+      fetch(event.request).catch((err) => {
+        console.warn('API network fetch failed:', err);
+        return new Response(JSON.stringify({ error: 'Network offline' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      })
+    );
+    return;
+  }
+
+  // Network-First 전략: 온라인일 때는 항상 서버의 최신 소스코드를 받고, 오프라인일 때만 캐시 사용
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
+        if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
           const responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseClone);
