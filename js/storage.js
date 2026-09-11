@@ -845,7 +845,17 @@ class ChoirStorage {
         { cat: 'prayers', key: STORAGE_KEYS.PRAYERS }
       ];
 
+      const now = Date.now();
       for (const item of categoryMap) {
+        const lastMut = this.lastMutationTime[item.cat] || 0;
+        const pendingCount = this.pendingPushCount[item.cat] || 0;
+        const isRecentlyMutatedByMe = (now - lastMut) < 10000; // 최근 10초 이내에 내가 직접 등록/수정/삭제한 카테고리
+
+        // 내가 방금 수정 중이거나 전송(Push) 중이라면 서버의 지연된 이전 데이터로 순간 롤백되는 현상 방지
+        if (pendingCount > 0 || isRecentlyMutatedByMe) {
+          continue;
+        }
+
         if (cloudData[item.cat] !== undefined && cloudData[item.cat] !== null && Array.isArray(cloudData[item.cat])) {
           const localObj = this.get(item.key);
           const cloudObj = cloudData[item.cat];
