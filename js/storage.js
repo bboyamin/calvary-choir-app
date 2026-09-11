@@ -14,7 +14,15 @@ const STORAGE_KEYS = {
 };
 
 const DEFAULT_DATA = {
-  notices: [],
+  notices: [
+    {
+      "id": "n_001",
+      "title": "📢 9월 성가대 정기 연습 및 예배 안내",
+      "content": "임마누엘성가대 대원 여러분, 매주 주일 오전 9:30 성가대실에서 정기 연습이 있습니다. 늦지 않게 참석해 주시기 바랍니다.",
+      "date": "2026-09-11",
+      "author": "임원회"
+    }
+  ],
   praises: [
         {
             "id": "p_imm_001",
@@ -305,7 +313,24 @@ const DEFAULT_DATA = {
             "youtubeUrl": "https://www.youtube.com/watch?v=urk6M1hqVTE"
         }
     ],
-  schedules: [],
+  schedules: [
+    {
+      "id": "s_001",
+      "title": "주일 정기 연습 및 3부 예배 찬양",
+      "date": "2026-09-13",
+      "time": "09:30",
+      "location": "성가대실 & 대예배실",
+      "description": "09:30 정기 연습 / 11:00 3부 예배 찬양"
+    },
+    {
+      "id": "s_002",
+      "title": "주일 정기 연습 및 3부 예배 찬양",
+      "date": "2026-09-20",
+      "time": "09:30",
+      "location": "성가대실 & 대예배실",
+      "description": "09:30 정기 연습 / 11:00 3부 예배 찬양"
+    }
+  ],
   members: [
     {
         "id": "m_c1",
