@@ -1612,6 +1612,19 @@ class ChoirApp {
     reader.readAsDataURL(file);
   }
 
+  clearFileInputOnly(fileInputId, previewId, hiddenInputId) {
+    const fileEl = document.getElementById(fileInputId);
+    const hiddenEl = document.getElementById(hiddenInputId);
+    const previewEl = document.getElementById(previewId);
+
+    if (fileEl) fileEl.value = '';
+    if (hiddenEl) hiddenEl.value = '';
+    if (previewEl) {
+      previewEl.innerHTML = '';
+      previewEl.classList.add('hidden');
+    }
+  }
+
   clearUploadedImage(fileInputId, previewId, hiddenInputId) {
     const fileEl = document.getElementById(fileInputId);
     const hiddenEl = document.getElementById(hiddenInputId);
