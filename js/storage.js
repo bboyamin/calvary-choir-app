@@ -797,69 +797,21 @@ class ChoirStorage {
     this.startCloudSync();
   }
 
-          init() {
+  init() {
     const currentVer = localStorage.getItem(STORAGE_KEYS.DATA_VERSION);
-    
-    // v1002 데이터 정화: 더미 연습실 영상(p_juyeo_*) 100% 제거 및 실데이터 정제
-    if (currentVer !== 'v1002') {
-      const existingNotices = this.get(STORAGE_KEYS.NOTICES);
-      const existingPraises = this.get(STORAGE_KEYS.PRAISES);
-      const existingSchedules = this.get(STORAGE_KEYS.SCHEDULES);
-      const existingMembers = this.get(STORAGE_KEYS.MEMBERS);
-      const existingPrayers = this.get(STORAGE_KEYS.PRAYERS);
-
-      // 더미 영상(p_juyeo_*) 필터링 제거
-      const cleanedPraises = (existingPraises && existingPraises.length > 0)
-        ? existingPraises.filter(p => !p.id.startsWith('p_juyeo_'))
-        : DEFAULT_DATA.praises;
-
-      const praises = cleanedPraises.length > 0 ? cleanedPraises : DEFAULT_DATA.praises;
-      const schedules = (existingSchedules && existingSchedules.length > 0) ? existingSchedules : DEFAULT_DATA.schedules;
-      const members = (existingMembers && existingMembers.length > 0) ? existingMembers : DEFAULT_DATA.members;
-      const prayers = (existingPrayers && existingPrayers.length > 0) ? existingPrayers : DEFAULT_DATA.prayers;
-      const notices = existingNotices || [];
-
-      this.saveLocal(STORAGE_KEYS.NOTICES, notices);
-      this.saveLocal(STORAGE_KEYS.PRAISES, praises);
-      this.saveLocal(STORAGE_KEYS.SCHEDULES, schedules);
-      this.saveLocal(STORAGE_KEYS.MEMBERS, members);
-      this.saveLocal(STORAGE_KEYS.PRAYERS, prayers);
-
-      this.pushCategoryToCloud('praises', praises);
-      this.pushCategoryToCloud('schedules', schedules);
-      this.pushCategoryToCloud('members', members);
-      this.pushCategoryToCloud('prayers', prayers);
-      if (notices.length > 0) this.pushCategoryToCloud('notices', notices);
-
-      localStorage.setItem(STORAGE_KEYS.DATA_VERSION, 'v1002');
-    } else {
-      if (!this.get(STORAGE_KEYS.PRAISES).length) {
-        this.saveLocal(STORAGE_KEYS.PRAISES, DEFAULT_DATA.praises);
-        this.pushCategoryToCloud('praises', DEFAULT_DATA.praises);
-      }
-      if (!this.get(STORAGE_KEYS.SCHEDULES).length) {
-        this.saveLocal(STORAGE_KEYS.SCHEDULES, DEFAULT_DATA.schedules);
-        this.pushCategoryToCloud('schedules', DEFAULT_DATA.schedules);
-      }
-      if (!this.get(STORAGE_KEYS.MEMBERS).length) {
-        this.saveLocal(STORAGE_KEYS.MEMBERS, DEFAULT_DATA.members);
-        this.pushCategoryToCloud('members', DEFAULT_DATA.members);
-      }
-      if (!this.get(STORAGE_KEYS.PRAYERS).length) {
-        this.saveLocal(STORAGE_KEYS.PRAYERS, DEFAULT_DATA.prayers);
-        this.pushCategoryToCloud('prayers', DEFAULT_DATA.prayers);
-      }
+    if (currentVer !== 'v1003') {
+      localStorage.setItem(STORAGE_KEYS.DATA_VERSION, 'v1003');
     }
   }
 
   startCloudSync() {
-    // 앱 진입 즉시 클라우드 실시간 데이터 동기화
+    // 앱 진입 즉시 클라우드 실시간 데이터 동기화 (SSOT)
     this.syncFromCloud();
 
-    // 12초 주기 실시간 자동 동기화 (전 대원 기기 부드러운 갱신)
+    // 10초 주기 실시간 자동 동기화
     setInterval(() => {
       this.syncFromCloud();
-    }, 12000);
+    }, 10000);
 
     // 앱 화면 다시 활성화(포커스) 및 온라인 복구 시 즉시 클라우드 동기화
     window.addEventListener('focus', () => this.syncFromCloud());
@@ -884,7 +836,6 @@ class ChoirStorage {
 
       const cloudData = await resp.json();
       let hasChanges = false;
-      const now = Date.now();
 
       const categoryMap = [
         { cat: 'notices', key: STORAGE_KEYS.NOTICES },
@@ -895,21 +846,6 @@ class ChoirStorage {
       ];
 
       for (const item of categoryMap) {
-        const isPendingPush = (this.pendingPushCount[item.cat] || 0) > 0;
-        const savedMutTime = parseInt(localStorage.getItem('last_mut_' + item.cat) || '0', 10);
-        const lastMutTime = Math.max(this.lastMutationTime[item.cat] || 0, savedMutTime);
-        const isRecentLocalMutation = (now - lastMutTime) < 300000; // 유저 수정 후 5분간 로컬 데이터 최우선 보호
-
-        if (isPendingPush || isRecentLocalMutation) {
-          // 로컬 데이터가 수신된 서버 데이터와 다를 경우 서버로 최신 로컬 데이터 Push
-          const localObj = this.get(item.key);
-          const cloudObj = cloudData[item.cat];
-          if (JSON.stringify(localObj) !== JSON.stringify(cloudObj)) {
-            this.pushCategoryToCloud(item.cat, localObj);
-          }
-          continue;
-        }
-
         if (cloudData[item.cat] !== undefined && cloudData[item.cat] !== null && Array.isArray(cloudData[item.cat])) {
           const localObj = this.get(item.key);
           const cloudObj = cloudData[item.cat];
@@ -917,39 +853,9 @@ class ChoirStorage {
           const cloudStr = JSON.stringify(cloudObj);
 
           if (localStr !== cloudStr) {
-            // 대원 사진 보호 스마트 병합: 로컬에 최신 사진이 있으면 서버 데이터로 덮어쓰지 않고 최신 사진을 유지하여 병합
-            if (item.cat === 'members' && Array.isArray(localObj)) {
-              let mergedMembers = [...cloudObj];
-              let hasLocalPhotoUpdate = false;
-              for (const localM of localObj) {
-                const cloudIdx = mergedMembers.findIndex(cm => (cm.id && localM.id && cm.id === localM.id) || (cm.name && localM.name && cm.name === localM.name));
-                if (cloudIdx !== -1) {
-                  const cloudM = mergedMembers[cloudIdx];
-                  const localTime = localM.photoUpdatedAt || 0;
-                  const cloudTime = cloudM.photoUpdatedAt || 0;
-                  // 로컬 사진이 더 최신이거나 localM.photoUrl이 새로 등록되었는데 클라우드는 다를 경우 로컬 사진 유지
-                  if (localTime > cloudTime || (localM.photoUrl && localM.photoUrl !== cloudM.photoUrl && (!cloudM.photoUpdatedAt || localTime >= cloudTime))) {
-                    mergedMembers[cloudIdx] = { ...cloudM, ...localM };
-                    hasLocalPhotoUpdate = true;
-                  }
-                } else if (localM.id || localM.name) {
-                  mergedMembers.push(localM);
-                  hasLocalPhotoUpdate = true;
-                }
-              }
-              if (hasLocalPhotoUpdate) {
-                localStorage.setItem(item.key, JSON.stringify(mergedMembers));
-                this.pushCategoryToCloud('members', mergedMembers);
-                hasChanges = true;
-                continue;
-              }
-            }
             localStorage.setItem(item.key, cloudStr);
             hasChanges = true;
           }
-        } else if (cloudData[item.cat] === null || cloudData[item.cat] === undefined) {
-          const localData = this.get(item.key);
-          this.pushCategoryToCloud(item.cat, localData || []);
         }
       }
 
@@ -1026,7 +932,7 @@ class ChoirStorage {
     // 1. 로컬 스토리지에 즉시 반응형 저장 (0ms)
     this.saveLocal(key, data);
 
-    // 2. 전 대원 공유 클라우드 DB로 비동기 전송 동기화
+    // 2. 전 대원 공유 클라우드 DB로 비동기 전송 동기화 (유저가 직접 등록/수정/삭제했을 때만 실행)
     if (category) {
       this.pushCategoryToCloud(category, data);
     }
