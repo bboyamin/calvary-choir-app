@@ -1195,7 +1195,7 @@ class ChoirApp {
       : members.map(m => {
       const cleanPhone = (m.phone || '').replace(/[^0-9+]/g, '');
 
-      const photoUrl = this.formatMemberPhotoUrl(m.photoUrl);
+      const photoUrl = this.formatMemberPhotoUrl(m.photoUrl, m.id);
 
       return `
         <div class="member-card">
@@ -1903,16 +1903,23 @@ class ChoirApp {
     return url;
   }
 
-  formatMemberPhotoUrl(url) {
+  formatMemberPhotoUrl(url, memberId) {
+    if (!url && memberId) {
+      return `assets/members/${memberId}.jpg`;
+    }
     if (!url) return '';
     url = url.trim();
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('/')) {
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
       return url;
     }
     if (!url.startsWith('assets/')) {
-      return 'assets/members/' + url;
+      url = 'assets/members/' + url;
     }
-    return url;
+    try {
+      return encodeURI(url);
+    } catch (e) {
+      return url;
+    }
   }
 
   openModal(modalId) {
