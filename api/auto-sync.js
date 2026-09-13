@@ -171,8 +171,11 @@ export default async function handler(req, res) {
     const existingKeys = new Set();
 
     currentPraises.forEach(p => {
-      if (p.youtubeUrl) existingUrls.add(p.youtubeUrl);
-      if (p.date && p.title) existingKeys.add(`${p.date}_${p.title.trim()}`);
+      // 파트별 연습실(type: 'part') 수동 항목에 영향을 받지 않고 '성가대 찬양 영상'(type: 'all')만 중복 체크합니다.
+      if (!p.type || p.type === 'all') {
+        if (p.youtubeUrl) existingUrls.add(p.youtubeUrl);
+        if (p.date && p.title) existingKeys.add(`${p.date}_${p.title.trim()}`);
+      }
     });
 
     const addedItems = [];
