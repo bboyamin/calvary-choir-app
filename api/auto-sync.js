@@ -16,16 +16,22 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const { KV_REST_API_URL, KV_REST_API_TOKEN } = process.env;
+  const urlRaw = process.env.KV_REST_API_URL || process.env.STORAGE_REST_API_URL || process.env.UPSTASH_REST_API_URL || process.env.KV_URL;
+  const token = process.env.KV_REST_API_TOKEN || process.env.STORAGE_REST_API_TOKEN || process.env.UPSTASH_REST_API_TOKEN || process.env.KV_TOKEN;
+  const baseUrl = urlRaw ? urlRaw.replace(/\/$/, '') : null;
 
   const kvGet = async (key) => {
-    if (!KV_REST_API_URL || !KV_REST_API_TOKEN) return null;
+    if (!baseUrl || !token) return null;
     try {
-      const resp = await fetch(`${KV_REST_API_URL}/get/${key}`, {
-        headers: { Authorization: `Bearer ${KV_REST_API_TOKEN}` }
+      const resp = await fetch(`${baseUrl}/get/${key}`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
+      if (!resp.ok) return null;
       const data = await resp.json();
-      return data.result ? JSON.parse(data.result) : null;
+      if (data.result !== undefined && data.result !== null) {
+        return typeof data.result === 'string' ? JSON.parse(data.result) : data.result;
+      }
+      return null;
     } catch (e) {
       console.error('KV get error:', e);
       return null;
@@ -33,13 +39,21 @@ export default async function handler(req, res) {
   };
 
   const kvSet = async (key, val) => {
-    if (!KV_REST_API_URL || !KV_REST_API_TOKEN) return;
+    if (!baseUrl || !token) return;
     try {
-      await fetch(`${KV_REST_API_URL}/set/${key}`, {
+      const stringifiedVal = JSON.stringify(val);
+      const resp = await fetch(baseUrl, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${KV_REST_API_TOKEN}` },
-        body: JSON.stringify(val)
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(['SET', key, stringifiedVal])
       });
+      if (!resp.ok) {
+        const errText = await resp.text();
+        console.error('KV set error response:', resp.status, errText);
+      }
     } catch (e) {
       console.error('KV set error:', e);
     }
