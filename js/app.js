@@ -488,11 +488,15 @@ class ChoirApp {
 
   updateViewerTransform() {
     const imgEl = document.getElementById('viewerImage');
+    const wrapEl = document.getElementById('viewerImgWrap');
     if (!imgEl) return;
     const s = this.viewerScale || 1;
     const tx = this.viewerTranslateX || 0;
     const ty = this.viewerTranslateY || 0;
     imgEl.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+    if (wrapEl) {
+      wrapEl.style.cursor = s > 1 ? 'grab' : 'default';
+    }
   }
 
   initImageViewerGestures() {
@@ -507,6 +511,7 @@ class ChoirApp {
     let isDragging = false;
     let lastTapTime = 0;
 
+    // 모바일 터치 피치 줌 & 드래그 조작
     wrap.addEventListener('touchstart', (e) => {
       if (e.touches.length === 2) {
         initialDist = Math.hypot(
@@ -562,11 +567,57 @@ class ChoirApp {
       if (e.touches.length === 0) isDragging = false;
     }, { passive: true });
 
+    // PC 마우스 휠 확대/축소 지원
     wrap.addEventListener('wheel', (e) => {
       e.preventDefault();
       const delta = e.deltaY < 0 ? 1.15 : 0.85;
       this.zoomImage(delta);
     }, { passive: false });
+
+    // PC 마우스 드래그 구석구석 이동 조작 지원
+    let isMouseDragging = false;
+    let mouseStartX = 0;
+    let mouseStartY = 0;
+
+    wrap.addEventListener('mousedown', (e) => {
+      if (e.button === 0 && (this.viewerScale || 1) > 1) {
+        isMouseDragging = true;
+        mouseStartX = e.clientX - (this.viewerTranslateX || 0);
+        mouseStartY = e.clientY - (this.viewerTranslateY || 0);
+        wrap.style.cursor = 'grabbing';
+      }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (isMouseDragging && (this.viewerScale || 1) > 1) {
+        this.viewerTranslateX = e.clientX - mouseStartX;
+        this.viewerTranslateY = e.clientY - mouseStartY;
+        this.updateViewerTransform();
+        wrap.style.cursor = 'grabbing';
+      }
+    });
+
+    const stopMouseDrag = () => {
+      if (isMouseDragging) {
+        isMouseDragging = false;
+        wrap.style.cursor = (this.viewerScale || 1) > 1 ? 'grab' : 'default';
+      }
+    };
+
+    window.addEventListener('mouseup', stopMouseDrag);
+    wrap.addEventListener('mouseleave', stopMouseDrag);
+
+    // PC 마우스 더블클릭 토글 줌
+    wrap.addEventListener('dblclick', () => {
+      if ((this.viewerScale || 1) > 1.2) {
+        this.resetZoomImage();
+      } else {
+        this.viewerScale = 2.5;
+        this.viewerTranslateX = 0;
+        this.viewerTranslateY = 0;
+        this.updateViewerTransform();
+      }
+    });
   }
 
   getItemTimestamp(item) {
