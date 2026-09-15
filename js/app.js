@@ -2017,7 +2017,20 @@ class ChoirApp {
     }
 
     const convertedImg = this.convertGoogleDriveUrl(url);
-    return `<img src="${convertedImg}" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${convertedImg}', '${this.escapeHtml(title)}')" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">`;
+    const escapedTitle = this.escapeHtml(title);
+    return `
+      <div class="notice-image-container" style="margin-top: 12px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 10px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <span style="font-size: 13.5px; font-weight: 600; color: #1E293B; display: flex; align-items: center; gap: 6px;">
+            🖼️ 공지 사진
+          </span>
+          <button type="button" onclick="app.openImageViewer('${convertedImg}', '${escapedTitle}')" style="font-size: 12.5px; background: #2563EB; color: #ffffff; padding: 4px 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600;">
+            🔍 원본/전체화면 크게 열기 ↗
+          </button>
+        </div>
+        <img src="${convertedImg}" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${convertedImg}', '${escapedTitle}')" alt="공지 사진" title="클릭하여 원본 사진 크게 보기" style="width: 100%; border-radius: 6px; margin-top: 0;">
+      </div>
+    `;
   }
 
   formatMemberPhotoUrl(url, memberId) {
