@@ -528,7 +528,7 @@ class ChoirApp {
             </div>
             <h3 class="card-title">${item.title}</h3>
             <p class="card-body-text">${content}</p>
-            ${item.imageUrl ? `<img src="${item.imageUrl}" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${item.imageUrl}', '${this.escapeHtml(item.title)}')" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">` : ''}
+            ${item.imageUrl ? this.getNoticeMediaHtml(item.imageUrl, item.title) : ''}
             ${item.youtubeUrl ? `<div class="video-responsive">${this.getYoutubeIframe(item.youtubeUrl)}</div>` : ''}
           </div>
         `;
@@ -551,7 +551,7 @@ class ChoirApp {
 
           <div class="notice-full-box" style="display: ${isExpanded ? 'block' : 'none'};">
             <p class="card-body-text notice-text-full">${content}</p>
-            ${item.imageUrl ? `<img src="${item.imageUrl}" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${item.imageUrl}', '${this.escapeHtml(item.title)}')" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">` : ''}
+            ${item.imageUrl ? this.getNoticeMediaHtml(item.imageUrl, item.title) : ''}
             ${item.youtubeUrl ? `<div class="video-responsive">${this.getYoutubeIframe(item.youtubeUrl)}</div>` : ''}
           </div>
 
@@ -625,7 +625,7 @@ class ChoirApp {
     const youtubeUrl = document.getElementById('noticeYoutube').value.trim();
     const uploadedDataUrl = document.getElementById('noticePhotoData').value.trim();
     const inputUrl = document.getElementById('noticeImageUrl').value.trim();
-    const imageUrl = uploadedDataUrl || this.convertGoogleDriveUrl(inputUrl);
+    const imageUrl = uploadedDataUrl || (this.isPdfUrl(inputUrl) ? inputUrl : this.convertGoogleDriveUrl(inputUrl));
 
     const notices = this.storage.get(STORAGE_KEYS.NOTICES);
     const now = Date.now();
@@ -1976,6 +1976,48 @@ class ChoirApp {
       return 'https://lh3.googleusercontent.com/d/' + fileIdMatch[1];
     }
     return url;
+  }
+
+  isPdfUrl(url) {
+    if (!url) return false;
+    const u = url.toLowerCase();
+    return u.includes('.pdf') || u.includes('type=pdf') || (u.includes('drive.google.com') && (u.includes('pdf') || u.includes('/file/d/'))) || (u.includes('docs.google.com') && u.includes('pdf'));
+  }
+
+  getNoticeMediaHtml(url, title) {
+    if (!url) return '';
+    url = url.trim();
+
+    if (this.isPdfUrl(url)) {
+      let embedUrl = url;
+      let openUrl = url;
+
+      const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/) || url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      if (fileIdMatch && fileIdMatch[1]) {
+        const fileId = fileIdMatch[1];
+        embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+        openUrl = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+      } else if (url.endsWith('.pdf')) {
+        embedUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+      }
+
+      return `
+        <div class="notice-pdf-container" style="margin-top: 12px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 10px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-size: 13.5px; font-weight: 600; color: #1E293B; display: flex; align-items: center; gap: 6px;">
+              📄 PDF 첨부 문서
+            </span>
+            <a href="${openUrl}" target="_blank" rel="noopener noreferrer" style="font-size: 12.5px; background: #2563EB; color: #ffffff; padding: 4px 10px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+              전체화면 열기 ↗
+            </a>
+          </div>
+          <iframe src="${embedUrl}" style="width: 100%; height: 380px; border: none; border-radius: 6px; background: #ffffff;" loading="lazy"></iframe>
+        </div>
+      `;
+    }
+
+    const convertedImg = this.convertGoogleDriveUrl(url);
+    return `<img src="${convertedImg}" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${convertedImg}', '${this.escapeHtml(title)}')" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">`;
   }
 
   formatMemberPhotoUrl(url, memberId) {
