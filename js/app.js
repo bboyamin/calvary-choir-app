@@ -465,7 +465,108 @@ class ChoirApp {
         capEl.classList.add('hidden');
       }
     }
+    this.resetZoomImage();
+    this.initImageViewerGestures();
     this.openModal('modalImageViewer');
+  }
+
+  zoomImage(factor) {
+    this.viewerScale = Math.min(Math.max(1, (this.viewerScale || 1) * factor), 4);
+    if (this.viewerScale === 1) {
+      this.viewerTranslateX = 0;
+      this.viewerTranslateY = 0;
+    }
+    this.updateViewerTransform();
+  }
+
+  resetZoomImage() {
+    this.viewerScale = 1;
+    this.viewerTranslateX = 0;
+    this.viewerTranslateY = 0;
+    this.updateViewerTransform();
+  }
+
+  updateViewerTransform() {
+    const imgEl = document.getElementById('viewerImage');
+    if (!imgEl) return;
+    const s = this.viewerScale || 1;
+    const tx = this.viewerTranslateX || 0;
+    const ty = this.viewerTranslateY || 0;
+    imgEl.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+  }
+
+  initImageViewerGestures() {
+    const wrap = document.getElementById('viewerImgWrap');
+    if (!wrap || wrap.dataset.gesturesBound) return;
+    wrap.dataset.gesturesBound = 'true';
+
+    let initialDist = 0;
+    let initialScale = 1;
+    let startX = 0;
+    let startY = 0;
+    let isDragging = false;
+    let lastTapTime = 0;
+
+    wrap.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        initialDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        initialScale = this.viewerScale || 1;
+      } else if (e.touches.length === 1) {
+        const now = Date.now();
+        if (now - lastTapTime < 300) {
+          if ((this.viewerScale || 1) > 1.2) {
+            this.resetZoomImage();
+          } else {
+            this.viewerScale = 2.5;
+            this.viewerTranslateX = 0;
+            this.viewerTranslateY = 0;
+            this.updateViewerTransform();
+          }
+          lastTapTime = 0;
+          return;
+        }
+        lastTapTime = now;
+
+        if ((this.viewerScale || 1) > 1) {
+          isDragging = true;
+          startX = e.touches[0].clientX - (this.viewerTranslateX || 0);
+          startY = e.touches[0].clientY - (this.viewerTranslateY || 0);
+        }
+      }
+    }, { passive: true });
+
+    wrap.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2 && initialDist > 0) {
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        this.viewerScale = Math.min(Math.max(1, initialScale * (dist / initialDist)), 4);
+        if (this.viewerScale === 1) {
+          this.viewerTranslateX = 0;
+          this.viewerTranslateY = 0;
+        }
+        this.updateViewerTransform();
+      } else if (e.touches.length === 1 && isDragging && (this.viewerScale || 1) > 1) {
+        this.viewerTranslateX = e.touches[0].clientX - startX;
+        this.viewerTranslateY = e.touches[0].clientY - startY;
+        this.updateViewerTransform();
+      }
+    }, { passive: true });
+
+    wrap.addEventListener('touchend', (e) => {
+      if (e.touches.length < 2) initialDist = 0;
+      if (e.touches.length === 0) isDragging = false;
+    }, { passive: true });
+
+    wrap.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 1.15 : 0.85;
+      this.zoomImage(delta);
+    }, { passive: false });
   }
 
   getItemTimestamp(item) {
