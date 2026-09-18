@@ -297,11 +297,11 @@
           <input type="url" id="noticeYoutube" placeholder="https://www.youtube.com/watch?v=...">
         </div>
         <div class="form-group">
-          <label for="noticeFilePhoto">📷 사진/📄 PDF 첨부 (스마트폰 사진 선택 또는 구글드라이브 URL 입력)</label>
+          <label for="noticeFilePhoto">📷 사진 또는 📄 PDF 첨부</label>
           <input type="file" id="noticeFilePhoto" accept="image/*,.pdf" class="file-upload-input" onclick="this.value=''" onchange="app.handleImageUpload(event, 'noticePhotoPreview', 'noticePhotoData', 'noticeImageUrl')">
           <input type="hidden" id="noticePhotoData">
           <div id="noticePhotoPreview" class="photo-upload-preview hidden"></div>
-          <input type="text" id="noticeImageUrl" placeholder="또는 웹/구글드라이브 사진 이미지 및 PDF URL 직접 입력" style="margin-top: 6px;" oninput="app.clearFileInputOnly('noticeFilePhoto', 'noticePhotoPreview', 'noticePhotoData')">
+          <input type="text" id="noticeImageUrl" placeholder="또는 웹/구글드라이브 사진 주소 및 PDF URL 직접 입력" style="margin-top: 6px;" oninput="app.clearFileInputOnly('noticeFilePhoto', 'noticePhotoPreview', 'noticePhotoData')">
         </div>
         <div class="form-actions">
           <button type="button" class="btn-secondary-large" onclick="app.closeModal('modalNotice')">취소</button>

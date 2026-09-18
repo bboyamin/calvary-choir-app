@@ -777,7 +777,7 @@ class ChoirApp {
     const youtubeUrl = document.getElementById('noticeYoutube').value.trim();
     const uploadedDataUrl = document.getElementById('noticePhotoData').value.trim();
     const inputUrl = document.getElementById('noticeImageUrl').value.trim();
-    const imageUrl = uploadedDataUrl || (this.isPdfUrl(inputUrl) ? inputUrl : this.convertGoogleDriveUrl(inputUrl));
+    const imageUrl = uploadedDataUrl || this.convertGoogleDriveUrl(inputUrl);
 
     const notices = this.storage.get(STORAGE_KEYS.NOTICES);
     const now = Date.now();
@@ -2130,47 +2130,93 @@ class ChoirApp {
     return url;
   }
 
-  isPdfUrl(url) {
-    if (!url) return false;
-    const u = url.toLowerCase();
-    return u.includes('.pdf') || u.includes('type=pdf') || (u.includes('drive.google.com') && (u.includes('pdf') || u.includes('/file/d/'))) || (u.includes('docs.google.com') && u.includes('pdf'));
-  }
-
   getNoticeMediaHtml(url, title) {
     if (!url) return '';
     url = url.trim();
 
-    if (this.isPdfUrl(url)) {
+    const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/) || url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    const fileId = fileIdMatch ? fileIdMatch[1] : '';
+
+    // 1. URL에 .pdf가 명시되어 있거나 백그라운드 검사 결과 PDF로 판명된 경우 즉시 PDF 뷰어로 표시
+    if (url.toLowerCase().includes('.pdf') || (fileId && this.drivePdfCache?.[fileId] === true)) {
       let embedUrl = url;
       let openUrl = url;
-
-      const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/) || url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-      if (fileIdMatch && fileIdMatch[1]) {
-        const fileId = fileIdMatch[1];
+      if (fileId) {
         embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
         openUrl = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
-      } else if (url.endsWith('.pdf')) {
+      } else {
         embedUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
       }
+      return this.getPdfViewerHtml(embedUrl, openUrl);
+    }
+
+    // 2. 구글 드라이브 주소인 경우 1차 이미지 표시 + 백그라운드 100% 실시간 PDF 파일 타입 검사 수행
+    const convertedImg = this.convertGoogleDriveUrl(url);
+    const escapedTitle = this.escapeHtml(title);
+    const wrapId = fileId ? `media_wrap_${fileId}` : ('media_wrap_' + Math.random().toString(36).substring(2, 9));
+
+    if (fileId) {
+      setTimeout(() => this.checkDrivePdfFile(fileId), 30);
 
       return `
-        <div class="notice-pdf-container" style="margin-top: 12px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 10px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <span style="font-size: 13.5px; font-weight: 600; color: #1E293B; display: flex; align-items: center; gap: 6px;">
-              📄 PDF 첨부 문서
-            </span>
-            <a href="${openUrl}" target="_blank" rel="noopener noreferrer" style="font-size: 12.5px; background: #2563EB; color: #ffffff; padding: 4px 10px; border-radius: 6px; text-decoration: none; font-weight: 600;">
-              전체화면 열기 ↗
-            </a>
-          </div>
-          <iframe src="${embedUrl}" style="width: 100%; height: 380px; border: none; border-radius: 6px; background: #ffffff;" loading="lazy"></iframe>
+        <div id="${wrapId}">
+          <img src="${convertedImg}" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${convertedImg}', '${escapedTitle}')" onerror="app.convertMediaToPdf('${wrapId}', '${fileId}')" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">
         </div>
       `;
     }
 
-    const convertedImg = this.convertGoogleDriveUrl(url);
-    const escapedTitle = this.escapeHtml(title);
     return `<img src="${convertedImg}" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${convertedImg}', '${escapedTitle}')" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">`;
+  }
+
+  async checkDrivePdfFile(fileId) {
+    if (!fileId) return;
+    if (!this.drivePdfCache) this.drivePdfCache = {};
+    if (this.drivePdfCache[fileId] !== undefined) return;
+
+    try {
+      const res = await fetch(`https://drive.google.com/file/d/${fileId}/view`);
+      if (!res.ok) return;
+      const html = await res.text();
+      const isPdf = html.includes('application/pdf') || html.includes('.pdf') || (html.match(/<meta property="og:title" content="([^"]+\.pdf)"/i) !== null);
+
+      this.drivePdfCache[fileId] = isPdf;
+
+      if (isPdf) {
+        const wrapEl = document.getElementById(`media_wrap_${fileId}`);
+        if (wrapEl) {
+          const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+          const openUrl = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+          wrapEl.innerHTML = this.getPdfViewerHtml(embedUrl, openUrl);
+        }
+      }
+    } catch (e) {
+      console.warn('Drive PDF check error:', e);
+      this.drivePdfCache[fileId] = false;
+    }
+  }
+
+  convertMediaToPdf(wrapId, fileId) {
+    const wrap = document.getElementById(wrapId);
+    if (!wrap) return;
+    const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+    const openUrl = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+    wrap.innerHTML = this.getPdfViewerHtml(embedUrl, openUrl);
+  }
+
+  getPdfViewerHtml(embedUrl, openUrl) {
+    return `
+      <div class="notice-pdf-container" style="margin-top: 12px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 10px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <span style="font-size: 13.5px; font-weight: 600; color: #1E293B; display: flex; align-items: center; gap: 6px;">
+            📄 PDF 첨부 문서
+          </span>
+          <a href="${openUrl}" target="_blank" rel="noopener noreferrer" style="font-size: 12.5px; background: #2563EB; color: #ffffff; padding: 4px 10px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+            전체화면 열기 ↗
+          </a>
+        </div>
+        <iframe src="${embedUrl}" style="width: 100%; height: 380px; border: none; border-radius: 6px; background: #ffffff;" loading="lazy"></iframe>
+      </div>
+    `;
   }
 
   formatMemberPhotoUrl(url, memberId) {

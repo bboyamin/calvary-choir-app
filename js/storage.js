@@ -860,7 +860,8 @@ class ChoirStorage {
     this.isSyncing = true;
 
     try {
-      const resp = await fetch('./api/storage?key=all');
+      const apiBaseUrl = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'https://calvary-ch.vercel.app/api/storage' : './api/storage';
+      const resp = await fetch(`${apiBaseUrl}?key=all`);
       if (!resp.ok) {
         this.isSyncing = false;
         return;
@@ -918,7 +919,8 @@ class ChoirStorage {
     this.lastMutationTime[category] = Date.now();
 
     try {
-      const resp = await fetch('./api/storage', {
+      const apiBaseUrl = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'https://calvary-ch.vercel.app/api/storage' : './api/storage';
+      const resp = await fetch(apiBaseUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category, data })
