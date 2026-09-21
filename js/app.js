@@ -641,42 +641,162 @@ class ChoirApp {
   // ----------------------------------------------------
   // 📢 3. 공지사항 렌더링 & 등록
   // ----------------------------------------------------
+  // ----------------------------------------------------
+  // 📢 3. 공지사항 렌더링, 검색, 즐겨찾기 & 등록
+  // ----------------------------------------------------
+  toggleNoticeSearch() {
+    this.isNoticeSearchOpen = !this.isNoticeSearchOpen;
+    const searchBox = document.getElementById('noticeSearchBox');
+    const searchBtn = document.getElementById('btnToggleNoticeSearch');
+    const searchInput = document.getElementById('noticeSearchInput');
+
+    if (searchBox) {
+      searchBox.classList.toggle('hidden', !this.isNoticeSearchOpen);
+    }
+    if (searchBtn) {
+      searchBtn.classList.toggle('active', this.isNoticeSearchOpen);
+    }
+    if (this.isNoticeSearchOpen) {
+      if (searchInput) {
+        setTimeout(() => searchInput.focus(), 100);
+      }
+    } else {
+      if (this.noticeSearchQuery) {
+        this.clearNoticeSearch();
+      }
+    }
+  }
+
+  onNoticeSearchInput(val) {
+    this.noticeSearchQuery = (val || '').trim().toLowerCase();
+    this.renderNotices();
+  }
+
+  clearNoticeSearch() {
+    this.noticeSearchQuery = '';
+    const searchInput = document.getElementById('noticeSearchInput');
+    if (searchInput) searchInput.value = '';
+    this.renderNotices();
+  }
+
+  setNoticeFilter(filterType) {
+    this.noticeFilter = filterType;
+    const btnAll = document.getElementById('btnFilterNoticeAll');
+    const btnFav = document.getElementById('btnFilterNoticeFav');
+    if (btnAll) btnAll.classList.toggle('active', filterType === 'all');
+    if (btnFav) btnFav.classList.toggle('active', filterType === 'fav');
+    this.renderNotices();
+  }
+
+  toggleNoticeFavorite(noticeId, event) {
+    if (event) event.stopPropagation();
+    this.storage.toggleFavoriteNotice(noticeId);
+    this.updateNoticeFavBadge();
+    this.renderNotices();
+  }
+
+  updateNoticeFavBadge() {
+    const badge = document.getElementById('noticeFavCountBadge');
+    if (badge) {
+      const favIds = this.storage.getFavoriteNoticeIds();
+      badge.textContent = favIds.length;
+    }
+  }
+
   renderNotices() {
     this.renderDailyVerse();
+    this.updateNoticeFavBadge();
 
     const listEl = document.getElementById('noticeList');
     if (!listEl) return;
-    const notices = this.storage.get(STORAGE_KEYS.NOTICES);
+    const rawNotices = this.storage.get(STORAGE_KEYS.NOTICES);
     const isOfficer = this.storage.isOfficer();
+    const favIds = new Set(this.storage.getFavoriteNoticeIds());
 
-    if (notices.length === 0) {
+    if (rawNotices.length === 0) {
       listEl.innerHTML = `<div class="item-card"><p class="card-body-text">등록된 공지사항이 없습니다.</p></div>`;
       return;
     }
 
-    // 최신 생성 시각(Timestamp) 내림차순 1차 정렬 -> 날짜 내림차순 2차 정렬 (신규 작성글 최상단 배치 보장)
-    notices.sort((a, b) => {
+    // 최신 생성 시각 내림차순 정렬
+    const notices = [...rawNotices].sort((a, b) => {
       const timeDiff = this.getItemTimestamp(b) - this.getItemTimestamp(a);
       if (timeDiff !== 0) return timeDiff;
       return (b.date || '').localeCompare(a.date || '');
     });
 
-    const MAX_RECENT = 4;
-    const recentNotices = notices.slice(0, MAX_RECENT);
-    const olderNotices = notices.slice(MAX_RECENT);
+    // 1. 필터링 (즐겨찾기 전용 vs 전체)
+    let filteredNotices = notices;
+    if (this.noticeFilter === 'fav') {
+      filteredNotices = filteredNotices.filter(item => favIds.has(item.id));
+    }
+
+    // 2. 검색어 필터링 (검색창 입력 시)
+    const q = this.noticeSearchQuery;
+    if (q) {
+      filteredNotices = filteredNotices.filter(item => {
+        const title = (item.title || '').toLowerCase();
+        const content = (item.content || '').toLowerCase();
+        return title.includes(q) || content.includes(q);
+      });
+    }
+
+    // 빈 검색/즐겨찾기 결과 안내
+    if (filteredNotices.length === 0) {
+      if (this.noticeFilter === 'fav') {
+        listEl.innerHTML = `
+          <div class="item-card" style="text-align: center; padding: 30px 16px;">
+            <p style="font-size: 36px; margin-bottom: 8px;">⭐</p>
+            <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">즐겨찾기한 공지사항이 없습니다</h4>
+            <p class="card-body-text" style="color: var(--text-sub);">중요한 공지 카드 상단의 별(☆) 아이콘을 눌러 즐겨찾기에 추가해 보세요!</p>
+          </div>
+        `;
+        return;
+      }
+      if (q) {
+        listEl.innerHTML = `
+          <div class="item-card" style="text-align: center; padding: 30px 16px;">
+            <p style="font-size: 36px; margin-bottom: 8px;">🔍</p>
+            <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">검색 결과가 없습니다</h4>
+            <p class="card-body-text" style="color: var(--text-sub);">'${this.escapeHtml(q)}' 와(과) 일치하는 공지사항이 없습니다.</p>
+          </div>
+        `;
+        return;
+      }
+    }
 
     const renderNoticeCard = (item) => {
       const content = item.content || '';
       const isLong = content.length > 120 || (content.match(/\n/g) || []).length >= 3;
       const isExpanded = this.expandedNoticeIds && this.expandedNoticeIds.has(item.id);
+      const isFav = favIds.has(item.id);
+
+      const getStarSvg = (starred) => starred ? `
+        <svg class="star-svg is-starred" width="22" height="22" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+      ` : `
+        <svg class="star-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+      `;
+
+      const starButtonHtml = `
+        <button type="button" class="btn-star-notice ${isFav ? 'is-starred' : ''}" onclick="app.toggleNoticeFavorite('${item.id}', event)" title="${isFav ? '즐겨찾기 해제' : '즐겨찾기 추가'}">
+          ${getStarSvg(isFav)}
+        </button>
+      `;
 
       if (!isLong) {
         return `
           <div class="item-card" id="notice_card_${item.id}">
-            ${isOfficer ? `<button class="btn-delete-card" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>` : ''}
             <div class="card-top">
               <span class="card-badge badge-notice">📢 성가대 공지</span>
-              <span class="card-date">${item.date}</span>
+              <div class="card-top-right">
+                <span class="card-date">${item.date}</span>
+                ${starButtonHtml}
+                ${isOfficer ? `<button class="btn-delete-card" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>` : ''}
+              </div>
             </div>
             <h3 class="card-title">${item.title}</h3>
             <p class="card-body-text">${content}</p>
@@ -690,10 +810,13 @@ class ChoirApp {
 
       return `
         <div class="item-card notice-card-collapsible ${isExpanded ? 'is-expanded' : ''}" id="notice_card_${item.id}">
-          ${isOfficer ? `<button class="btn-delete-card" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>` : ''}
           <div class="card-top">
             <span class="card-badge badge-notice">📢 성가대 공지</span>
-            <span class="card-date">${item.date}</span>
+            <div class="card-top-right">
+              <span class="card-date">${item.date}</span>
+              ${starButtonHtml}
+              ${isOfficer ? `<button class="btn-delete-card" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>` : ''}
+            </div>
           </div>
           <h3 class="card-title">${item.title}</h3>
 
@@ -714,14 +837,40 @@ class ChoirApp {
       `;
     };
 
+    // 검색 중이거나 즐겨찾기 필터 모드일 때는 보관함 구분 없이 일괄 표시
+    if (q || this.noticeFilter === 'fav') {
+      const html = filteredNotices.map(renderNoticeCard).join('');
+      if (listEl.innerHTML !== html) listEl.innerHTML = html;
+      return;
+    }
+
+    // 전체 모드 + 검색어 없음: 기존 상위 4개 + 보관함 보보기 처리
+    const MAX_RECENT = 4;
+    const recentNotices = filteredNotices.slice(0, MAX_RECENT);
+    const olderNotices = filteredNotices.slice(MAX_RECENT);
+
     let html = recentNotices.map(renderNoticeCard).join('');
 
     if (olderNotices.length > 0) {
+      if (!this.visibleNoticeArchiveCount) {
+        this.visibleNoticeArchiveCount = 5;
+      }
+      const visibleCount = Math.min(this.visibleNoticeArchiveCount, olderNotices.length);
+      const displayedOlder = olderNotices.slice(0, visibleCount);
+      const hasMore = visibleCount < olderNotices.length;
+
       html += `
-        <details class="archive-accordion">
+        <details class="archive-accordion" ${this.isNoticeArchiveOpen ? 'open' : ''} ontoggle="app.onNoticeArchiveToggle(this)">
           <summary class="archive-summary">📁 지난 공지사항 보관함 (총 ${olderNotices.length}개)</summary>
           <div class="archive-content">
-            ${olderNotices.map(renderNoticeCard).join('')}
+            ${displayedOlder.map(renderNoticeCard).join('')}
+            ${hasMore ? `
+              <div class="load-more-archive-box">
+                <button type="button" class="btn-load-more-archive" onclick="app.loadMoreNoticeArchive()">
+                  👇 공지사항 더보기
+                </button>
+              </div>
+            ` : ''}
           </div>
         </details>
       `;
@@ -730,6 +879,17 @@ class ChoirApp {
     if (listEl.innerHTML !== html) {
       listEl.innerHTML = html;
     }
+  }
+
+  onNoticeArchiveToggle(detailsEl) {
+    if (detailsEl) {
+      this.isNoticeArchiveOpen = detailsEl.open;
+    }
+  }
+
+  loadMoreNoticeArchive() {
+    this.visibleNoticeArchiveCount = (this.visibleNoticeArchiveCount || 5) + 5;
+    this.renderNotices();
   }
 
   renderDailyVerse() {
@@ -2125,7 +2285,14 @@ class ChoirApp {
     url = url.trim();
     const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/) || url.match(/\/d\/([a-zA-Z0-9_-]+)/);
     if (fileIdMatch && fileIdMatch[1]) {
-      return 'https://lh3.googleusercontent.com/d/' + fileIdMatch[1];
+      return `https://drive.google.com/thumbnail?id=${fileIdMatch[1]}&sz=w1200`;
+    }
+    if (url.includes('lh3.googleusercontent.com/d/')) {
+      const parts = url.split('/d/');
+      if (parts[1]) {
+        const id = parts[1].split('?')[0];
+        return `https://drive.google.com/thumbnail?id=${id}&sz=w1200`;
+      }
     }
     return url;
   }
@@ -2160,12 +2327,12 @@ class ChoirApp {
 
       return `
         <div id="${wrapId}">
-          <img src="${convertedImg}" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${convertedImg}', '${escapedTitle}')" onerror="app.convertMediaToPdf('${wrapId}', '${fileId}')" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">
+          <img src="${convertedImg}" referrerpolicy="no-referrer" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${convertedImg}', '${escapedTitle}')" onerror="app.convertMediaToPdf('${wrapId}', '${fileId}', this)" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">
         </div>
       `;
     }
 
-    return `<img src="${convertedImg}" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${convertedImg}', '${escapedTitle}')" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">`;
+    return `<img src="${convertedImg}" referrerpolicy="no-referrer" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${convertedImg}', '${escapedTitle}')" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">`;
   }
 
   async checkDrivePdfFile(fileId) {
@@ -2177,7 +2344,9 @@ class ChoirApp {
       const res = await fetch(`https://drive.google.com/file/d/${fileId}/view`);
       if (!res.ok) return;
       const html = await res.text();
-      const isPdf = html.includes('application/pdf') || html.includes('.pdf') || (html.match(/<meta property="og:title" content="([^"]+\.pdf)"/i) !== null);
+      const isPdf = /itemprop="name"\s+content="[^"]*\.pdf"/i.test(html) || 
+                    /property="og:title"\s+content="[^"]*\.pdf"/i.test(html) || 
+                    /<title>[^<]*\.pdf\s*(?:-[^<]*)?<\/title>/i.test(html);
 
       this.drivePdfCache[fileId] = isPdf;
 
@@ -2195,12 +2364,43 @@ class ChoirApp {
     }
   }
 
-  convertMediaToPdf(wrapId, fileId) {
-    const wrap = document.getElementById(wrapId);
-    if (!wrap) return;
-    const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-    const openUrl = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
-    wrap.innerHTML = this.getPdfViewerHtml(embedUrl, openUrl);
+  convertMediaToPdf(wrapId, fileId, imgEl) {
+    // 1. 이미 이미지 파일(isPdf: false)로 확정되었으면 절대로 PDF 뷰어로 전환하지 않음
+    if (this.drivePdfCache && this.drivePdfCache[fileId] === false) {
+      if (imgEl && !imgEl.dataset.fallbackTried) {
+        imgEl.dataset.fallbackTried = 'true';
+        imgEl.src = `https://drive.google.com/uc?export=view&id=${fileId}`;
+      }
+      return;
+    }
+
+    // 2. 백그라운드 PDF 검사가 진행 중인 경우(undefined) 1차 대체 이미지 시도 후 재검사
+    if (!this.drivePdfCache || this.drivePdfCache[fileId] === undefined) {
+      if (imgEl && !imgEl.dataset.fallbackTried) {
+        imgEl.dataset.fallbackTried = 'true';
+        imgEl.src = `https://drive.google.com/uc?export=view&id=${fileId}`;
+      }
+      setTimeout(() => {
+        if (this.drivePdfCache && this.drivePdfCache[fileId] === true) {
+          const wrap = document.getElementById(wrapId);
+          if (wrap) {
+            const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+            const openUrl = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+            wrap.innerHTML = this.getPdfViewerHtml(embedUrl, openUrl);
+          }
+        }
+      }, 1000);
+      return;
+    }
+
+    // 3. 백그라운드 검사가 완료되었고 100% PDF(true)임이 확인된 경우에만 PDF 뷰어로 전환
+    if (this.drivePdfCache[fileId] === true) {
+      const wrap = document.getElementById(wrapId);
+      if (!wrap) return;
+      const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+      const openUrl = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+      wrap.innerHTML = this.getPdfViewerHtml(embedUrl, openUrl);
+    }
   }
 
   getPdfViewerHtml(embedUrl, openUrl) {

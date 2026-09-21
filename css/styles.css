@@ -220,6 +220,177 @@ body {
 }
 
 /* ==========================================
+   공지사항 전용 헤더 액션, 검색창, 필터 칩 & 별표 즐겨찾기
+   ========================================== */
+.pane-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-icon-action {
+  height: 42px;
+  width: 42px;
+  border-radius: 10px;
+  background: #F1F5F9;
+  color: var(--primary-navy);
+  border: 1.5px solid #CBD5E1;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+}
+
+.btn-icon-action:hover, .btn-icon-action.active {
+  background: var(--primary-navy);
+  color: #FFFFFF;
+  border-color: var(--primary-navy);
+  box-shadow: 0 4px 10px rgba(30, 41, 59, 0.2);
+}
+
+.notice-search-box {
+  margin-bottom: 12px;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.notice-search-box.hidden {
+  display: none;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #FFFFFF;
+  border: 2px solid var(--primary-navy);
+  border-radius: 12px;
+  padding: 0 12px;
+  box-shadow: 0 4px 14px rgba(30, 41, 59, 0.12);
+}
+
+.search-icon {
+  font-size: 16px;
+  margin-right: 8px;
+  opacity: 0.6;
+}
+
+.search-input-wrapper input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 10px 0;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--text-dark);
+  background: transparent;
+}
+
+.btn-clear-search {
+  background: #E2E8F0;
+  color: #475569;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.btn-clear-search:active {
+  background: #CBD5E1;
+}
+
+.notice-filter-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.notice-filter-chip {
+  padding: 8px 16px;
+  font-size: 13.5px;
+  font-weight: 700;
+  border-radius: 20px;
+  background: #F1F5F9;
+  color: #64748B;
+  border: 1.5px solid #CBD5E1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.notice-filter-chip.active {
+  background: var(--primary-navy);
+  color: #FFFFFF;
+  border-color: var(--primary-navy);
+  box-shadow: 0 3px 8px rgba(30, 41, 59, 0.2);
+}
+
+.filter-count-badge {
+  background: #E2E8F0;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.notice-filter-chip.active .filter-count-badge {
+  background: var(--gold-accent);
+  color: #FFFFFF;
+}
+
+/* 별표 즐겨찾기 스크랩 버튼 & 카드 우측 구성 */
+.card-top-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.btn-star-notice {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.btn-star-notice:active {
+  transform: scale(1.3);
+}
+
+.star-svg {
+  transition: all 0.2s ease;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.08));
+}
+
+.star-svg.is-starred {
+  filter: drop-shadow(0 2px 6px rgba(245, 158, 11, 0.5));
+  transform: scale(1.08);
+}
+
+/* ==========================================
    📖 오늘의 말씀 카드 스타일 (고운바탕 폰트 적용)
    ========================================== */
 .daily-verse-box {
@@ -489,6 +660,34 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.load-more-archive-box {
+  text-align: center;
+  padding: 8px 0 4px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.btn-load-more-archive {
+  width: 100%;
+  max-width: 340px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 12px;
+  background: var(--bg-soft, #f1f5f9);
+  color: var(--primary-navy, #1e293b);
+  border: 1.5px solid var(--border-color, #cbd5e1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.btn-load-more-archive:hover, .btn-load-more-archive:active {
+  background: var(--primary-navy, #1e293b);
+  color: #ffffff;
+  border-color: var(--primary-navy, #1e293b);
 }
 
 .card-date {
@@ -1399,64 +1598,85 @@ body {
   transform: scale(0.98);
 }
 
+#modalImageViewer {
+  padding: 0 !important;
+  background: rgba(0, 0, 0, 0.96) !important;
+}
+
 .image-viewer-container {
-  position: relative;
-  max-width: 95vw;
-  max-height: 92vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 .viewer-zoom-controls {
-  position: absolute;
-  top: -48px;
+  position: fixed;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 8px;
-  background: rgba(15, 23, 42, 0.85);
-  padding: 4px 10px;
-  border-radius: 20px;
-  backdrop-filter: blur(8px);
-  z-index: 25;
+  gap: 10px;
+  background: rgba(15, 23, 42, 0.88);
+  padding: 8px 16px;
+  border-radius: 30px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  z-index: 10001;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
 }
 
 .btn-zoom-action {
   background: rgba(255, 255, 255, 0.2);
   color: #FFFFFF;
   border: none;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .btn-zoom-action:active {
   background: rgba(255, 255, 255, 0.4);
+  transform: scale(0.95);
 }
 
 .viewer-img-wrap {
   overflow: hidden;
-  max-width: 100%;
-  max-height: 82vh;
+  width: 100vw;
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: 0;
   touch-action: none;
+  position: relative;
 }
 
 .viewer-img {
-  max-width: 100%;
-  max-height: 82vh;
+  max-width: 100vw;
+  max-height: 100vh;
+  width: auto;
+  height: auto;
   object-fit: contain;
-  border-radius: 12px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-  background-color: #000;
+  border-radius: 0;
+  box-shadow: none;
+  background-color: transparent;
   transition: transform 0.08s ease-out;
   transform-origin: center center;
   user-select: none;
@@ -1464,38 +1684,52 @@ body {
 }
 
 .viewer-caption {
-  margin-top: 10px;
+  position: fixed;
+  top: calc(18px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
   color: #FFFFFF;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   text-align: center;
-  background: rgba(15, 23, 42, 0.85);
-  padding: 6px 16px;
+  background: rgba(15, 23, 42, 0.88);
+  padding: 8px 20px;
   border-radius: 20px;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  z-index: 10000;
+  max-width: 75vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 .btn-close-image-viewer {
-  position: absolute;
-  top: -16px;
-  right: -16px;
-  width: 38px;
-  height: 38px;
+  position: fixed;
+  top: calc(16px + env(safe-area-inset-top, 0px));
+  right: 16px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.95);
-  color: #0F172A;
-  border: 1.5px solid var(--border-light);
-  font-size: 20px;
+  background: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  font-size: 22px;
   font-weight: 900;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  z-index: 20;
-  transition: transform 0.15s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 10001;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: transform 0.15s ease, background 0.15s ease;
 }
 
 .btn-close-image-viewer:active {
   transform: scale(0.9);
+  background: rgba(255, 255, 255, 0.45);
 }

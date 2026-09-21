@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=57">
+  <link rel="stylesheet" href="css/styles.css?v=1013">
 </head>
 <body>
   <!-- 메인 앱 콘테이너 -->
@@ -51,8 +51,35 @@
       <section id="tab-notice" class="tab-pane active">
         <div class="pane-header">
           <h2>📢 성가대 공지사항</h2>
-          <button class="btn-add-content officer-only hidden" onclick="app.openNoticeModal()">
-            ➕ 공지 작성
+          <div class="pane-header-actions">
+            <button type="button" class="btn-icon-action" id="btnToggleNoticeSearch" onclick="app.toggleNoticeSearch()" title="공지 검색">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="7"></circle>
+                <line x1="21" y1="21" x2="16.35" y2="16.35"></line>
+              </svg>
+            </button>
+            <button class="btn-add-content officer-only hidden" onclick="app.openNoticeModal()">
+              ➕ 공지 작성
+            </button>
+          </div>
+        </div>
+
+        <!-- 🔍 펼쳐지는 공지사항 실시간 검색창 -->
+        <div id="noticeSearchBox" class="notice-search-box hidden">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="noticeSearchInput" placeholder="공지 제목 또는 내용 검색..." oninput="app.onNoticeSearchInput(this.value)">
+            <button type="button" class="btn-clear-search" id="btnClearNoticeSearch" onclick="app.clearNoticeSearch()" title="지우기">✕</button>
+          </div>
+        </div>
+
+        <!-- 🏷️ 공지 필터 칩 (전체 공지 vs ⭐ 즐겨찾기) -->
+        <div class="notice-filter-bar">
+          <button type="button" class="notice-filter-chip active" id="btnFilterNoticeAll" onclick="app.setNoticeFilter('all')">
+            📋 전체 공지
+          </button>
+          <button type="button" class="notice-filter-chip" id="btnFilterNoticeFav" onclick="app.setNoticeFilter('fav')">
+            ⭐ 즐겨찾기 <span id="noticeFavCountBadge" class="filter-count-badge">0</span>
           </button>
         </div>
 
@@ -637,13 +664,13 @@
     </div>
   </div>
 
-  <script src="js/storage.js?v=1005"></script>
-  <script src="js/app.js?v=1005"></script>
+  <script src="js/storage.js?v=1013"></script>
+  <script src="js/app.js?v=1013"></script>
   <script>
     // 서비스 워커 등록 및 실시간 캐시 갱신 (PWA)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=1005')
+        navigator.serviceWorker.register('sw.js?v=1013')
           .then(reg => {
             console.log('PWA ServiceWorker registered', reg);
             reg.update(); // 강제 SW 최신버전 업데이트 검사
