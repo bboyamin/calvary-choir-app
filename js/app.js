@@ -688,11 +688,44 @@ class ChoirApp {
     this.renderNotices();
   }
 
+  getStarSvg(starred) {
+    return starred ? `
+      <svg class="star-svg is-starred" width="22" height="22" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+      </svg>
+    ` : `
+      <svg class="star-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+      </svg>
+    `;
+  }
+
   toggleNoticeFavorite(noticeId, event) {
-    if (event) event.stopPropagation();
-    this.storage.toggleFavoriteNotice(noticeId);
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    const ids = this.storage.toggleFavoriteNotice(noticeId);
     this.updateNoticeFavBadge();
-    this.renderNotices();
+    const isFav = ids.includes(noticeId);
+
+    // 1. 만약 '즐겨찾기 전용' 필터 모드라면 목록 갱신을 위해 렌더링
+    if (this.noticeFilter === 'fav') {
+      this.renderNotices();
+      return;
+    }
+
+    // 2. 일반 '전체 공지' 모드라면 전체 DOM을 허물지 않고 해당 별 아이콘만 0.001초 만에 미세 업데이트 (화면 깜빡임/새로고침/멈춤 현상 100% 방지)
+    const cardEl = document.getElementById(`notice_card_${noticeId}`);
+    if (cardEl) {
+      const starBtn = cardEl.querySelector('.btn-star-notice');
+      if (starBtn) {
+        starBtn.classList.toggle('is-starred', isFav);
+        starBtn.title = isFav ? '즐겨찾기 해제' : '즐겨찾기 추가';
+        starBtn.innerHTML = this.getStarSvg(isFav);
+      }
+    }
   }
 
   updateNoticeFavBadge() {
@@ -771,19 +804,9 @@ class ChoirApp {
       const isExpanded = this.expandedNoticeIds && this.expandedNoticeIds.has(item.id);
       const isFav = favIds.has(item.id);
 
-      const getStarSvg = (starred) => starred ? `
-        <svg class="star-svg is-starred" width="22" height="22" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-        </svg>
-      ` : `
-        <svg class="star-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-        </svg>
-      `;
-
       const starButtonHtml = `
         <button type="button" class="btn-star-notice ${isFav ? 'is-starred' : ''}" onclick="app.toggleNoticeFavorite('${item.id}', event)" title="${isFav ? '즐겨찾기 해제' : '즐겨찾기 추가'}">
-          ${getStarSvg(isFav)}
+          ${this.getStarSvg(isFav)}
         </button>
       `;
 
