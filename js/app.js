@@ -2365,36 +2365,17 @@ class ChoirApp {
   }
 
   convertMediaToPdf(wrapId, fileId, imgEl) {
+    if (imgEl) {
+      imgEl.onerror = null; // 🛑 무한 재귀 호출 및 모바일 멈춤 현상 100% 방지 (이벤트 핸들러 즉시 제거)
+    }
+
     // 1. 이미 이미지 파일(isPdf: false)로 확정되었으면 절대로 PDF 뷰어로 전환하지 않음
     if (this.drivePdfCache && this.drivePdfCache[fileId] === false) {
-      if (imgEl && !imgEl.dataset.fallbackTried) {
-        imgEl.dataset.fallbackTried = 'true';
-        imgEl.src = `https://drive.google.com/uc?export=view&id=${fileId}`;
-      }
       return;
     }
 
-    // 2. 백그라운드 PDF 검사가 진행 중인 경우(undefined) 1차 대체 이미지 시도 후 재검사
-    if (!this.drivePdfCache || this.drivePdfCache[fileId] === undefined) {
-      if (imgEl && !imgEl.dataset.fallbackTried) {
-        imgEl.dataset.fallbackTried = 'true';
-        imgEl.src = `https://drive.google.com/uc?export=view&id=${fileId}`;
-      }
-      setTimeout(() => {
-        if (this.drivePdfCache && this.drivePdfCache[fileId] === true) {
-          const wrap = document.getElementById(wrapId);
-          if (wrap) {
-            const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-            const openUrl = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
-            wrap.innerHTML = this.getPdfViewerHtml(embedUrl, openUrl);
-          }
-        }
-      }, 1000);
-      return;
-    }
-
-    // 3. 백그라운드 검사가 완료되었고 100% PDF(true)임이 확인된 경우에만 PDF 뷰어로 전환
-    if (this.drivePdfCache[fileId] === true) {
+    // 2. 백그라운드 검사가 완료되었고 100% PDF(true)임이 확인된 경우에만 PDF 뷰어로 전환
+    if (this.drivePdfCache && this.drivePdfCache[fileId] === true) {
       const wrap = document.getElementById(wrapId);
       if (!wrap) return;
       const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
