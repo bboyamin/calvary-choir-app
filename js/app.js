@@ -680,12 +680,67 @@ class ChoirApp {
   }
 
   setNoticeFilter(filterType) {
+    if (this.noticeFilter === filterType) return;
     this.noticeFilter = filterType;
+
     const btnAll = document.getElementById('btnFilterNoticeAll');
     const btnFav = document.getElementById('btnFilterNoticeFav');
     if (btnAll) btnAll.classList.toggle('active', filterType === 'all');
     if (btnFav) btnFav.classList.toggle('active', filterType === 'fav');
-    this.renderNotices();
+
+    this.applyNoticeFilterInDom();
+  }
+
+  applyNoticeFilterInDom() {
+    const listEl = document.getElementById('noticeList');
+    if (!listEl) return;
+
+    const favIds = new Set(this.storage.getFavoriteNoticeIds());
+    const cards = listEl.querySelectorAll('.item-card');
+
+    let cardCount = 0;
+    cards.forEach(c => {
+      if (c.id && c.id.startsWith('notice_card_')) cardCount++;
+    });
+
+    if (cardCount === 0) {
+      this.renderNotices();
+      return;
+    }
+
+    let visibleCount = 0;
+    cards.forEach(card => {
+      if (card.id && card.id.startsWith('notice_card_')) {
+        const noticeId = card.id.replace('notice_card_', '');
+        if (this.noticeFilter === 'fav') {
+          const isFav = favIds.has(noticeId);
+          card.style.display = isFav ? '' : 'none';
+          if (isFav) visibleCount++;
+        } else {
+          card.style.display = '';
+          visibleCount++;
+        }
+      }
+    });
+
+    let emptyFavEl = document.getElementById('notice_empty_fav_msg');
+    if (this.noticeFilter === 'fav' && visibleCount === 0) {
+      if (!emptyFavEl) {
+        emptyFavEl = document.createElement('div');
+        emptyFavEl.id = 'notice_empty_fav_msg';
+        emptyFavEl.className = 'item-card';
+        emptyFavEl.style.cssText = 'text-align: center; padding: 30px 16px;';
+        emptyFavEl.innerHTML = `
+          <p style="font-size: 36px; margin-bottom: 8px;">⭐</p>
+          <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">즐겨찾기한 공지사항이 없습니다</h4>
+          <p class="card-body-text" style="color: var(--text-sub);">중요한 공지 카드 상단의 별(☆) 아이콘을 눌러 즐겨찾기에 추가해 보세요!</p>
+        `;
+        listEl.appendChild(emptyFavEl);
+      }
+      emptyFavEl.style.display = '';
+    } else if (emptyFavEl) {
+      emptyFavEl.style.display = 'none';
+    }
   }
 
   getStarSvg(starred) {
@@ -710,7 +765,6 @@ class ChoirApp {
       this.togglingNoticeSet = new Set();
     }
 
-    // 🛑 1. 디바운스 잠금: 스마트폰에서 빠른 연속 연타(0.3초 내) 중복 실행 완벽 방지
     if (this.togglingNoticeSet.has(noticeId)) {
       return;
     }
@@ -721,37 +775,29 @@ class ChoirApp {
 
     const cardEl = document.getElementById(`notice_card_${noticeId}`);
 
-    // 2. '즐겨찾기 전용' 필터 모드인 경우 (해제 전용)
     if (this.noticeFilter === 'fav') {
-      // 🛑 절대적 해제(false) 처리: 연타하더라도 재등록되는 부작용 100% 방지
       this.storage.setFavoriteNotice(noticeId, false);
       this.updateNoticeFavBadge();
 
       if (cardEl) {
-        // 🛑 터치 이벤트 즉시 무력화 및 부드러운 아웃 애니메이션
         cardEl.style.pointerEvents = 'none';
         cardEl.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
         cardEl.style.opacity = '0';
         cardEl.style.transform = 'scale(0.95)';
 
         setTimeout(() => {
-          cardEl.remove();
-          const listEl = document.getElementById('noticeList');
-          if (listEl && listEl.querySelectorAll('.item-card').length === 0) {
-            listEl.innerHTML = `
-              <div class="item-card" style="text-align: center; padding: 30px 16px;">
-                <p style="font-size: 36px; margin-bottom: 8px;">⭐</p>
-                <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">즐겨찾기한 공지사항이 없습니다</h4>
-                <p class="card-body-text" style="color: var(--text-sub);">중요한 공지 카드 상단의 별(☆) 아이콘을 눌러 즐겨찾기에 추가해 보세요!</p>
-              </div>
-            `;
-          }
+          cardEl.style.display = 'none';
+          cardEl.style.pointerEvents = '';
+          cardEl.style.opacity = '';
+          cardEl.style.transform = '';
+          this.applyNoticeFilterInDom();
         }, 200);
+      } else {
+        this.applyNoticeFilterInDom();
       }
       return;
     }
 
-    // 3. '전체 공지' 모드인 경우
     const currentFavs = this.storage.getFavoriteNoticeIds();
     const isNowFav = !currentFavs.includes(noticeId);
     this.storage.setFavoriteNotice(noticeId, isNowFav);
@@ -783,28 +829,20 @@ class ChoirApp {
     if (!listEl) return;
     const rawNotices = this.storage.get(STORAGE_KEYS.NOTICES);
     const isOfficer = this.storage.isOfficer();
-    const favIds = new Set(this.storage.getFavoriteNoticeIds());
 
     if (rawNotices.length === 0) {
       listEl.innerHTML = `<div class="item-card"><p class="card-body-text">등록된 공지사항이 없습니다.</p></div>`;
       return;
     }
 
-    // 최신 생성 시각 내림차순 정렬
     const notices = [...rawNotices].sort((a, b) => {
       const timeDiff = this.getItemTimestamp(b) - this.getItemTimestamp(a);
       if (timeDiff !== 0) return timeDiff;
       return (b.date || '').localeCompare(a.date || '');
     });
 
-    // 1. 필터링 (즐겨찾기 전용 vs 전체)
-    let filteredNotices = notices;
-    if (this.noticeFilter === 'fav') {
-      filteredNotices = filteredNotices.filter(item => favIds.has(item.id));
-    }
-
-    // 2. 검색어 필터링 (검색창 입력 시)
     const q = this.noticeSearchQuery;
+    let filteredNotices = notices;
     if (q) {
       filteredNotices = filteredNotices.filter(item => {
         const title = (item.title || '').toLowerCase();
@@ -813,30 +851,18 @@ class ChoirApp {
       });
     }
 
-    // 빈 검색/즐겨찾기 결과 안내
-    if (filteredNotices.length === 0) {
-      if (this.noticeFilter === 'fav') {
-        listEl.innerHTML = `
-          <div class="item-card" style="text-align: center; padding: 30px 16px;">
-            <p style="font-size: 36px; margin-bottom: 8px;">⭐</p>
-            <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">즐겨찾기한 공지사항이 없습니다</h4>
-            <p class="card-body-text" style="color: var(--text-sub);">중요한 공지 카드 상단의 별(☆) 아이콘을 눌러 즐겨찾기에 추가해 보세요!</p>
-          </div>
-        `;
-        return;
-      }
-      if (q) {
-        listEl.innerHTML = `
-          <div class="item-card" style="text-align: center; padding: 30px 16px;">
-            <p style="font-size: 36px; margin-bottom: 8px;">🔍</p>
-            <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">검색 결과가 없습니다</h4>
-            <p class="card-body-text" style="color: var(--text-sub);">'${this.escapeHtml(q)}' 와(과) 일치하는 공지사항이 없습니다.</p>
-          </div>
-        `;
-        return;
-      }
+    if (filteredNotices.length === 0 && q) {
+      listEl.innerHTML = `
+        <div class="item-card" style="text-align: center; padding: 30px 16px;">
+          <p style="font-size: 36px; margin-bottom: 8px;">🔍</p>
+          <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">검색 결과가 없습니다</h4>
+          <p class="card-body-text" style="color: var(--text-sub);">'${this.escapeHtml(q)}' 와(과) 일치하는 공지사항이 없습니다.</p>
+        </div>
+      `;
+      return;
     }
 
+    const favIds = new Set(this.storage.getFavoriteNoticeIds());
     const renderNoticeCard = (item) => {
       const content = item.content || '';
       const isLong = content.length > 120 || (content.match(/\n/g) || []).length >= 3;
@@ -899,10 +925,11 @@ class ChoirApp {
       `;
     };
 
-    // 검색 중이거나 즐겨찾기 필터 모드일 때는 보관함 구분 없이 일괄 표시
-    if (q || this.noticeFilter === 'fav') {
+    // 검색 중일 때는 보관함 구분 없이 일괄 표시
+    if (q) {
       const html = filteredNotices.map(renderNoticeCard).join('');
       if (listEl.innerHTML !== html) listEl.innerHTML = html;
+      this.applyNoticeFilterInDom();
       return;
     }
 
@@ -941,6 +968,8 @@ class ChoirApp {
     if (listEl.innerHTML !== html) {
       listEl.innerHTML = html;
     }
+
+    this.applyNoticeFilterInDom();
   }
 
   onNoticeArchiveToggle(detailsEl) {
