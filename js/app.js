@@ -2330,13 +2330,13 @@ class ChoirApp {
     url = url.trim();
     const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/) || url.match(/\/d\/([a-zA-Z0-9_-]+)/);
     if (fileIdMatch && fileIdMatch[1]) {
-      return `https://drive.google.com/thumbnail?id=${fileIdMatch[1]}&sz=w1200`;
+      return `https://drive.google.com/thumbnail?id=${fileIdMatch[1]}&sz=w800`;
     }
     if (url.includes('lh3.googleusercontent.com/d/')) {
       const parts = url.split('/d/');
       if (parts[1]) {
         const id = parts[1].split('?')[0];
-        return `https://drive.google.com/thumbnail?id=${id}&sz=w1200`;
+        return `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
       }
     }
     return url;
@@ -2362,7 +2362,7 @@ class ChoirApp {
       return this.getPdfViewerHtml(embedUrl, openUrl);
     }
 
-    // 2. 구글 드라이브 주소인 경우 1차 이미지 표시 + 백그라운드 100% 실시간 PDF 파일 타입 검사 수행
+    // 2. 구글 드라이브 주소인 경우 1차 이미지 표시 + 백그라운드 실시간 PDF 파일 타입 검사 수행
     const convertedImg = this.convertGoogleDriveUrl(url);
     const escapedTitle = this.escapeHtml(title);
     const wrapId = fileId ? `media_wrap_${fileId}` : ('media_wrap_' + Math.random().toString(36).substring(2, 9));
@@ -2372,12 +2372,12 @@ class ChoirApp {
 
       return `
         <div id="${wrapId}">
-          <img src="${convertedImg}" referrerpolicy="no-referrer" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${convertedImg}', '${escapedTitle}')" onerror="app.convertMediaToPdf('${wrapId}', '${fileId}', this)" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">
+          <img src="${convertedImg}" loading="lazy" referrerpolicy="no-referrer" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${convertedImg}', '${escapedTitle}')" onerror="app.convertMediaToPdf('${wrapId}', '${fileId}', this)" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">
         </div>
       `;
     }
 
-    return `<img src="${convertedImg}" referrerpolicy="no-referrer" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${convertedImg}', '${escapedTitle}')" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">`;
+    return `<img src="${convertedImg}" loading="lazy" referrerpolicy="no-referrer" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${convertedImg}', '${escapedTitle}')" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">`;
   }
 
   async checkDrivePdfFile(fileId) {
@@ -2385,9 +2385,22 @@ class ChoirApp {
     if (!this.drivePdfCache) this.drivePdfCache = {};
     if (this.drivePdfCache[fileId] !== undefined) return;
 
+    // 🛑 1. 중복 요청 방지: 요청 시작 시점에 즉시 'pending' 처리하여 동일 fileId의 중복 fetch 전면 차단
+    this.drivePdfCache[fileId] = 'pending';
+
+    let timeoutId = null;
     try {
-      const res = await fetch(`https://drive.google.com/file/d/${fileId}/view`);
-      if (!res.ok) {
+      // 🛑 2. 타임아웃 3.5초 제한 (느린 스마트폰 통신망에서 무한 대기/먹통 현상 100% 방지)
+      const controller = new AbortController();
+      timeoutId = setTimeout(() => controller.abort(), 3500);
+
+      const res = await fetch(`https://drive.google.com/file/d/${fileId}/view`, {
+        signal: controller.signal
+      });
+
+      if (timeoutId) clearTimeout(timeoutId);
+
+      if (!res || !res.ok) {
         this.drivePdfCache[fileId] = false;
         return;
       }
@@ -2400,14 +2413,15 @@ class ChoirApp {
 
       if (isPdf) {
         const wrapEl = document.getElementById(`media_wrap_${fileId}`);
-        if (wrapEl) {
+        // 🛑 3. 화면 이동 후에도 안전하게 현재 활성 DOM에 위치할 때만 PDF 뷰어로 업데이트
+        if (wrapEl && document.body.contains(wrapEl)) {
           const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
           const openUrl = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
           wrapEl.innerHTML = this.getPdfViewerHtml(embedUrl, openUrl);
         }
       }
     } catch (e) {
-      console.warn('Drive PDF check error:', e);
+      if (timeoutId) clearTimeout(timeoutId);
       this.drivePdfCache[fileId] = false;
     }
   }
