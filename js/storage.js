@@ -1015,6 +1015,20 @@ class ChoirStorage {
     }
   }
 
+  setFavoriteNotice(noticeId, targetFavState) {
+    const ids = this.getFavoriteNoticeIds();
+    const idx = ids.indexOf(noticeId);
+    if (targetFavState && idx < 0) {
+      ids.push(noticeId);
+    } else if (!targetFavState && idx >= 0) {
+      ids.splice(idx, 1);
+    }
+    try {
+      localStorage.setItem('calvary_choir_fav_notices', JSON.stringify(ids));
+    } catch (e) {}
+    return ids;
+  }
+
   toggleFavoriteNotice(noticeId) {
     const ids = this.getFavoriteNoticeIds();
     const idx = ids.indexOf(noticeId);

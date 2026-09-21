@@ -706,46 +706,63 @@ class ChoirApp {
       event.stopPropagation();
     }
 
-    const ids = this.storage.toggleFavoriteNotice(noticeId);
-    this.updateNoticeFavBadge();
-    const isFav = ids.includes(noticeId);
+    if (!this.togglingNoticeSet) {
+      this.togglingNoticeSet = new Set();
+    }
+
+    // 🛑 1. 디바운스 잠금: 스마트폰에서 빠른 연속 연타(0.3초 내) 중복 실행 완벽 방지
+    if (this.togglingNoticeSet.has(noticeId)) {
+      return;
+    }
+    this.togglingNoticeSet.add(noticeId);
+    setTimeout(() => {
+      this.togglingNoticeSet.delete(noticeId);
+    }, 350);
 
     const cardEl = document.getElementById(`notice_card_${noticeId}`);
 
-    // 1. '즐겨찾기 전용' 필터 모드인 경우
+    // 2. '즐겨찾기 전용' 필터 모드인 경우 (해제 전용)
     if (this.noticeFilter === 'fav') {
-      if (!isFav && cardEl) {
-        // 즐겨찾기 해제 시: 해당 카드 1개만 DOM에서 즉시 제거 (전체 렌더링/이미지 재로드 100% 방지, 화면 멈춤/다운 현상 100% 차단)
-        cardEl.remove();
+      // 🛑 절대적 해제(false) 처리: 연타하더라도 재등록되는 부작용 100% 방지
+      this.storage.setFavoriteNotice(noticeId, false);
+      this.updateNoticeFavBadge();
 
-        const listEl = document.getElementById('noticeList');
-        if (listEl && listEl.querySelectorAll('.item-card').length === 0) {
-          listEl.innerHTML = `
-            <div class="item-card" style="text-align: center; padding: 30px 16px;">
-              <p style="font-size: 36px; margin-bottom: 8px;">⭐</p>
-              <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">즐겨찾기한 공지사항이 없습니다</h4>
-              <p class="card-body-text" style="color: var(--text-sub);">중요한 공지 카드 상단의 별(☆) 아이콘을 눌러 즐겨찾기에 추가해 보세요!</p>
-            </div>
-          `;
-        }
-      } else if (cardEl) {
-        const starBtn = cardEl.querySelector('.btn-star-notice');
-        if (starBtn) {
-          starBtn.classList.toggle('is-starred', isFav);
-          starBtn.title = isFav ? '즐겨찾기 해제' : '즐겨찾기 추가';
-          starBtn.innerHTML = this.getStarSvg(isFav);
-        }
+      if (cardEl) {
+        // 🛑 터치 이벤트 즉시 무력화 및 부드러운 아웃 애니메이션
+        cardEl.style.pointerEvents = 'none';
+        cardEl.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+        cardEl.style.opacity = '0';
+        cardEl.style.transform = 'scale(0.95)';
+
+        setTimeout(() => {
+          cardEl.remove();
+          const listEl = document.getElementById('noticeList');
+          if (listEl && listEl.querySelectorAll('.item-card').length === 0) {
+            listEl.innerHTML = `
+              <div class="item-card" style="text-align: center; padding: 30px 16px;">
+                <p style="font-size: 36px; margin-bottom: 8px;">⭐</p>
+                <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">즐겨찾기한 공지사항이 없습니다</h4>
+                <p class="card-body-text" style="color: var(--text-sub);">중요한 공지 카드 상단의 별(☆) 아이콘을 눌러 즐겨찾기에 추가해 보세요!</p>
+              </div>
+            `;
+          }
+        }, 200);
       }
       return;
     }
 
-    // 2. '전체 공지' 모드인 경우: 별 아이콘만 0.001초 만에 미세 업데이트
+    // 3. '전체 공지' 모드인 경우
+    const currentFavs = this.storage.getFavoriteNoticeIds();
+    const isNowFav = !currentFavs.includes(noticeId);
+    this.storage.setFavoriteNotice(noticeId, isNowFav);
+    this.updateNoticeFavBadge();
+
     if (cardEl) {
       const starBtn = cardEl.querySelector('.btn-star-notice');
       if (starBtn) {
-        starBtn.classList.toggle('is-starred', isFav);
-        starBtn.title = isFav ? '즐겨찾기 해제' : '즐겨찾기 추가';
-        starBtn.innerHTML = this.getStarSvg(isFav);
+        starBtn.classList.toggle('is-starred', isNowFav);
+        starBtn.title = isNowFav ? '즐겨찾기 해제' : '즐겨찾기 추가';
+        starBtn.innerHTML = this.getStarSvg(isNowFav);
       }
     }
   }
