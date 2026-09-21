@@ -706,27 +706,16 @@ class ChoirApp {
 
     this.noticeSearchQuery = '';
     if (searchInput) searchInput.value = '';
-    this.renderNotices(true);
+    this.renderNotices();
   }
 
-  renderNotices(force = false) {
+  renderNotices() {
     this.renderDailyVerse();
 
     const listEl = document.getElementById('noticeList');
     if (!listEl) return;
     const rawNotices = this.storage.get(STORAGE_KEYS.NOTICES);
     const isOfficer = this.storage.isOfficer();
-
-    const q = this.noticeSearchQuery || '';
-    const archiveOpen = !!this.isNoticeArchiveOpen;
-    const archiveCount = this.visibleNoticeArchiveCount || 5;
-
-    // 🛑 3. 렌더링 상태 키 비교: 동일한 조건이면 불필요한 DOM 전체 파괴/재생성을 스킵하여 스마트폰 멈춤/다운 현상 100% 방지
-    const stateKey = `${q}_${archiveOpen ? '1' : '0'}_${archiveCount}_${rawNotices.length}_${isOfficer ? '1' : '0'}`;
-    if (!force && this.lastNoticeRenderStateKey === stateKey) {
-      return;
-    }
-    this.lastNoticeRenderStateKey = stateKey;
 
     if (rawNotices.length === 0) {
       listEl.innerHTML = `<div class="item-card"><p class="card-body-text">등록된 공지사항이 없습니다.</p></div>`;
