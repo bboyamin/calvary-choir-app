@@ -679,89 +679,13 @@ class ChoirApp {
     this.renderNotices();
   }
 
-  setNoticeFilter(filterType) {
-    if (this.noticeFilter === filterType) return;
-    this.noticeFilter = filterType;
-
-    const btnAll = document.getElementById('btnFilterNoticeAll');
-    const btnFav = document.getElementById('btnFilterNoticeFav');
-    if (btnAll) btnAll.classList.toggle('active', filterType === 'all');
-    if (btnFav) btnFav.classList.toggle('active', filterType === 'fav');
-
-    this.renderNotices();
-  }
-
-  getStarSvg(starred) {
-    return starred ? `
-      <svg class="star-svg is-starred" width="22" height="22" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-      </svg>
-    ` : `
-      <svg class="star-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-      </svg>
-    `;
-  }
-
-  toggleNoticeFavorite(noticeId, event) {
-    if (event) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-
-    if (!this.togglingNoticeSet) {
-      this.togglingNoticeSet = new Set();
-    }
-
-    if (this.togglingNoticeSet.has(noticeId)) {
-      return;
-    }
-    this.togglingNoticeSet.add(noticeId);
-    setTimeout(() => {
-      this.togglingNoticeSet.delete(noticeId);
-    }, 350);
-
-    // 1. '즐겨찾기 전용' 필터 모드인 경우: 해제 후 동기식 즉시 재렌더링 (비동기 타임아웃 및 WebKit 터치 락 100% 차단)
-    if (this.noticeFilter === 'fav') {
-      this.storage.setFavoriteNotice(noticeId, false);
-      this.renderNotices();
-      return;
-    }
-
-    // 2. '전체 공지' 모드인 경우: 해당 별 아이콘 상태만 동기식 갱신
-    const currentFavs = this.storage.getFavoriteNoticeIds();
-    const isNowFav = !currentFavs.includes(noticeId);
-    this.storage.setFavoriteNotice(noticeId, isNowFav);
-    this.updateNoticeFavBadge();
-
-    const cardEl = document.getElementById(`notice_card_${noticeId}`);
-    if (cardEl) {
-      const starBtn = cardEl.querySelector('.btn-star-notice');
-      if (starBtn) {
-        starBtn.classList.toggle('is-starred', isNowFav);
-        starBtn.title = isNowFav ? '즐겨찾기 해제' : '즐겨찾기 추가';
-        starBtn.innerHTML = this.getStarSvg(isNowFav);
-      }
-    }
-  }
-
-  updateNoticeFavBadge() {
-    const badge = document.getElementById('noticeFavCountBadge');
-    if (badge) {
-      const favIds = this.storage.getFavoriteNoticeIds();
-      badge.textContent = favIds.length;
-    }
-  }
-
   renderNotices() {
     this.renderDailyVerse();
-    this.updateNoticeFavBadge();
 
     const listEl = document.getElementById('noticeList');
     if (!listEl) return;
     const rawNotices = this.storage.get(STORAGE_KEYS.NOTICES);
     const isOfficer = this.storage.isOfficer();
-    const favIds = new Set(this.storage.getFavoriteNoticeIds());
 
     if (rawNotices.length === 0) {
       listEl.innerHTML = `<div class="item-card"><p class="card-body-text">등록된 공지사항이 없습니다.</p></div>`;
@@ -774,14 +698,8 @@ class ChoirApp {
       return (b.date || '').localeCompare(a.date || '');
     });
 
-    // 1. 필터링 (즐겨찾기 전용 vs 전체)
-    let filteredNotices = notices;
-    if (this.noticeFilter === 'fav') {
-      filteredNotices = filteredNotices.filter(item => favIds.has(item.id));
-    }
-
-    // 2. 검색어 필터링
     const q = this.noticeSearchQuery;
+    let filteredNotices = notices;
     if (q) {
       filteredNotices = filteredNotices.filter(item => {
         const title = (item.title || '').toLowerCase();
@@ -790,41 +708,21 @@ class ChoirApp {
       });
     }
 
-    // 3. 빈 결과 안내 (즐겨찾기 없음 / 검색 결과 없음)
-    if (filteredNotices.length === 0) {
-      if (this.noticeFilter === 'fav') {
-        listEl.innerHTML = `
-          <div class="item-card" style="text-align: center; padding: 30px 16px;">
-            <p style="font-size: 36px; margin-bottom: 8px;">⭐</p>
-            <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">즐겨찾기한 공지사항이 없습니다</h4>
-            <p class="card-body-text" style="color: var(--text-sub);">중요한 공지 카드 상단의 별(☆) 아이콘을 눌러 즐겨찾기에 추가해 보세요!</p>
-          </div>
-        `;
-        return;
-      }
-      if (q) {
-        listEl.innerHTML = `
-          <div class="item-card" style="text-align: center; padding: 30px 16px;">
-            <p style="font-size: 36px; margin-bottom: 8px;">🔍</p>
-            <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">검색 결과가 없습니다</h4>
-            <p class="card-body-text" style="color: var(--text-sub);">'${this.escapeHtml(q)}' 와(과) 일치하는 공지사항이 없습니다.</p>
-          </div>
-        `;
-        return;
-      }
+    if (filteredNotices.length === 0 && q) {
+      listEl.innerHTML = `
+        <div class="item-card" style="text-align: center; padding: 30px 16px;">
+          <p style="font-size: 36px; margin-bottom: 8px;">🔍</p>
+          <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">검색 결과가 없습니다</h4>
+          <p class="card-body-text" style="color: var(--text-sub);">'${this.escapeHtml(q)}' 와(과) 일치하는 공지사항이 없습니다.</p>
+        </div>
+      `;
+      return;
     }
 
     const renderNoticeCard = (item) => {
       const content = item.content || '';
       const isLong = content.length > 120 || (content.match(/\n/g) || []).length >= 3;
       const isExpanded = this.expandedNoticeIds && this.expandedNoticeIds.has(item.id);
-      const isFav = favIds.has(item.id);
-
-      const starButtonHtml = `
-        <button type="button" class="btn-star-notice ${isFav ? 'is-starred' : ''}" onclick="app.toggleNoticeFavorite('${item.id}', event)" title="${isFav ? '즐겨찾기 해제' : '즐겨찾기 추가'}">
-          ${this.getStarSvg(isFav)}
-        </button>
-      `;
 
       if (!isLong) {
         return `
@@ -833,7 +731,6 @@ class ChoirApp {
               <span class="card-badge badge-notice">📢 성가대 공지</span>
               <div class="card-top-right">
                 <span class="card-date">${item.date}</span>
-                ${starButtonHtml}
                 ${isOfficer ? `<button class="btn-delete-card" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>` : ''}
               </div>
             </div>
@@ -853,7 +750,6 @@ class ChoirApp {
             <span class="card-badge badge-notice">📢 성가대 공지</span>
             <div class="card-top-right">
               <span class="card-date">${item.date}</span>
-              ${starButtonHtml}
               ${isOfficer ? `<button class="btn-delete-card" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>` : ''}
             </div>
           </div>
@@ -876,8 +772,7 @@ class ChoirApp {
       `;
     };
 
-    // 4. 즐겨찾기 전용 모드이거나 검색 중일 때는 보관함 아코디언 없이 대상 공지 전체를 펼쳐서 직접 표시
-    if (q || this.noticeFilter === 'fav') {
+    if (q) {
       const html = filteredNotices.map(renderNoticeCard).join('');
       if (listEl.innerHTML !== html) {
         listEl.innerHTML = html;
@@ -885,7 +780,6 @@ class ChoirApp {
       return;
     }
 
-    // 5. 전체 공지 모드 + 검색어 없음: 최근 상위 4개 + 지난 공지사항 보관함 접힘 처리
     const MAX_RECENT = 4;
     const recentNotices = filteredNotices.slice(0, MAX_RECENT);
     const olderNotices = filteredNotices.slice(MAX_RECENT);

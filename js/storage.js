@@ -1005,43 +1005,7 @@ class ChoirStorage {
   setMemberUnlocked(status) {
     localStorage.setItem('calvary_choir_member_unlocked', status ? 'true' : 'false');
   }
-
-  getFavoriteNoticeIds() {
-    try {
-      const data = localStorage.getItem('calvary_choir_fav_notices');
-      return data ? JSON.parse(data) : [];
-    } catch (e) {
-      return [];
-    }
-  }
-
-  setFavoriteNotice(noticeId, targetFavState) {
-    const ids = this.getFavoriteNoticeIds();
-    const idx = ids.indexOf(noticeId);
-    if (targetFavState && idx < 0) {
-      ids.push(noticeId);
-    } else if (!targetFavState && idx >= 0) {
-      ids.splice(idx, 1);
-    }
-    try {
-      localStorage.setItem('calvary_choir_fav_notices', JSON.stringify(ids));
-    } catch (e) {}
-    return ids;
-  }
-
-  toggleFavoriteNotice(noticeId) {
-    const ids = this.getFavoriteNoticeIds();
-    const idx = ids.indexOf(noticeId);
-    if (idx >= 0) {
-      ids.splice(idx, 1);
-    } else {
-      ids.push(noticeId);
-    }
-    try {
-      localStorage.setItem('calvary_choir_fav_notices', JSON.stringify(ids));
-    } catch (e) {}
-    return ids;
-  }
 }
 
 window.choirStorage = new ChoirStorage();
+
