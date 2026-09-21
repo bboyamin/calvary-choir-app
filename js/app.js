@@ -649,6 +649,7 @@ class ChoirApp {
     const searchBox = document.getElementById('noticeSearchBox');
     const searchBtn = document.getElementById('btnToggleNoticeSearch');
     const searchInput = document.getElementById('noticeSearchInput');
+    const clearBtn = document.getElementById('btnClearNoticeSearch');
 
     if (searchBox) {
       searchBox.classList.toggle('hidden', !this.isNoticeSearchOpen);
@@ -660,32 +661,72 @@ class ChoirApp {
       if (searchInput) {
         setTimeout(() => searchInput.focus(), 100);
       }
+      if (clearBtn) {
+        const hasText = searchInput && searchInput.value.trim().length > 0;
+        clearBtn.style.display = hasText ? 'flex' : 'none';
+      }
     } else {
-      if (this.noticeSearchQuery) {
+      if (this.noticeSearchQuery || (searchInput && searchInput.value)) {
         this.clearNoticeSearch();
       }
     }
   }
 
   onNoticeSearchInput(val) {
-    this.noticeSearchQuery = (val || '').trim().toLowerCase();
+    const rawVal = val || '';
+    const cleaned = rawVal.trim().toLowerCase();
+
+    const clearBtn = document.getElementById('btnClearNoticeSearch');
+    if (clearBtn) {
+      clearBtn.style.display = rawVal.length > 0 ? 'flex' : 'none';
+    }
+
+    if (this.noticeSearchQuery === cleaned) return;
+    this.noticeSearchQuery = cleaned;
     this.renderNotices();
   }
 
   clearNoticeSearch() {
-    this.noticeSearchQuery = '';
     const searchInput = document.getElementById('noticeSearchInput');
+    const clearBtn = document.getElementById('btnClearNoticeSearch');
+    const currentVal = searchInput ? searchInput.value : '';
+
+    if (clearBtn) clearBtn.style.display = 'none';
+
+    // 🛑 1. 이미 검색어와 입력창이 모두 비어있는 경우: 불필요한 DOM 전체 파괴/재생성 및 모바일 멈춤 현상 100% 방지
+    if (!this.noticeSearchQuery && !currentVal) {
+      if (searchInput) searchInput.value = '';
+      return;
+    }
+
+    // 🛑 2. 지우기 버튼 연속 연타 차단 (Debounce Lock)
+    if (this.isClearingNoticeSearch) return;
+    this.isClearingNoticeSearch = true;
+    setTimeout(() => { this.isClearingNoticeSearch = false; }, 300);
+
+    this.noticeSearchQuery = '';
     if (searchInput) searchInput.value = '';
-    this.renderNotices();
+    this.renderNotices(true);
   }
 
-  renderNotices() {
+  renderNotices(force = false) {
     this.renderDailyVerse();
 
     const listEl = document.getElementById('noticeList');
     if (!listEl) return;
     const rawNotices = this.storage.get(STORAGE_KEYS.NOTICES);
     const isOfficer = this.storage.isOfficer();
+
+    const q = this.noticeSearchQuery || '';
+    const archiveOpen = !!this.isNoticeArchiveOpen;
+    const archiveCount = this.visibleNoticeArchiveCount || 5;
+
+    // 🛑 3. 렌더링 상태 키 비교: 동일한 조건이면 불필요한 DOM 전체 파괴/재생성을 스킵하여 스마트폰 멈춤/다운 현상 100% 방지
+    const stateKey = `${q}_${archiveOpen ? '1' : '0'}_${archiveCount}_${rawNotices.length}_${isOfficer ? '1' : '0'}`;
+    if (!force && this.lastNoticeRenderStateKey === stateKey) {
+      return;
+    }
+    this.lastNoticeRenderStateKey = stateKey;
 
     if (rawNotices.length === 0) {
       listEl.innerHTML = `<div class="item-card"><p class="card-body-text">등록된 공지사항이 없습니다.</p></div>`;
