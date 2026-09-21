@@ -721,47 +721,20 @@ class ChoirApp {
       this.togglingNoticeSet.delete(noticeId);
     }, 350);
 
-    const cardEl = document.getElementById(`notice_card_${noticeId}`);
-
+    // 1. '즐겨찾기 전용' 필터 모드인 경우: 해제 후 동기식 즉시 재렌더링 (비동기 타임아웃 및 WebKit 터치 락 100% 차단)
     if (this.noticeFilter === 'fav') {
       this.storage.setFavoriteNotice(noticeId, false);
-      this.updateNoticeFavBadge();
-
-      if (cardEl) {
-        const starBtn = cardEl.querySelector('.btn-star-notice');
-        if (starBtn) {
-          starBtn.classList.remove('is-starred');
-          starBtn.title = '즐겨찾기 추가';
-          starBtn.innerHTML = this.getStarSvg(false);
-        }
-
-        cardEl.style.pointerEvents = 'none';
-        cardEl.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
-        cardEl.style.opacity = '0';
-        cardEl.style.transform = 'scale(0.95)';
-
-        setTimeout(() => {
-          cardEl.remove();
-          const listEl = document.getElementById('noticeList');
-          if (listEl && listEl.querySelectorAll('.item-card').length === 0) {
-            listEl.innerHTML = `
-              <div class="item-card" style="text-align: center; padding: 30px 16px;">
-                <p style="font-size: 36px; margin-bottom: 8px;">⭐</p>
-                <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">즐겨찾기한 공지사항이 없습니다</h4>
-                <p class="card-body-text" style="color: var(--text-sub);">중요한 공지 카드 상단의 별(☆) 아이콘을 눌러 즐겨찾기에 추가해 보세요!</p>
-              </div>
-            `;
-          }
-        }, 200);
-      }
+      this.renderNotices();
       return;
     }
 
+    // 2. '전체 공지' 모드인 경우: 해당 별 아이콘 상태만 동기식 갱신
     const currentFavs = this.storage.getFavoriteNoticeIds();
     const isNowFav = !currentFavs.includes(noticeId);
     this.storage.setFavoriteNotice(noticeId, isNowFav);
     this.updateNoticeFavBadge();
 
+    const cardEl = document.getElementById(`notice_card_${noticeId}`);
     if (cardEl) {
       const starBtn = cardEl.querySelector('.btn-star-notice');
       if (starBtn) {
