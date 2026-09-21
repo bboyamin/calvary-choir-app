@@ -1046,6 +1046,7 @@ class ChoirApp {
   // 🎵 4. 찬양 음원/영상 렌더링
   // ----------------------------------------------------
   renderPraises() {
+    this.populatePraiseMonthDropdown();
     const listAllEl = document.getElementById('praiseListAll');
     const listPartEl = document.getElementById('praiseListPart');
     let praises = this.storage.get(STORAGE_KEYS.PRAISES);
