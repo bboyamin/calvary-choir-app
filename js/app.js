@@ -749,6 +749,25 @@ class ChoirApp {
       return;
     }
 
+    const renderNoticeMediaItems = (item) => {
+      if (item.mediaList && Array.isArray(item.mediaList) && item.mediaList.length > 0) {
+        return item.mediaList.map(m => {
+          if (m.type === 'youtube' && m.url) {
+            return `<div class="video-responsive" style="margin-top: 10px;">${this.getYoutubeIframe(m.url)}</div>`;
+          }
+          if (m.type === 'media' && m.url) {
+            return `<div style="margin-top: 10px;">${this.getNoticeMediaHtml(m.url, item.title)}</div>`;
+          }
+          return '';
+        }).join('');
+      }
+
+      let html = '';
+      if (item.imageUrl) html += this.getNoticeMediaHtml(item.imageUrl, item.title);
+      if (item.youtubeUrl) html += `<div class="video-responsive">${this.getYoutubeIframe(item.youtubeUrl)}</div>`;
+      return html;
+    };
+
     const renderNoticeCard = (item) => {
       const content = item.content || '';
       const isLong = content.length > 120 || (content.match(/\n/g) || []).length >= 3;
@@ -766,8 +785,7 @@ class ChoirApp {
             </div>
             <h3 class="card-title">${item.title}</h3>
             <p class="card-body-text">${content}</p>
-            ${item.imageUrl ? this.getNoticeMediaHtml(item.imageUrl, item.title) : ''}
-            ${item.youtubeUrl ? `<div class="video-responsive">${this.getYoutubeIframe(item.youtubeUrl)}</div>` : ''}
+            ${renderNoticeMediaItems(item)}
           </div>
         `;
       }
@@ -791,8 +809,7 @@ class ChoirApp {
 
           <div class="notice-full-box" style="display: ${isExpanded ? 'block' : 'none'};">
             <p class="card-body-text notice-text-full">${content}</p>
-            ${item.imageUrl ? this.getNoticeMediaHtml(item.imageUrl, item.title) : ''}
-            ${item.youtubeUrl ? `<div class="video-responsive">${this.getYoutubeIframe(item.youtubeUrl)}</div>` : ''}
+            ${renderNoticeMediaItems(item)}
           </div>
 
           <button type="button" class="btn-toggle-expand" onclick="app.toggleNoticeExpand('${item.id}', this)">
@@ -891,18 +908,103 @@ class ChoirApp {
 
   openNoticeModal() {
     document.getElementById('formNotice').reset();
-    this.clearUploadedImage('noticeFilePhoto', 'noticePhotoPreview', 'noticePhotoData');
+    this.noticeMediaSlots = [Date.now()];
+    this.renderNoticeMediaSlots();
     this.openModal('modalNotice');
+  }
+
+  renderNoticeMediaSlots() {
+    const container = document.getElementById('noticeMediaListContainer');
+    const badge = document.getElementById('noticeMediaCountBadge');
+    const addBtn = document.getElementById('btnAddNoticeMedia');
+    if (!container) return;
+
+    if (!this.noticeMediaSlots || this.noticeMediaSlots.length === 0) {
+      this.noticeMediaSlots = [Date.now()];
+    }
+
+    const count = this.noticeMediaSlots.length;
+    if (badge) badge.textContent = `${count} / 5`;
+    if (addBtn) {
+      addBtn.disabled = count >= 5;
+      addBtn.style.opacity = count >= 5 ? '0.5' : '1';
+    }
+
+    const savedData = {};
+    this.noticeMediaSlots.forEach(id => {
+      const yt = document.getElementById(`noticeYoutube_${id}`)?.value || '';
+      const dataUrl = document.getElementById(`noticePhotoData_${id}`)?.value || '';
+      const imgUrl = document.getElementById(`noticeImageUrl_${id}`)?.value || '';
+      const previewHtml = document.getElementById(`noticePhotoPreview_${id}`)?.innerHTML || '';
+      const previewHidden = document.getElementById(`noticePhotoPreview_${id}`)?.classList.contains('hidden');
+      savedData[id] = { yt, dataUrl, imgUrl, previewHtml, previewHidden };
+    });
+
+    container.innerHTML = this.noticeMediaSlots.map((id, index) => `
+      <div class="notice-media-item-box" id="notice_media_slot_${id}">
+        <div class="notice-media-item-header">
+          <span class="notice-media-item-title">📌 첨부 #${index + 1}</span>
+          ${this.noticeMediaSlots.length > 1 ? `
+            <button type="button" class="btn-remove-media-slot" onclick="app.removeNoticeMediaSlot(${id})">✕ 삭제</button>
+          ` : ''}
+        </div>
+        <div class="form-group" style="margin-bottom: 8px;">
+          <label for="noticeYoutube_${id}" style="font-size: 12.5px;">🎥 유튜브 영상 링크 (선택)</label>
+          <input type="url" id="noticeYoutube_${id}" placeholder="https://www.youtube.com/watch?v=..." value="${this.escapeHtml(savedData[id]?.yt || '')}">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="noticeFilePhoto_${id}" style="font-size: 12.5px;">📷 사진 파일 / 📄 PDF 첨부 (선택)</label>
+          <input type="file" id="noticeFilePhoto_${id}" accept="image/*,.pdf" class="file-upload-input" onclick="this.value=''" onchange="app.handleImageUpload(event, 'noticePhotoPreview_${id}', 'noticePhotoData_${id}', 'noticeImageUrl_${id}')">
+          <input type="hidden" id="noticePhotoData_${id}" value="${this.escapeHtml(savedData[id]?.dataUrl || '')}">
+          <div id="noticePhotoPreview_${id}" class="photo-upload-preview ${savedData[id]?.previewHidden !== false ? 'hidden' : ''}">
+            ${savedData[id]?.previewHtml || ''}
+          </div>
+          <input type="text" id="noticeImageUrl_${id}" placeholder="또는 사진 주소 및 PDF / 구글드라이브 URL 직접 입력" style="margin-top: 6px;" value="${this.escapeHtml(savedData[id]?.imgUrl || '')}" oninput="app.clearFileInputOnly('noticeFilePhoto_${id}', 'noticePhotoPreview_${id}', 'noticePhotoData_${id}')">
+        </div>
+      </div>
+    `).join('');
+  }
+
+  addNoticeMediaSlot() {
+    if (!this.noticeMediaSlots) this.noticeMediaSlots = [Date.now()];
+    if (this.noticeMediaSlots.length >= 5) {
+      alert('첨부파일 및 영상은 최대 5개까지 등록할 수 있습니다.');
+      return;
+    }
+    this.noticeMediaSlots.push(Date.now() + Math.floor(Math.random() * 1000));
+    this.renderNoticeMediaSlots();
+  }
+
+  removeNoticeMediaSlot(id) {
+    if (!this.noticeMediaSlots || this.noticeMediaSlots.length <= 1) return;
+    this.noticeMediaSlots = this.noticeMediaSlots.filter(sId => sId !== id);
+    this.renderNoticeMediaSlots();
   }
 
   saveNotice(e) {
     e.preventDefault();
     const title = document.getElementById('noticeTitle').value.trim();
     const content = document.getElementById('noticeContent').value.trim();
-    const youtubeUrl = document.getElementById('noticeYoutube').value.trim();
-    const uploadedDataUrl = document.getElementById('noticePhotoData').value.trim();
-    const inputUrl = document.getElementById('noticeImageUrl').value.trim();
-    const imageUrl = uploadedDataUrl || this.convertGoogleDriveUrl(inputUrl);
+
+    const mediaList = [];
+    if (this.noticeMediaSlots && this.noticeMediaSlots.length > 0) {
+      this.noticeMediaSlots.forEach(id => {
+        const youtubeUrl = document.getElementById(`noticeYoutube_${id}`)?.value.trim() || '';
+        const uploadedDataUrl = document.getElementById(`noticePhotoData_${id}`)?.value.trim() || '';
+        const inputUrl = document.getElementById(`noticeImageUrl_${id}`)?.value.trim() || '';
+        const imageUrl = uploadedDataUrl || this.convertGoogleDriveUrl(inputUrl);
+
+        if (youtubeUrl) {
+          mediaList.push({ type: 'youtube', url: youtubeUrl });
+        }
+        if (imageUrl) {
+          mediaList.push({ type: 'media', url: imageUrl });
+        }
+      });
+    }
+
+    const firstYoutube = mediaList.find(m => m.type === 'youtube')?.url || '';
+    const firstMedia = mediaList.find(m => m.type === 'media')?.url || '';
 
     const notices = this.storage.get(STORAGE_KEYS.NOTICES);
     const now = Date.now();
@@ -911,8 +1013,9 @@ class ChoirApp {
       createdAt: now,
       title,
       content,
-      youtubeUrl,
-      imageUrl,
+      mediaList,
+      youtubeUrl: firstYoutube,
+      imageUrl: firstMedia,
       date: new Date().toISOString().split('T')[0]
     };
     notices.unshift(newNotice);

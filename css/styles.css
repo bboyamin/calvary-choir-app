@@ -746,6 +746,68 @@ body {
   cursor: pointer;
 }
 
+/* 📎 동적 미디어/첨부파일 슬롯 (최대 5개) 스타일 */
+.notice-media-item-box {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.notice-media-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed #CBD5E1;
+}
+
+.notice-media-item-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.btn-remove-media-slot {
+  background: #FEE2E2;
+  color: #EF4444;
+  border: none;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-add-media-slot {
+  width: 100%;
+  padding: 10px;
+  background: rgba(37, 99, 235, 0.08);
+  border: 1.5px dashed #3B82F6;
+  color: #2563EB;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 13.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-add-media-slot:hover {
+  background: rgba(37, 99, 235, 0.14);
+}
+
+.btn-add-media-slot:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .card-body-text {
   font-size: 16px;
   color: var(--text-main);
