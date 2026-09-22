@@ -2966,19 +2966,47 @@ class ChoirApp {
   }
 
   getPdfViewerHtml(embedUrl, openUrl) {
+    const boxId = 'pdf_box_' + Math.random().toString(36).substring(2, 9);
+    const escapedEmbed = this.escapeHtml(embedUrl);
+    const escapedOpen = this.escapeHtml(openUrl);
+
     return `
-      <div class="notice-pdf-container" style="margin-top: 12px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 10px;">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+      <div class="notice-pdf-container" style="margin-top: 12px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 12px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
           <span style="font-size: 13.5px; font-weight: 600; color: #1E293B; display: flex; align-items: center; gap: 6px;">
             📄 PDF 첨부 문서
           </span>
-          <a href="${openUrl}" target="_blank" rel="noopener noreferrer" style="font-size: 12.5px; background: #2563EB; color: #ffffff; padding: 4px 10px; border-radius: 6px; text-decoration: none; font-weight: 600;">
-            전체화면 열기 ↗
-          </a>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <button type="button" onclick="app.togglePdfPreview(this, '${boxId}', '${escapedEmbed}')" style="font-size: 12.5px; background: #2563EB; color: #ffffff; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+              👁️ 미리보기 열기
+            </button>
+            <a href="${escapedOpen}" target="_blank" rel="noopener noreferrer" style="font-size: 12.5px; background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; padding: 5px 10px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+              전체화면 열기 ↗
+            </a>
+          </div>
         </div>
-        <iframe src="${embedUrl}" style="width: 100%; height: 380px; border: none; border-radius: 6px; background: #ffffff;" loading="lazy"></iframe>
+        <div id="${boxId}" class="pdf-iframe-box" style="display: none; margin-top: 10px;"></div>
       </div>
     `;
+  }
+
+  togglePdfPreview(btn, boxId, embedUrl) {
+    const box = document.getElementById(boxId);
+    if (!box) return;
+
+    if (box.style.display === 'none' || !box.innerHTML) {
+      box.innerHTML = `<iframe src="${embedUrl}" style="width: 100%; height: 420px; border: none; border-radius: 6px; background: #ffffff;" loading="lazy"></iframe>`;
+      box.style.display = 'block';
+      btn.innerHTML = '✕ 미리보기 닫기';
+      btn.style.background = '#64748B';
+      btn.style.color = '#ffffff';
+    } else {
+      box.style.display = 'none';
+      box.innerHTML = '';
+      btn.innerHTML = '👁️ 미리보기 열기';
+      btn.style.background = '#2563EB';
+      btn.style.color = '#ffffff';
+    }
   }
 
   formatMemberPhotoUrl(url, memberId) {
