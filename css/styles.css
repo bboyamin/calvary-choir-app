@@ -817,10 +817,13 @@ body {
 }
 
 .card-img-preview {
-  width: 100%;
+  max-width: 100%;
+  width: auto;
   max-height: 480px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
   object-fit: contain;
-  background: #F8FAFC;
   border-radius: 10px;
   border: 1px solid var(--border-light);
 }
