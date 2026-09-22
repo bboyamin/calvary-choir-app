@@ -1255,6 +1255,7 @@ class ChoirApp {
             <span class="card-date">🗓️ ${item.date}</span>
             ${isOfficer ? `
               <div class="card-admin-actions">
+                <button type="button" class="btn-card-edit" onclick="app.openEditPraiseModal('${item.id}')" title="수정">✏️</button>
                 <button type="button" class="btn-card-delete" onclick="app.deletePraise('${item.id}', this)" title="삭제">✕</button>
               </div>
             ` : ''}
@@ -1270,7 +1271,17 @@ class ChoirApp {
   }
 
   openPraiseModal() {
-    document.getElementById('formPraise').reset();
+    const form = document.getElementById('formPraise');
+    if (form) form.reset();
+
+    const editingIdEl = document.getElementById('editingPraiseId');
+    if (editingIdEl) editingIdEl.value = '';
+
+    const headerTitle = document.getElementById('praiseHeaderTitle');
+    if (headerTitle) headerTitle.textContent = '🎵 찬양 음원/영상 등록';
+
+    const btnSubmit = document.getElementById('btnSubmitPraise');
+    if (btnSubmit) btnSubmit.textContent = '등록하기';
 
     if (this.lastBatchTitle && this.lastBatchDate && this.lastNextPartTarget) {
       document.getElementById('praiseType').value = 'part';
@@ -1297,6 +1308,39 @@ class ChoirApp {
     }, 150);
   }
 
+  openEditPraiseModal(id) {
+    if (!this.storage.isOfficer()) {
+      alert('🔒 관리자만 찬양 음원/영상을 수정할 수 있습니다.');
+      return;
+    }
+    const praises = this.storage.get(STORAGE_KEYS.PRAISES);
+    const item = praises.find(p => p.id === id);
+    if (!item) return;
+
+    const form = document.getElementById('formPraise');
+    if (form) form.reset();
+
+    const editingIdEl = document.getElementById('editingPraiseId');
+    if (editingIdEl) editingIdEl.value = id;
+
+    const headerTitle = document.getElementById('praiseHeaderTitle');
+    if (headerTitle) headerTitle.textContent = '✏️ 찬양 음원/영상 수정';
+
+    const btnSubmit = document.getElementById('btnSubmitPraise');
+    if (btnSubmit) btnSubmit.textContent = '수정 완료';
+
+    document.getElementById('praiseType').value = item.type || 'all';
+    this.togglePartSelect(item.type || 'all');
+    if (item.type === 'part') {
+      document.getElementById('praisePartTarget').value = item.partTarget || 'ALL_PART';
+    }
+    document.getElementById('praiseTitle').value = item.title || '';
+    document.getElementById('praiseDate').value = item.date || '';
+    document.getElementById('praiseYoutube').value = item.youtubeUrl || '';
+
+    this.openModal('modalPraise');
+  }
+
   togglePartSelect(val) {
     const grp = document.getElementById('groupPartSelect');
     if (val === 'part') {
@@ -1308,6 +1352,7 @@ class ChoirApp {
 
   savePraise(e) {
     e.preventDefault();
+    const editingId = document.getElementById('editingPraiseId')?.value;
     const type = document.getElementById('praiseType').value;
     const partTarget = type === 'part' ? document.getElementById('praisePartTarget').value : '';
     const title = document.getElementById('praiseTitle').value.trim();
@@ -1315,6 +1360,23 @@ class ChoirApp {
     const youtubeUrl = document.getElementById('praiseYoutube').value.trim();
 
     const praises = this.storage.get(STORAGE_KEYS.PRAISES);
+
+    if (editingId) {
+      const item = praises.find(p => p.id === editingId);
+      if (item) {
+        item.type = type;
+        item.partTarget = partTarget;
+        item.title = title;
+        item.date = date;
+        item.youtubeUrl = youtubeUrl;
+        this.storage.save(STORAGE_KEYS.PRAISES, praises);
+        this.closeModal('modalPraise');
+        this.populatePraiseMonthDropdown();
+        this.renderPraises();
+        alert('✏️ 찬양 정보가 성공적으로 수정되었습니다.');
+        return;
+      }
+    }
     const newPraise = {
       id: 'p_' + Date.now(),
       type,
@@ -1435,13 +1497,14 @@ class ChoirApp {
         <div class="item-card ${isPast ? 'opacity-80' : ''}">
           <div class="card-top">
             <span class="card-badge ${isPast ? 'badge-past' : 'badge-praise'}">${isPast ? '📜 지난 일정' : '📅 주요 일정'} · ${dateStr} ${timeStr}</span>
-            ${isOfficer ? `
-              <div class="card-top-right">
+            <div class="card-top-right">
+              ${isOfficer ? `
                 <div class="card-admin-actions">
+                  <button type="button" class="btn-card-edit" onclick="app.openEditScheduleModal('${s.id}')" title="수정">✏️</button>
                   <button type="button" class="btn-card-delete" onclick="app.deleteSchedule('${s.id}', this)" title="삭제">✕</button>
                 </div>
-              </div>
-            ` : ''}
+              ` : ''}
+            </div>
           </div>
           <h3 class="card-title">${s.title}</h3>
           <p class="card-body-text">📍 <strong>장소:</strong> ${s.location}</p>
@@ -1490,9 +1553,65 @@ class ChoirApp {
   }
 
   openScheduleModal() {
-    document.getElementById('formSchedule').reset();
+    const form = document.getElementById('formSchedule');
+    if (form) form.reset();
+
+    const editingIdEl = document.getElementById('editingSchedId');
+    if (editingIdEl) editingIdEl.value = '';
+
+    const headerTitle = document.getElementById('schedHeaderTitle');
+    if (headerTitle) headerTitle.textContent = '📅 성가대 일정 등록';
+
+    const btnSubmit = document.getElementById('btnSubmitSched');
+    if (btnSubmit) btnSubmit.textContent = '등록하기';
+
     this.clearUploadedImage('schedFilePhoto', 'schedPhotoPreview', 'schedPhotoData');
     this.toggleSchedApplyFields(false);
+    this.openModal('modalSchedule');
+  }
+
+  openEditScheduleModal(id) {
+    if (!this.storage.isOfficer()) {
+      alert('🔒 관리자만 일정을 수정할 수 있습니다.');
+      return;
+    }
+    const schedules = this.storage.get(STORAGE_KEYS.SCHEDULES);
+    const sched = schedules.find(s => s.id === id);
+    if (!sched) return;
+
+    const form = document.getElementById('formSchedule');
+    if (form) form.reset();
+
+    const editingIdEl = document.getElementById('editingSchedId');
+    if (editingIdEl) editingIdEl.value = id;
+
+    const headerTitle = document.getElementById('schedHeaderTitle');
+    if (headerTitle) headerTitle.textContent = '✏️ 성가대 일정 수정';
+
+    const btnSubmit = document.getElementById('btnSubmitSched');
+    if (btnSubmit) btnSubmit.textContent = '수정 완료';
+
+    document.getElementById('schedTitle').value = sched.title || '';
+    document.getElementById('schedDate').value = sched.datetime || '';
+    document.getElementById('schedLocation').value = sched.location || '';
+    document.getElementById('schedNote').value = sched.note || '';
+
+    const ytInput = document.getElementById('schedYoutube');
+    if (ytInput) ytInput.value = sched.youtubeUrl || '';
+
+    const imgInput = document.getElementById('schedImageUrl');
+    if (imgInput) imgInput.value = sched.imageUrl || '';
+
+    const enableApplyCheckbox = document.getElementById('schedEnableApply');
+    const isApplyEnabled = !!sched.enableApply;
+    if (enableApplyCheckbox) enableApplyCheckbox.checked = isApplyEnabled;
+    this.toggleSchedApplyFields(isApplyEnabled);
+
+    if (isApplyEnabled) {
+      document.getElementById('schedApplyTitle').value = sched.applyTitle || '';
+      document.getElementById('schedApplyType').value = sched.applyType || 'ticket';
+    }
+
     this.openModal('modalSchedule');
   }
 
@@ -1507,6 +1626,7 @@ class ChoirApp {
 
   saveSchedule(e) {
     e.preventDefault();
+    const editingId = document.getElementById('editingSchedId')?.value;
     const title = document.getElementById('schedTitle').value.trim();
     const datetime = document.getElementById('schedDate').value;
     const location = document.getElementById('schedLocation').value.trim();
@@ -1521,6 +1641,27 @@ class ChoirApp {
     const imageUrl = uploadedDataUrl || this.convertGoogleDriveUrl(inputUrl);
 
     const schedules = this.storage.get(STORAGE_KEYS.SCHEDULES);
+
+    if (editingId) {
+      const sched = schedules.find(s => s.id === editingId);
+      if (sched) {
+        sched.title = title;
+        sched.datetime = datetime;
+        sched.location = location;
+        sched.note = note;
+        sched.youtubeUrl = youtubeUrl;
+        sched.imageUrl = imageUrl;
+        sched.enableApply = enableApply;
+        sched.applyTitle = applyTitle;
+        sched.applyType = applyType;
+
+        this.storage.save(STORAGE_KEYS.SCHEDULES, schedules);
+        this.closeModal('modalSchedule');
+        this.renderSchedules();
+        alert('✏️ 일정이 성공적으로 수정되었습니다.');
+        return;
+      }
+    }
     const now = Date.now();
     schedules.push({
       id: 's_' + now,
