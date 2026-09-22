@@ -990,6 +990,14 @@ class ChoirStorage {
     localStorage.setItem(STORAGE_KEYS.IS_OFFICER, isOfficer ? 'true' : 'false');
   }
 
+  getOfficerPin() {
+    return localStorage.getItem('calvary_choir_officer_pin') || '1234';
+  }
+
+  setOfficerPin(pin) {
+    localStorage.setItem('calvary_choir_officer_pin', pin);
+  }
+
   getMemberPin() {
     return localStorage.getItem('calvary_choir_member_pin') || '1004';
   }

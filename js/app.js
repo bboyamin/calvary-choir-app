@@ -266,8 +266,8 @@ class ChoirApp {
   }
 
   submitPin() {
-    const DEFAULT_PIN = '1234';
-    if (this.enteredPin === DEFAULT_PIN) {
+    const validPin = this.storage.getOfficerPin();
+    if (this.enteredPin === validPin) {
       this.storage.setOfficer(true);
       this.closeModal('modalPin');
       this.checkOfficerStatus();
@@ -282,15 +282,21 @@ class ChoirApp {
   checkOfficerStatus() {
     const isOfficer = this.storage.isOfficer();
     const banner = document.getElementById('officerBanner');
-    const badge = document.getElementById('adminStatusBadge');
+    const toggleBtn = document.getElementById('btnOfficerToggle');
 
     if (isOfficer) {
-      banner.classList.remove('hidden');
-      if (badge) badge.textContent = '편집 모드 중';
+      if (banner) banner.classList.remove('hidden');
+      if (toggleBtn) {
+        toggleBtn.classList.add('is-active');
+        toggleBtn.title = '관리자 모드 실행 중 (클릭시 종료/설정)';
+      }
       document.querySelectorAll('.officer-only').forEach(el => el.classList.remove('hidden'));
     } else {
-      banner.classList.add('hidden');
-      if (badge) badge.textContent = '관리자';
+      if (banner) banner.classList.add('hidden');
+      if (toggleBtn) {
+        toggleBtn.classList.remove('is-active');
+        toggleBtn.title = '관리자 접속';
+      }
       document.querySelectorAll('.officer-only').forEach(el => el.classList.add('hidden'));
     }
     this.renderAll();
@@ -2594,6 +2600,25 @@ class ChoirApp {
     this.storage.setMemberPin(newPin);
     this.closeModal('modalChangeMemberPin');
     alert(`🔑 대원명단 접근 비밀번호가 [ ${newPin} ](으)로 변경되었습니다.`);
+  }
+
+  openChangeOfficerPinModal() {
+    const input = document.getElementById('inputNewOfficerPin');
+    if (input) input.value = '';
+    this.openModal('modalChangeOfficerPin');
+  }
+
+  saveNewOfficerPin(e) {
+    if (e) e.preventDefault();
+    const input = document.getElementById('inputNewOfficerPin');
+    const newPin = input ? input.value.trim() : '';
+    if (!/^\d{4}$/.test(newPin)) {
+      alert('비밀번호는 숫자 4자리로 입력해주세요.');
+      return;
+    }
+    this.storage.setOfficerPin(newPin);
+    this.closeModal('modalChangeOfficerPin');
+    alert(`🔑 관리자 모드 접근 비밀번호가 [ ${newPin} ](으)로 변경되었습니다.`);
   }
 
   // ----------------------------------------------------
