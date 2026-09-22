@@ -1084,10 +1084,12 @@ body {
 .part-tag {
   font-size: 12px;
   font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 5px;
+  padding: 2.5px 8px;
+  border-radius: 6px;
   width: fit-content;
-  margin-top: 2px;
+  white-space: nowrap;
+  display: inline-block;
+  line-height: 1.2;
 }
 
 .part-tag.소프라노 { background: #FCE7F3; color: var(--soprano-color); }
@@ -1215,8 +1217,145 @@ body {
 }
 
 /* ==========================================
-   신청자 현황 테이블 스타일
+   신청자 현황 모바일 카드 리스트 스타일
    ========================================== */
+.applicant-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.applicant-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.applicant-card.is-mine {
+  background: #FFFBEB;
+  border: 1.5px solid #F59E0B;
+  border-left: 4px solid #D97706;
+}
+
+.applicant-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.applicant-user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.applicant-name {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0F172A;
+  white-space: nowrap;
+}
+
+.my-apply-badge {
+  font-size: 11px;
+  font-weight: 800;
+  background: #D97706;
+  color: #FFFFFF;
+  padding: 2px 6px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.applicant-option-badge {
+  font-size: 13px;
+  font-weight: 800;
+  background: #E0F2FE;
+  color: #0284C7;
+  padding: 3px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.applicant-note-box {
+  background: #F1F5F9;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13.5px;
+  color: #334155;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  line-height: 1.45;
+  word-break: break-all;
+}
+
+.applicant-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2px;
+  padding-top: 6px;
+  border-top: 1px dashed #E2E8F0;
+}
+
+.apply-time-str {
+  font-size: 11.5px;
+  color: #94A3B8;
+}
+
+.applicant-action-btns {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.btn-app-action {
+  font-size: 12.5px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.btn-app-action.edit {
+  background: #EFF6FF;
+  color: #2563EB;
+}
+
+.btn-app-action.delete {
+  background: #FEF2F2;
+  color: #EF4444;
+}
+
+.btn-app-action:active {
+  transform: scale(0.95);
+}
+
+.part-count-badge {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+.part-count-badge.소프라노 { background: #FCE7F3; color: #DB2777; }
+.part-count-badge.알토 { background: #EDE9FE; color: #7C3AED; }
+.part-count-badge.테너 { background: #DBEAFE; color: #2563EB; }
+.part-count-badge.베이스 { background: #D1FAE5; color: #059669; }
+.part-count-badge.임원 { background: #FEF3C7; color: #D97706; }
+
 .apply-sched-summary-box {
   background: #FEF3C7;
   border: 1px solid var(--gold-accent);

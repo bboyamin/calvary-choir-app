@@ -1862,10 +1862,23 @@ class ChoirApp {
     document.getElementById('applyListSchedTitle').textContent = sched.title;
     const apps = sched.applications || [];
     let totalTickets = 0;
+
+    const partCounts = {
+      '소프라노': 0,
+      '알토': 0,
+      '테너': 0,
+      '베이스': 0,
+      '임원': 0
+    };
+
     apps.forEach(a => {
       if (a.option) {
         const match = a.option.match(/(\d+)매/);
         if (match) totalTickets += parseInt(match[1], 10);
+      }
+      if (a.part) {
+        const pKey = a.part === '소프' ? '소프라노' : a.part;
+        partCounts[pKey] = (partCounts[pKey] || 0) + 1;
       }
     });
 
@@ -1874,13 +1887,26 @@ class ChoirApp {
       : `총 ${apps.length}명 신청 완료`;
     document.getElementById('applyTotalCountBadge').textContent = totalText;
 
+    const breakdownEl = document.getElementById('applyPartBreakdownBadges');
+    if (breakdownEl) {
+      const partsArr = ['소프라노', '알토', '테너', '베이스', '임원'];
+      const activeParts = partsArr.filter(p => partCounts[p] > 0);
+      if (activeParts.length > 0) {
+        breakdownEl.innerHTML = activeParts.map(p => {
+          const label = p === '임원' ? '지휘/반주' : p;
+          return `<span class="part-count-badge ${p}">${label} ${partCounts[p]}명</span>`;
+        }).join('');
+      } else {
+        breakdownEl.innerHTML = '';
+      }
+    }
+
     const container = document.getElementById('applyListContainer');
     const isOfficer = this.storage.isOfficer();
 
     if (apps.length === 0) {
-      container.innerHTML = `<p style="padding:16px; text-align:center; color:var(--text-sub);">아직 신청한 대원이 없습니다.</p>`;
+      container.innerHTML = `<p style="padding:24px 16px; text-align:center; color:var(--text-sub); font-size:15px;">아직 신청한 대원이 없습니다.</p>`;
     } else {
-      // 1. 파트순 (소프라노 -> 알토 -> 테너 -> 베이스) -> 2. 파트 내 가나다순 정렬
       const partRank = {
         '소프라노': 1,
         '소프': 1,
@@ -1900,41 +1926,42 @@ class ChoirApp {
         return (a.name || '').localeCompare(b.name || '', 'ko');
       });
 
-      container.innerHTML = `
-        <table class="apply-table">
-          <thead>
-            <tr>
-              <th>파트</th>
-              <th>이름</th>
-              <th>신청 내용</th>
-              <th>메모</th>
-              <th>관리</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${apps.map(a => {
-              const isMine = this.storage.isMyItem(a.id);
-              const canEdit = isMine || isOfficer;
-              return `
-                <tr>
-                  <td><span class="part-tag ${a.part}">${this.formatPartTag(a.part)}</span></td>
-                  <td><strong>${this.escapeHtml(a.name || '')}</strong> ${isMine ? '<span style="font-size:10px; background:var(--primary-navy); color:#fff; padding:1px 5px; border-radius:8px; margin-left:4px;">내 신청</span>' : ''}</td>
-                  <td>${this.escapeHtml(a.option || '')}</td>
-                  <td>${this.escapeHtml(a.note || '-')}</td>
-                  <td>
-                    ${canEdit ? `
-                      <div style="display:flex; gap:6px;">
-                        <button type="button" style="color:var(--primary-navy); background:none; border:none; cursor:pointer; font-weight:bold; font-size:12px; padding:2px 4px;" onclick="app.openEditApplicationModal('${schedId}', '${a.id}')">수정</button>
-                        <button type="button" style="color:#EF4444; background:none; border:none; cursor:pointer; font-weight:bold; font-size:12px; padding:2px 4px;" onclick="app.deleteApplication('${schedId}', '${a.id}', this)">삭제</button>
-                      </div>
-                    ` : '-'}
-                  </td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
-      `;
+      container.innerHTML = apps.map(a => {
+        const isMine = this.storage.isMyItem(a.id);
+        const canEdit = isMine || isOfficer;
+        const partClass = a.part || '';
+        const displayPart = this.formatPartTag(a.part);
+
+        return `
+          <div class="applicant-card ${isMine ? 'is-mine' : ''}">
+            <div class="applicant-card-header">
+              <div class="applicant-user-info">
+                <span class="part-tag ${partClass}">${displayPart}</span>
+                <strong class="applicant-name">${this.escapeHtml(a.name || '')}</strong>
+                ${isMine ? '<span class="my-apply-badge">내 신청</span>' : ''}
+              </div>
+              <span class="applicant-option-badge">${this.escapeHtml(a.option || '신청')}</span>
+            </div>
+
+            ${a.note ? `
+              <div class="applicant-note-box">
+                <span style="font-size:13px;">💬</span>
+                <span>${this.escapeHtml(a.note)}</span>
+              </div>
+            ` : ''}
+
+            <div class="applicant-card-footer">
+              <span class="apply-time-str">${a.time ? '🕒 ' + this.escapeHtml(a.time) : ''}</span>
+              ${canEdit ? `
+                <div class="applicant-action-btns">
+                  <button type="button" class="btn-app-action edit" onclick="app.openEditApplicationModal('${schedId}', '${a.id}')">✏️ 수정</button>
+                  <button type="button" class="btn-app-action delete" onclick="app.deleteApplication('${schedId}', '${a.id}', this)">🗑️ 삭제</button>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
     this.openModal('modalApplyList');
