@@ -1341,6 +1341,8 @@ class ChoirApp {
           <h3 class="card-title">${s.title}</h3>
           <p class="card-body-text">📍 <strong>장소:</strong> ${s.location}</p>
           ${s.note ? `<p class="card-body-text" style="color: var(--text-sub);">💡 ${s.note}</p>` : ''}
+          ${s.imageUrl ? `<div style="margin-top: 10px;">${this.getNoticeMediaHtml(s.imageUrl, s.title)}</div>` : ''}
+          ${s.youtubeUrl ? `<div class="video-responsive" style="margin-top: 10px;">${this.getYoutubeIframe(s.youtubeUrl)}</div>` : ''}
 
           <!-- 🎟️ 신청 기능 활성화 시 버튼 표시 -->
           ${s.enableApply ? `
@@ -1384,6 +1386,7 @@ class ChoirApp {
 
   openScheduleModal() {
     document.getElementById('formSchedule').reset();
+    this.clearUploadedImage('schedFilePhoto', 'schedPhotoPreview', 'schedPhotoData');
     this.toggleSchedApplyFields(false);
     this.openModal('modalSchedule');
   }
@@ -1407,6 +1410,11 @@ class ChoirApp {
     const applyTitle = document.getElementById('schedApplyTitle').value.trim() || '🎟️ 참석/티켓 신청하기';
     const applyType = document.getElementById('schedApplyType').value;
 
+    const youtubeUrl = document.getElementById('schedYoutube')?.value.trim() || '';
+    const uploadedDataUrl = document.getElementById('schedPhotoData')?.value.trim() || '';
+    const inputUrl = document.getElementById('schedImageUrl')?.value.trim() || '';
+    const imageUrl = uploadedDataUrl || this.convertGoogleDriveUrl(inputUrl);
+
     const schedules = this.storage.get(STORAGE_KEYS.SCHEDULES);
     const now = Date.now();
     schedules.push({
@@ -1416,6 +1424,8 @@ class ChoirApp {
       datetime,
       location,
       note,
+      youtubeUrl,
+      imageUrl,
       enableApply,
       applyTitle,
       applyType,
@@ -1541,8 +1551,25 @@ class ChoirApp {
     if (apps.length === 0) {
       container.innerHTML = `<p style="padding:16px; text-align:center; color:var(--text-sub);">아직 신청한 대원이 없습니다.</p>`;
     } else {
-      // 파트순 및 가나다순 정렬
-      apps.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+      // 1. 파트순 (소프라노 -> 알토 -> 테너 -> 베이스) -> 2. 파트 내 가나다순 정렬
+      const partRank = {
+        '소프라노': 1,
+        '소프': 1,
+        '알토': 2,
+        '테너': 3,
+        '베이스': 4,
+        '지휘자/반주자': 5,
+        '임원': 5
+      };
+
+      apps.sort((a, b) => {
+        const rankA = partRank[a.part] || 99;
+        const rankB = partRank[b.part] || 99;
+        if (rankA !== rankB) {
+          return rankA - rankB;
+        }
+        return (a.name || '').localeCompare(b.name || '', 'ko');
+      });
 
       container.innerHTML = `
         <table class="apply-table">
