@@ -298,10 +298,11 @@
   <div id="modalNotice" class="modal-overlay hidden">
     <div class="modal-card">
       <div class="modal-header">
-        <h3>📢 신규 공지사항 작성</h3>
+        <h3 id="noticeHeaderTitle">📢 신규 공지사항 작성</h3>
         <button class="btn-close-modal" onclick="app.closeModal('modalNotice')">✕</button>
       </div>
       <form id="formNotice" onsubmit="app.saveNotice(event)" class="modal-body">
+        <input type="hidden" id="editingNoticeId">
         <div class="form-group">
           <label for="noticeTitle">공지 제목 *</label>
           <input type="text" id="noticeTitle" required placeholder="공지 제목 입력">
@@ -324,7 +325,7 @@
         </div>
         <div class="form-actions">
           <button type="button" class="btn-secondary-large" onclick="app.closeModal('modalNotice')">취소</button>
-          <button type="submit" class="btn-primary-large">등록하기</button>
+          <button type="submit" id="btnSubmitNotice" class="btn-primary-large">등록하기</button>
         </div>
       </form>
     </div>
@@ -757,13 +758,13 @@
     </div>
   </div>
 
-  <script src="js/storage.js?v=1033"></script>
-  <script src="js/app.js?v=1033"></script>
+  <script src="js/storage.js?v=1034"></script>
+  <script src="js/app.js?v=1034"></script>
   <script>
     // 서비스 워커 등록 및 실시간 캐시 갱신 (PWA)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=1033')
+        navigator.serviceWorker.register('sw.js?v=1034')
           .then(reg => {
             console.log('PWA ServiceWorker registered', reg);
             reg.update(); // 강제 SW 최신버전 업데이트 검사

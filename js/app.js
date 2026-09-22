@@ -780,7 +780,10 @@ class ChoirApp {
               <span class="card-badge badge-notice">📢 성가대 공지</span>
               <div class="card-top-right">
                 <span class="card-date">${item.date}</span>
-                ${isOfficer ? `<button class="btn-delete-card" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>` : ''}
+                ${isOfficer ? `
+                  <button class="btn-delete-card" onclick="app.openEditNoticeModal('${item.id}')" title="수정" style="right: 36px; color: var(--primary-navy); font-size: 13px;">✏️</button>
+                  <button class="btn-delete-card" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>
+                ` : ''}
               </div>
             </div>
             <h3 class="card-title">${item.title}</h3>
@@ -798,7 +801,10 @@ class ChoirApp {
             <span class="card-badge badge-notice">📢 성가대 공지</span>
             <div class="card-top-right">
               <span class="card-date">${item.date}</span>
-              ${isOfficer ? `<button class="btn-delete-card" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>` : ''}
+              ${isOfficer ? `
+                <button class="btn-delete-card" onclick="app.openEditNoticeModal('${item.id}')" title="수정" style="right: 36px; color: var(--primary-navy); font-size: 13px;">✏️</button>
+                <button class="btn-delete-card" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>
+              ` : ''}
             </div>
           </div>
           <h3 class="card-title">${item.title}</h3>
@@ -907,9 +913,74 @@ class ChoirApp {
   }
 
   openNoticeModal() {
-    document.getElementById('formNotice').reset();
+    const form = document.getElementById('formNotice');
+    if (form) form.reset();
+    const editingIdEl = document.getElementById('editingNoticeId');
+    if (editingIdEl) editingIdEl.value = '';
+
+    const headerTitle = document.getElementById('noticeHeaderTitle');
+    if (headerTitle) headerTitle.textContent = '📢 신규 공지사항 작성';
+    const btnSubmit = document.getElementById('btnSubmitNotice');
+    if (btnSubmit) btnSubmit.textContent = '등록하기';
+
     this.noticeMediaSlots = [Date.now()];
     this.renderNoticeMediaSlots();
+    this.openModal('modalNotice');
+  }
+
+  openEditNoticeModal(id) {
+    if (!this.storage.isOfficer()) {
+      alert('🔒 관리자만 공지사항을 수정할 수 있습니다.');
+      return;
+    }
+    const notices = this.storage.get(STORAGE_KEYS.NOTICES);
+    const notice = notices.find(n => n.id === id);
+    if (!notice) return;
+
+    const form = document.getElementById('formNotice');
+    if (form) form.reset();
+
+    const editingIdEl = document.getElementById('editingNoticeId');
+    if (editingIdEl) editingIdEl.value = id;
+
+    const headerTitle = document.getElementById('noticeHeaderTitle');
+    if (headerTitle) headerTitle.textContent = '✏️ 공지사항 수정';
+
+    const btnSubmit = document.getElementById('btnSubmitNotice');
+    if (btnSubmit) btnSubmit.textContent = '수정 완료';
+
+    document.getElementById('noticeTitle').value = notice.title || '';
+    document.getElementById('noticeContent').value = notice.content || '';
+
+    let mediaList = notice.mediaList || [];
+    if (!mediaList || mediaList.length === 0) {
+      if (notice.youtubeUrl || notice.imageUrl) {
+        mediaList = [];
+        if (notice.youtubeUrl) mediaList.push({ type: 'youtube', url: notice.youtubeUrl });
+        if (notice.imageUrl) mediaList.push({ type: 'media', url: notice.imageUrl });
+      }
+    }
+
+    if (!mediaList || mediaList.length === 0) {
+      this.noticeMediaSlots = [Date.now()];
+      this.renderNoticeMediaSlots();
+    } else {
+      this.noticeMediaSlots = mediaList.map((m, idx) => Date.now() + idx);
+      this.renderNoticeMediaSlots();
+      this.noticeMediaSlots.forEach((slotId, idx) => {
+        const item = mediaList[idx];
+        if (item) {
+          if (item.type === 'youtube') {
+            const ytInput = document.getElementById(`noticeYoutube_${slotId}`);
+            if (ytInput) ytInput.value = item.url || '';
+          } else if (item.type === 'media') {
+            const imgInput = document.getElementById(`noticeImageUrl_${slotId}`);
+            if (imgInput) imgInput.value = item.url || '';
+          }
+        }
+      });
+    }
+
     this.openModal('modalNotice');
   }
 
@@ -983,6 +1054,7 @@ class ChoirApp {
 
   saveNotice(e) {
     e.preventDefault();
+    const editingId = document.getElementById('editingNoticeId')?.value;
     const title = document.getElementById('noticeTitle').value.trim();
     const content = document.getElementById('noticeContent').value.trim();
 
@@ -1007,6 +1079,23 @@ class ChoirApp {
     const firstMedia = mediaList.find(m => m.type === 'media')?.url || '';
 
     const notices = this.storage.get(STORAGE_KEYS.NOTICES);
+
+    if (editingId) {
+      const notice = notices.find(n => n.id === editingId);
+      if (notice) {
+        notice.title = title;
+        notice.content = content;
+        notice.mediaList = mediaList;
+        notice.youtubeUrl = firstYoutube;
+        notice.imageUrl = firstMedia;
+        this.storage.save(STORAGE_KEYS.NOTICES, notices);
+        this.closeModal('modalNotice');
+        this.renderNotices();
+        alert('✏️ 공지사항이 성공적으로 수정되었습니다.');
+        return;
+      }
+    }
+
     const now = Date.now();
     const newNotice = {
       id: 'n_' + now,
