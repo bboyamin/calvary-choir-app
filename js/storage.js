@@ -1005,6 +1005,44 @@ class ChoirStorage {
   setMemberUnlocked(status) {
     localStorage.setItem('calvary_choir_member_unlocked', status ? 'true' : 'false');
   }
+
+  // ----------------------------------------------------
+  // 🔐 내 기기 작성 항목 (기도제목, 댓글, 일정신청) 관리
+  // ----------------------------------------------------
+  getMyItemIds() {
+    try {
+      const data = localStorage.getItem('calvary_choir_my_item_ids');
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  addMyItemId(id) {
+    if (!id) return;
+    const ids = this.getMyItemIds();
+    if (!ids.includes(id)) {
+      ids.push(id);
+      try {
+        localStorage.setItem('calvary_choir_my_item_ids', JSON.stringify(ids));
+      } catch (e) {}
+    }
+  }
+
+  removeMyItemId(id) {
+    if (!id) return;
+    let ids = this.getMyItemIds();
+    ids = ids.filter(itemId => itemId !== id);
+    try {
+      localStorage.setItem('calvary_choir_my_item_ids', JSON.stringify(ids));
+    } catch (e) {}
+  }
+
+  isMyItem(id) {
+    if (!id) return false;
+    const ids = this.getMyItemIds();
+    return ids.includes(id);
+  }
 }
 
 window.choirStorage = new ChoirStorage();

@@ -1509,8 +1509,9 @@ class ChoirApp {
     const sched = schedules.find(s => s.id === schedId);
     if (sched) {
       if (!sched.applications) sched.applications = [];
+      const appId = 'app_' + Date.now();
       sched.applications.push({
-        id: 'app_' + Date.now(),
+        id: appId,
         part,
         name,
         option,
@@ -1519,6 +1520,7 @@ class ChoirApp {
       });
 
       this.storage.save(STORAGE_KEYS.SCHEDULES, schedules);
+      this.storage.addMyItemId(appId);
       this.closeModal('modalApplySchedule');
       this.renderSchedules();
       alert(`🎉 ${name} 대원님의 신청이 성공적으로 접수되었습니다!`);
@@ -1579,19 +1581,30 @@ class ChoirApp {
               <th>이름</th>
               <th>신청 내용</th>
               <th>메모</th>
-              ${isOfficer ? '<th>관리</th>' : ''}
+              <th>관리</th>
             </tr>
           </thead>
           <tbody>
-            ${apps.map(a => `
-              <tr>
-                <td><span class="part-tag ${a.part}">${this.formatPartTag(a.part)}</span></td>
-                <td><strong>${a.name}</strong></td>
-                <td>${a.option}</td>
-                <td>${a.note || '-'}</td>
-                ${isOfficer ? `<td><button style="color:red; background:none; border:none; cursor:pointer;" onclick="app.deleteApplication('${schedId}', '${a.id}', this)">삭제</button></td>` : ''}
-              </tr>
-            `).join('')}
+            ${apps.map(a => {
+              const isMine = this.storage.isMyItem(a.id);
+              const canEdit = isMine || isOfficer;
+              return `
+                <tr>
+                  <td><span class="part-tag ${a.part}">${this.formatPartTag(a.part)}</span></td>
+                  <td><strong>${this.escapeHtml(a.name || '')}</strong> ${isMine ? '<span style="font-size:10px; background:var(--primary-navy); color:#fff; padding:1px 5px; border-radius:8px; margin-left:4px;">내 신청</span>' : ''}</td>
+                  <td>${this.escapeHtml(a.option || '')}</td>
+                  <td>${this.escapeHtml(a.note || '-')}</td>
+                  <td>
+                    ${canEdit ? `
+                      <div style="display:flex; gap:6px;">
+                        <button type="button" style="color:var(--primary-navy); background:none; border:none; cursor:pointer; font-weight:bold; font-size:12px; padding:2px 4px;" onclick="app.openEditApplicationModal('${schedId}', '${a.id}')">수정</button>
+                        <button type="button" style="color:#EF4444; background:none; border:none; cursor:pointer; font-weight:bold; font-size:12px; padding:2px 4px;" onclick="app.deleteApplication('${schedId}', '${a.id}', this)">삭제</button>
+                      </div>
+                    ` : '-'}
+                  </td>
+                </tr>
+              `;
+            }).join('')}
           </tbody>
         </table>
       `;
@@ -1600,14 +1613,91 @@ class ChoirApp {
     this.openModal('modalApplyList');
   }
 
+  openEditApplicationModal(schedId, appId) {
+    if (!this.storage.isMyItem(appId) && !this.storage.isOfficer()) {
+      alert('🔒 본인이 작성한 신청 내역만 수정할 수 있습니다.');
+      return;
+    }
+    const schedules = this.storage.get(STORAGE_KEYS.SCHEDULES);
+    const sched = schedules.find(s => s.id === schedId);
+    if (!sched || !sched.applications) return;
+    const appItem = sched.applications.find(a => a.id === appId);
+    if (!appItem) return;
+
+    document.getElementById('editAppSchedId').value = schedId;
+    document.getElementById('editAppId').value = appId;
+    document.getElementById('editAppPart').value = appItem.part || '소프라노';
+    document.getElementById('editAppName').value = appItem.name || '';
+    document.getElementById('editAppNote').value = appItem.note || '';
+
+    const selectEl = document.getElementById('editAppOptionSelect');
+    selectEl.innerHTML = '';
+    if (sched.applyType === 'ticket') {
+      [1, 2, 3, 4].forEach(num => {
+        const opt = document.createElement('option');
+        opt.value = `${num}매`;
+        opt.textContent = `🎟️ 티켓 ${num}매`;
+        if (appItem.option === `${num}매`) opt.selected = true;
+        selectEl.appendChild(opt);
+      });
+    } else {
+      ['참석', '불참'].forEach(val => {
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = val === '참석' ? '🙋 참석' : '🙅 불참';
+        if (appItem.option === val) opt.selected = true;
+        selectEl.appendChild(opt);
+      });
+    }
+
+    this.openModal('modalEditApplication');
+  }
+
+  saveEditedApplication(e) {
+    e.preventDefault();
+    const schedId = document.getElementById('editAppSchedId').value;
+    const appId = document.getElementById('editAppId').value;
+    const part = document.getElementById('editAppPart').value;
+    const name = document.getElementById('editAppName').value.trim();
+    const option = document.getElementById('editAppOptionSelect').value;
+    const note = document.getElementById('editAppNote').value.trim();
+
+    if (!this.storage.isMyItem(appId) && !this.storage.isOfficer()) {
+      alert('🔒 본인이 작성한 신청 내역만 수정할 수 있습니다.');
+      return;
+    }
+
+    const schedules = this.storage.get(STORAGE_KEYS.SCHEDULES);
+    const sched = schedules.find(s => s.id === schedId);
+    if (sched && sched.applications) {
+      const appItem = sched.applications.find(a => a.id === appId);
+      if (appItem) {
+        appItem.part = part;
+        appItem.name = name;
+        appItem.option = option;
+        appItem.note = note;
+        this.storage.save(STORAGE_KEYS.SCHEDULES, schedules);
+        this.closeModal('modalEditApplication');
+        this.openApplyListModal(schedId);
+        this.renderSchedules();
+        alert('✏️ 신청 내역이 성공적으로 수정되었습니다.');
+      }
+    }
+  }
+
   deleteApplication(schedId, appId, btn) {
-    this.confirmAction('🎟️ 해당 대원의 신청을 삭제하시겠습니까?', () => {
+    if (!this.storage.isMyItem(appId) && !this.storage.isOfficer()) {
+      alert('🔒 본인이 작성한 신청 내역만 삭제할 수 있습니다.');
+      return;
+    }
+    this.confirmAction('🎟️ 해당 신청 내역을 삭제하시겠습니까?', () => {
       this.animateRemoveCard(btn, () => {
         const schedules = this.storage.get(STORAGE_KEYS.SCHEDULES);
         const sched = schedules.find(s => s.id === schedId);
         if (sched && sched.applications) {
           sched.applications = sched.applications.filter(a => a.id !== appId);
           this.storage.save(STORAGE_KEYS.SCHEDULES, schedules);
+          this.storage.removeMyItemId(appId);
           this.openApplyListModal(schedId);
           this.renderSchedules();
         }
@@ -2192,7 +2282,7 @@ class ChoirApp {
   renderPrayers() {
     const listEl = document.getElementById('prayerList');
     if (!listEl) return;
-    const prayers = this.storage.get(STORAGE_KEYS.PRAYERS);
+    const prayers = this.storage.get(STORAGE_KEYS.PRAYERS) || [];
 
     if (prayers.length === 0) {
       listEl.innerHTML = `<div class="item-card"><p class="card-body-text">등록된 기도제목이 없습니다.</p></div>`;
@@ -2212,39 +2302,61 @@ class ChoirApp {
 
     const isOfficer = this.storage.isOfficer();
 
-    const renderPrayerCard = (p) => `
-      <div class="item-card" style="position: relative;">
-        ${isOfficer ? `<button class="btn-delete-card" onclick="app.deletePrayer('${p.id}', this)" title="삭제">✕</button>` : ''}
-        <div class="card-top">
-          <span class="card-badge badge-notice">🙏 ${p.author} 대원</span>
-          <span class="card-date">${p.date}</span>
-        </div>
-        <p class="card-body-text">${p.content}</p>
+    const renderPrayerCard = (p) => {
+      const isMyPrayer = this.storage.isMyItem(p.id);
+      const canEditPrayer = isMyPrayer || isOfficer;
 
-        <!-- 함께 기도해요 (아멘) 버튼 -->
-        <button class="amen-button" onclick="app.addAmen('${p.id}')">
-          ❤️ 함께 기도해요 (아멘 ${p.amenCount || 0})
-        </button>
-
-        <!-- 댓글 목록 -->
-        <div class="comment-section">
-          <div class="comment-list">
-            ${(p.comments || []).map(c => `
-              <div class="comment-item">
-                <span class="comment-author">${c.author}:</span>
-                <span>${c.text}</span>
-              </div>
-            `).join('')}
+      return `
+        <div class="item-card" style="position: relative;">
+          ${canEditPrayer ? `
+            <div style="position: absolute; top: 12px; right: 12px; display: flex; gap: 4px; z-index: 5;">
+              <button type="button" onclick="app.openEditPrayerModal('${p.id}')" title="수정" style="background: rgba(37, 99, 235, 0.1); color: var(--primary-navy); border: none; border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: bold; cursor: pointer;">✏️ 수정</button>
+              <button type="button" onclick="app.deletePrayer('${p.id}', this)" title="삭제" style="background: rgba(239, 68, 68, 0.1); color: #EF4444; border: none; border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: bold; cursor: pointer;">✕ 삭제</button>
+            </div>
+          ` : ''}
+          <div class="card-top" style="padding-right: ${canEditPrayer ? '110px' : '0px'};">
+            <span class="card-badge badge-notice">🙏 ${this.escapeHtml(p.author || '익명')} 대원</span>
+            <span class="card-date">${p.date || ''}</span>
           </div>
+          <p class="card-body-text">${this.escapeHtml(p.content || '')}</p>
 
-          <!-- 댓글 입력 폼 -->
-          <div class="comment-input-row">
-            <input type="text" id="comment_input_${p.id}" placeholder="응원과 기도의 글을 남겨주세요...">
-            <button onclick="app.addComment('${p.id}')">등록</button>
+          <!-- 함께 기도해요 (아멘) 버튼 -->
+          <button type="button" class="amen-button" onclick="app.addAmen('${p.id}')">
+            ❤️ 함께 기도해요 (아멘 ${p.amenCount || 0})
+          </button>
+
+          <!-- 댓글 목록 -->
+          <div class="comment-section">
+            <div class="comment-list">
+              ${(p.comments || []).map(c => {
+                const commentId = c.id || '';
+                const canEditComment = (commentId && this.storage.isMyItem(commentId)) || isOfficer;
+                return `
+                  <div class="comment-item" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                      <span class="comment-author">${this.escapeHtml(c.author || '익명')}:</span>
+                      <span>${this.escapeHtml(c.text || '')}</span>
+                    </div>
+                    ${canEditComment ? `
+                      <div style="display: flex; gap: 4px; flex-shrink: 0; margin-left: 8px;">
+                        <button type="button" onclick="app.openEditCommentModal('${p.id}', '${c.id}')" style="background: none; border: none; color: var(--primary-navy); font-size: 11px; font-weight: bold; cursor: pointer;">[수정]</button>
+                        <button type="button" onclick="app.deleteComment('${p.id}', '${c.id}', this)" style="background: none; border: none; color: #EF4444; font-size: 11px; font-weight: bold; cursor: pointer;">[삭제]</button>
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+
+            <!-- 댓글 입력 폼 -->
+            <div class="comment-input-row">
+              <input type="text" id="comment_input_${p.id}" placeholder="응원과 기도의 글을 남겨주세요...">
+              <button type="button" onclick="app.addComment('${p.id}')">등록</button>
+            </div>
           </div>
         </div>
-      </div>
-    `;
+      `;
+    };
 
     let html = recentPrayers.map(renderPrayerCard).join('');
 
@@ -2264,12 +2376,54 @@ class ChoirApp {
     }
   }
 
+  openEditPrayerModal(id) {
+    if (!this.storage.isMyItem(id) && !this.storage.isOfficer()) {
+      alert('🔒 본인이 작성한 기도제목만 수정할 수 있습니다.');
+      return;
+    }
+    const prayers = this.storage.get(STORAGE_KEYS.PRAYERS);
+    const prayer = prayers.find(p => p.id === id);
+    if (!prayer) return;
+
+    document.getElementById('editPrayerId').value = id;
+    const titleEl = document.getElementById('editPrayerTitle');
+    if (titleEl) titleEl.textContent = prayer.author ? `✏️ ${prayer.author} 대원님의 기도제목 수정` : '✏️ 기도제목 수정하기';
+    document.getElementById('editPrayerContent').value = prayer.content || '';
+    this.openModal('modalEditPrayer');
+  }
+
+  saveEditedPrayer(e) {
+    e.preventDefault();
+    const id = document.getElementById('editPrayerId').value;
+    const content = document.getElementById('editPrayerContent').value.trim();
+
+    if (!this.storage.isMyItem(id) && !this.storage.isOfficer()) {
+      alert('🔒 본인이 작성한 기도제목만 수정할 수 있습니다.');
+      return;
+    }
+
+    const prayers = this.storage.get(STORAGE_KEYS.PRAYERS);
+    const prayer = prayers.find(p => p.id === id);
+    if (prayer) {
+      prayer.content = content;
+      this.storage.save(STORAGE_KEYS.PRAYERS, prayers);
+      this.closeModal('modalEditPrayer');
+      this.renderPrayers();
+      alert('✏️ 기도제목이 성공적으로 수정되었습니다.');
+    }
+  }
+
   deletePrayer(id, btn) {
+    if (!this.storage.isMyItem(id) && !this.storage.isOfficer()) {
+      alert('🔒 본인이 작성한 기도제목만 삭제할 수 있습니다.');
+      return;
+    }
     this.confirmAction('🙏 이 중보기도제목을 삭제하시겠습니까?', () => {
       this.animateRemoveCard(btn, () => {
         let prayers = this.storage.get(STORAGE_KEYS.PRAYERS);
         prayers = prayers.filter(p => p.id !== id);
         this.storage.save(STORAGE_KEYS.PRAYERS, prayers);
+        this.storage.removeMyItemId(id);
         this.renderPrayers();
         this.updateUnreadBadges();
       });
@@ -2298,8 +2452,9 @@ class ChoirApp {
 
     const prayers = this.storage.get(STORAGE_KEYS.PRAYERS);
     const now = Date.now();
+    const newPrayerId = 'pr_' + now;
     prayers.unshift({
-      id: 'pr_' + now,
+      id: newPrayerId,
       createdAt: now,
       author,
       content,
@@ -2309,6 +2464,7 @@ class ChoirApp {
     });
 
     this.storage.save(STORAGE_KEYS.PRAYERS, prayers);
+    this.storage.addMyItemId(newPrayerId);
     this.closeModal('modalPrayer');
     this.renderPrayers();
     this.updateUnreadBadges();
@@ -2325,14 +2481,78 @@ class ChoirApp {
     const author = prompt('작성자 성함을 입력해주세요:', '익명 대원');
     if (!author) return;
 
+    const commentId = 'c_' + Date.now();
+    const newComment = { id: commentId, author, text };
+
     const prayers = this.storage.get(STORAGE_KEYS.PRAYERS);
     const prayer = prayers.find(p => p.id === id);
     if (prayer) {
       if (!prayer.comments) prayer.comments = [];
-      prayer.comments.push({ author, text });
+      prayer.comments.push(newComment);
       this.storage.save(STORAGE_KEYS.PRAYERS, prayers);
+      this.storage.addMyItemId(commentId);
+      inputEl.value = '';
       this.renderPrayers();
     }
+  }
+
+  openEditCommentModal(prayerId, commentId) {
+    if (!this.storage.isMyItem(commentId) && !this.storage.isOfficer()) {
+      alert('🔒 본인이 작성한 댓글만 수정할 수 있습니다.');
+      return;
+    }
+    const prayers = this.storage.get(STORAGE_KEYS.PRAYERS);
+    const prayer = prayers.find(p => p.id === prayerId);
+    if (!prayer || !prayer.comments) return;
+    const comment = prayer.comments.find(c => c.id === commentId);
+    if (!comment) return;
+
+    document.getElementById('editCommentPrayerId').value = prayerId;
+    document.getElementById('editCommentId').value = commentId;
+    document.getElementById('editCommentText').value = comment.text || '';
+    this.openModal('modalEditComment');
+  }
+
+  saveEditedComment(e) {
+    e.preventDefault();
+    const prayerId = document.getElementById('editCommentPrayerId').value;
+    const commentId = document.getElementById('editCommentId').value;
+    const text = document.getElementById('editCommentText').value.trim();
+
+    if (!this.storage.isMyItem(commentId) && !this.storage.isOfficer()) {
+      alert('🔒 본인이 작성한 댓글만 수정할 수 있습니다.');
+      return;
+    }
+
+    const prayers = this.storage.get(STORAGE_KEYS.PRAYERS);
+    const prayer = prayers.find(p => p.id === prayerId);
+    if (prayer && prayer.comments) {
+      const comment = prayer.comments.find(c => c.id === commentId);
+      if (comment) {
+        comment.text = text;
+        this.storage.save(STORAGE_KEYS.PRAYERS, prayers);
+        this.closeModal('modalEditComment');
+        this.renderPrayers();
+        alert('✏️ 댓글이 성공적으로 수정되었습니다.');
+      }
+    }
+  }
+
+  deleteComment(prayerId, commentId, btn) {
+    if (!this.storage.isMyItem(commentId) && !this.storage.isOfficer()) {
+      alert('🔒 본인이 작성한 댓글만 삭제할 수 있습니다.');
+      return;
+    }
+    this.confirmAction('💬 이 응원 댓글을 삭제하시겠습니까?', () => {
+      const prayers = this.storage.get(STORAGE_KEYS.PRAYERS);
+      const prayer = prayers.find(p => p.id === prayerId);
+      if (prayer && prayer.comments) {
+        prayer.comments = prayer.comments.filter(c => c.id !== commentId);
+        this.storage.save(STORAGE_KEYS.PRAYERS, prayers);
+        this.storage.removeMyItemId(commentId);
+        this.renderPrayers();
+      }
+    });
   }
 
   formatPartTag(part) {
