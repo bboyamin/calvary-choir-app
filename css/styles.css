@@ -916,41 +916,59 @@ body {
   border: 0;
 }
 
-/* 삭제 임원 버튼 */
-.btn-delete-card {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: #FEE2E2;
-  color: #DC2626;
-  border: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  font-weight: 800;
-  font-size: 13px;
-  cursor: pointer;
-  display: flex;
+/* 카드 헤더 관리자 액션 버튼 레이아웃 */
+.card-admin-actions {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 4px;
+  margin-left: 6px;
+  flex-shrink: 0;
 }
 
-.btn-edit-card {
-  position: absolute;
-  top: 12px;
-  right: 48px;
-  background: #FEF3C7;
-  color: #D97706;
-  border: none;
-  width: 32px;
-  height: 32px;
+.btn-card-edit {
+  background: #EFF6FF;
+  color: #2563EB;
+  border: 1px solid #BFDBFE;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  font-weight: 800;
   font-size: 13px;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.15s ease;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.15);
+}
+
+.btn-card-edit:hover {
+  background: #DBEAFE;
+  transform: scale(1.08);
+}
+
+.btn-card-delete, .btn-delete-card {
+  background: #FEE2E2;
+  color: #DC2626;
+  border: 1px solid #FCA5A5;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.15);
+}
+
+.btn-card-delete:hover, .btn-delete-card:hover {
+  background: #EF4444;
+  color: #FFFFFF;
+  transform: scale(1.08);
 }
 
 /* ==========================================

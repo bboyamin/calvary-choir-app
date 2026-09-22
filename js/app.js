@@ -781,8 +781,10 @@ class ChoirApp {
               <div class="card-top-right">
                 <span class="card-date">${item.date}</span>
                 ${isOfficer ? `
-                  <button class="btn-delete-card" onclick="app.openEditNoticeModal('${item.id}')" title="수정" style="right: 36px; color: var(--primary-navy); font-size: 13px;">✏️</button>
-                  <button class="btn-delete-card" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>
+                  <div class="card-admin-actions">
+                    <button type="button" class="btn-card-edit" onclick="app.openEditNoticeModal('${item.id}')" title="수정">✏️</button>
+                    <button type="button" class="btn-card-delete" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>
+                  </div>
                 ` : ''}
               </div>
             </div>
@@ -802,8 +804,10 @@ class ChoirApp {
             <div class="card-top-right">
               <span class="card-date">${item.date}</span>
               ${isOfficer ? `
-                <button class="btn-delete-card" onclick="app.openEditNoticeModal('${item.id}')" title="수정" style="right: 36px; color: var(--primary-navy); font-size: 13px;">✏️</button>
-                <button class="btn-delete-card" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>
+                <div class="card-admin-actions">
+                  <button type="button" class="btn-card-edit" onclick="app.openEditNoticeModal('${item.id}')" title="수정">✏️</button>
+                  <button type="button" class="btn-card-delete" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>
+                </div>
               ` : ''}
             </div>
           </div>
@@ -1245,10 +1249,16 @@ class ChoirApp {
 
     return `
       <div class="item-card">
-        ${isOfficer ? `<button class="btn-delete-card" onclick="app.deletePraise('${item.id}', this)" title="삭제">✕</button>` : ''}
         <div class="card-top">
           <span class="card-badge ${badgeClass}">${badgeText}</span>
-          <span class="card-date">🗓️ ${item.date}</span>
+          <div class="card-top-right">
+            <span class="card-date">🗓️ ${item.date}</span>
+            ${isOfficer ? `
+              <div class="card-admin-actions">
+                <button type="button" class="btn-card-delete" onclick="app.deletePraise('${item.id}', this)" title="삭제">✕</button>
+              </div>
+            ` : ''}
+          </div>
         </div>
         <h3 class="card-title">${item.title}</h3>
         
@@ -1423,9 +1433,15 @@ class ChoirApp {
 
       return `
         <div class="item-card ${isPast ? 'opacity-80' : ''}">
-          ${isOfficer ? `<button class="btn-delete-card" onclick="app.deleteSchedule('${s.id}', this)" title="삭제">✕</button>` : ''}
           <div class="card-top">
             <span class="card-badge ${isPast ? 'badge-past' : 'badge-praise'}">${isPast ? '📜 지난 일정' : '📅 주요 일정'} · ${dateStr} ${timeStr}</span>
+            ${isOfficer ? `
+              <div class="card-top-right">
+                <div class="card-admin-actions">
+                  <button type="button" class="btn-card-delete" onclick="app.deleteSchedule('${s.id}', this)" title="삭제">✕</button>
+                </div>
+              </div>
+            ` : ''}
           </div>
           <h3 class="card-title">${s.title}</h3>
           <p class="card-body-text">📍 <strong>장소:</strong> ${s.location}</p>
@@ -2396,16 +2412,18 @@ class ChoirApp {
       const canEditPrayer = isMyPrayer || isOfficer;
 
       return `
-        <div class="item-card" style="position: relative;">
-          ${canEditPrayer ? `
-            <div style="position: absolute; top: 12px; right: 12px; display: flex; gap: 4px; z-index: 5;">
-              <button type="button" onclick="app.openEditPrayerModal('${p.id}')" title="수정" style="background: rgba(37, 99, 235, 0.1); color: var(--primary-navy); border: none; border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: bold; cursor: pointer;">✏️ 수정</button>
-              <button type="button" onclick="app.deletePrayer('${p.id}', this)" title="삭제" style="background: rgba(239, 68, 68, 0.1); color: #EF4444; border: none; border-radius: 6px; padding: 2px 8px; font-size: 12px; font-weight: bold; cursor: pointer;">✕ 삭제</button>
-            </div>
-          ` : ''}
-          <div class="card-top" style="padding-right: ${canEditPrayer ? '110px' : '0px'};">
+        <div class="item-card">
+          <div class="card-top">
             <span class="card-badge badge-notice">🙏 ${this.escapeHtml(p.author || '익명')} 대원</span>
-            <span class="card-date">${p.date || ''}</span>
+            <div class="card-top-right">
+              <span class="card-date">${p.date || ''}</span>
+              ${canEditPrayer ? `
+                <div class="card-admin-actions">
+                  <button type="button" class="btn-card-edit" onclick="app.openEditPrayerModal('${p.id}')" title="수정">✏️</button>
+                  <button type="button" class="btn-card-delete" onclick="app.deletePrayer('${p.id}', this)" title="삭제">✕</button>
+                </div>
+              ` : ''}
+            </div>
           </div>
           <p class="card-body-text">${this.escapeHtml(p.content || '')}</p>
 
