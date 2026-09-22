@@ -709,13 +709,62 @@ class ChoirApp {
     this.renderNotices();
   }
 
+  getStarSvg(isFav) {
+    if (isFav) {
+      return `<svg class="star-svg is-starred" width="20" height="20" viewBox="0 0 24 24" fill="#F59E0B" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
+    }
+    return `<svg class="star-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`;
+  }
+
+  setNoticeFilter(filter) {
+    this.noticeFilter = filter || 'all';
+    document.querySelectorAll('[data-notice-filter]').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-notice-filter') === this.noticeFilter);
+    });
+    this.renderNotices();
+  }
+
+  toggleNoticeFavorite(noticeId, event) {
+    if (event) event.stopPropagation();
+
+    const currentFavs = this.storage.getFavoriteNoticeIds();
+    const isNowFav = !currentFavs.includes(noticeId);
+    this.storage.setFavoriteNotice(noticeId, isNowFav);
+    this.updateNoticeFavBadge();
+
+    if (this.noticeFilter === 'fav') {
+      this.renderNotices();
+      return;
+    }
+
+    const cardEl = document.getElementById(`notice_card_${noticeId}`);
+    if (cardEl) {
+      const starBtn = cardEl.querySelector('.btn-star-notice');
+      if (starBtn) {
+        starBtn.classList.toggle('is-starred', isNowFav);
+        starBtn.title = isNowFav ? '즐겨찾기 해제' : '즐겨찾기 추가';
+        starBtn.innerHTML = this.getStarSvg(isNowFav);
+      }
+    }
+  }
+
+  updateNoticeFavBadge() {
+    const badge = document.getElementById('noticeFavCountBadge');
+    if (badge) {
+      const favIds = this.storage.getFavoriteNoticeIds();
+      badge.textContent = favIds.length;
+    }
+  }
+
   renderNotices() {
     this.renderDailyVerse();
+    this.updateNoticeFavBadge();
 
     const listEl = document.getElementById('noticeList');
     if (!listEl) return;
     const rawNotices = this.storage.get(STORAGE_KEYS.NOTICES);
     const isOfficer = this.storage.isOfficer();
+    const favIds = new Set(this.storage.getFavoriteNoticeIds());
 
     if (rawNotices.length === 0) {
       listEl.innerHTML = `<div class="item-card"><p class="card-body-text">등록된 공지사항이 없습니다.</p></div>`;
@@ -728,8 +777,12 @@ class ChoirApp {
       return (b.date || '').localeCompare(a.date || '');
     });
 
-    const q = this.noticeSearchQuery;
     let filteredNotices = notices;
+    if (this.noticeFilter === 'fav') {
+      filteredNotices = filteredNotices.filter(item => favIds.has(item.id));
+    }
+
+    const q = this.noticeSearchQuery;
     if (q) {
       filteredNotices = filteredNotices.filter(item => {
         const title = (item.title || '').toLowerCase();
@@ -738,15 +791,27 @@ class ChoirApp {
       });
     }
 
-    if (filteredNotices.length === 0 && q) {
-      listEl.innerHTML = `
-        <div class="item-card" style="text-align: center; padding: 30px 16px;">
-          <p style="font-size: 36px; margin-bottom: 8px;">🔍</p>
-          <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">검색 결과가 없습니다</h4>
-          <p class="card-body-text" style="color: var(--text-sub);">'${this.escapeHtml(q)}' 와(과) 일치하는 공지사항이 없습니다.</p>
-        </div>
-      `;
-      return;
+    if (filteredNotices.length === 0) {
+      if (this.noticeFilter === 'fav') {
+        listEl.innerHTML = `
+          <div class="item-card" style="text-align: center; padding: 30px 16px;">
+            <p style="font-size: 36px; margin-bottom: 8px;">⭐</p>
+            <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">즐겨찾기한 공지사항이 없습니다</h4>
+            <p class="card-body-text" style="color: var(--text-sub);">중요한 공지 카드 상단의 별(☆) 아이콘을 눌러 즐겨찾기에 추가해 보세요!</p>
+          </div>
+        `;
+        return;
+      }
+      if (q) {
+        listEl.innerHTML = `
+          <div class="item-card" style="text-align: center; padding: 30px 16px;">
+            <p style="font-size: 36px; margin-bottom: 8px;">🔍</p>
+            <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">검색 결과가 없습니다</h4>
+            <p class="card-body-text" style="color: var(--text-sub);">'${this.escapeHtml(q)}' 와(과) 일치하는 공지사항이 없습니다.</p>
+          </div>
+        `;
+        return;
+      }
     }
 
     const renderNoticeMediaItems = (item) => {
@@ -772,6 +837,13 @@ class ChoirApp {
       const content = item.content || '';
       const isLong = content.length > 120 || (content.match(/\n/g) || []).length >= 3;
       const isExpanded = this.expandedNoticeIds && this.expandedNoticeIds.has(item.id);
+      const isFav = favIds.has(item.id);
+
+      const starButtonHtml = `
+        <button type="button" class="btn-star-notice ${isFav ? 'is-starred' : ''}" onclick="app.toggleNoticeFavorite('${item.id}', event)" title="${isFav ? '즐겨찾기 해제' : '즐겨찾기 추가'}">
+          ${this.getStarSvg(isFav)}
+        </button>
+      `;
 
       if (!isLong) {
         return `
@@ -780,6 +852,7 @@ class ChoirApp {
               <span class="card-badge badge-notice">📢 성가대 공지</span>
               <div class="card-top-right">
                 <span class="card-date">${item.date}</span>
+                ${starButtonHtml}
                 ${isOfficer ? `
                   <div class="card-admin-actions">
                     <button type="button" class="btn-card-edit" onclick="app.openEditNoticeModal('${item.id}')" title="수정">✏️</button>
@@ -803,6 +876,7 @@ class ChoirApp {
             <span class="card-badge badge-notice">📢 성가대 공지</span>
             <div class="card-top-right">
               <span class="card-date">${item.date}</span>
+              ${starButtonHtml}
               ${isOfficer ? `
                 <div class="card-admin-actions">
                   <button type="button" class="btn-card-edit" onclick="app.openEditNoticeModal('${item.id}')" title="수정">✏️</button>
@@ -829,7 +903,7 @@ class ChoirApp {
       `;
     };
 
-    if (q) {
+    if (q || this.noticeFilter === 'fav') {
       const html = filteredNotices.map(renderNoticeCard).join('');
       if (listEl.innerHTML !== html) {
         listEl.innerHTML = html;

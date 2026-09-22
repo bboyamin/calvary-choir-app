@@ -73,6 +73,16 @@
           </div>
         </div>
 
+        <!-- 서브 탭: 전체 공지 vs ⭐ 즐겨찾기 -->
+        <div class="sub-tab-bar" style="margin-bottom: 12px;">
+          <button type="button" class="sub-tab-btn active" data-notice-filter="all" onclick="app.setNoticeFilter('all')">
+            📋 전체 공지
+          </button>
+          <button type="button" class="sub-tab-btn" data-notice-filter="fav" onclick="app.setNoticeFilter('fav')">
+            ⭐ 즐겨찾기 <span id="noticeFavCountBadge" class="fav-badge" style="background: var(--accent-gold, #F59E0B); color: #ffffff; font-size: 11px; padding: 1px 6px; border-radius: 10px; margin-left: 4px;">0</span>
+          </button>
+        </div>
+
 
         <!-- 📖 오늘의 말씀 카드가 보여집니다 -->
         <div id="dailyVerseContainer" class="daily-verse-box"></div>
@@ -760,13 +770,13 @@
     </div>
   </div>
 
-  <script src="js/storage.js?v=1037"></script>
-  <script src="js/app.js?v=1037"></script>
+  <script src="js/storage.js?v=1038"></script>
+  <script src="js/app.js?v=1038"></script>
   <script>
     // 서비스 워커 등록 및 실시간 캐시 갱신 (PWA)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=1037')
+        navigator.serviceWorker.register('sw.js?v=1038')
           .then(reg => {
             console.log('PWA ServiceWorker registered', reg);
             reg.update(); // 강제 SW 최신버전 업데이트 검사
