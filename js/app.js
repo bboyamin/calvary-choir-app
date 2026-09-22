@@ -82,6 +82,7 @@ class ChoirApp {
     this.requestNotificationPermission();
     this.markTabAsRead(this.currentTab);
     this.startAutoUpdateChecker();
+    this.checkFirstVisitManual();
   }
 
   startAutoUpdateChecker() {
@@ -2623,6 +2624,16 @@ class ChoirApp {
 
   openUserManualModal() {
     this.openModal('modalUserManual');
+  }
+
+  checkFirstVisitManual() {
+    const hasSeenManual = localStorage.getItem('calvary_user_manual_seen');
+    if (!hasSeenManual) {
+      localStorage.setItem('calvary_user_manual_seen', 'true');
+      setTimeout(() => {
+        this.openUserManualModal();
+      }, 500);
+    }
   }
 
   // ----------------------------------------------------
