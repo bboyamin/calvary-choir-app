@@ -1,4 +1,8 @@
 {
+  "rewrites": [
+    { "source": "/user_manual", "destination": "/user_manual.html" },
+    { "source": "/manual", "destination": "/user_manual.html" }
+  ],
   "crons": [
     {
       "path": "/api/auto-sync",
