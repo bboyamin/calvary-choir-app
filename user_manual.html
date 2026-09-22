@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>갈보리교회 임마누엘 성가대 앱 사용 설명서</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background-color: #F1F5F9;
+      color: #0F172A;
+      line-height: 1.6;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .manual-card {
+      background: #FFFFFF;
+      width: 100%;
+      max-width: 800px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      padding: 28px 24px;
+      border: 1px solid #E2E8F0;
+    }
+
+    /* 헤더 타이틀 */
+    .header-box {
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+      color: #FFFFFF;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 24px;
+      border-bottom: 4px solid #D97706;
+    }
+
+    .header-box h1 {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+
+    .header-box p {
+      font-size: 15px;
+      color: #FCD34D;
+      font-weight: 700;
+    }
+
+    .url-badge {
+      display: inline-block;
+      margin-top: 10px;
+      background: rgba(255,255,255,0.15);
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #FFFFFF;
+    }
+
+    /* 하단 메뉴 가이드 바 */
+    .nav-guide-box {
+      background: #F8FAFC;
+      border: 2px solid #CBD5E1;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 24px;
+    }
+
+    .nav-guide-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #0F172A;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .nav-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      text-align: center;
+    }
+
+    .nav-item {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 8px;
+      padding: 8px 4px;
+    }
+
+    .nav-item .icon {
+      font-size: 22px;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .nav-item .label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1E293B;
+    }
+
+    /* 기능별 설명 세션 */
+    .section-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .feature-row {
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-left: 5px solid #D97706;
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .feature-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0F172A;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .feature-desc {
+      font-size: 15.5px;
+      color: #334155;
+      line-height: 1.65;
+    }
+
+    .feature-desc li {
+      margin-left: 20px;
+      margin-bottom: 4px;
+    }
+
+    .badge-btn {
+      display: inline-block;
+      background: #2563EB;
+      color: #FFFFFF;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .badge-part {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .badge-s { background: #EC4899; }
+    .badge-a { background: #8B5CF6; }
+    .badge-t { background: #3B82F6; }
+    .badge-b { background: #10B981; }
+
+    /* 하단 팁 바 */
+    .footer-tip {
+      margin-top: 24px;
+      background: #FEF3C7;
+      border: 1px solid #FCD34D;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 14.5px;
+      color: #78350F;
+      font-weight: 500;
+    }
+
+    .footer-tip strong {
+      color: #92400E;
+    }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .manual-card { box-shadow: none; border: none; padding: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="manual-card">
+    
+    <!-- 1. 헤더 타이틀 -->
+    <div class="header-box">
+      <h1>📖 갈보리교회 임마누엘 성가대 앱 쉬운 설명서</h1>
+      <p>어르신 대원분들도 손쉽게 따라 하실 수 있는 스마트폰 사용 가이드</p>
+      <div class="url-badge">🌐 인터넷 주소: https://calvary-ch.vercel.app</div>
+    </div>
+
+    <!-- 2. 하단 5개 메뉴 가이드 -->
+    <div class="nav-guide-box">
+      <div class="nav-guide-title">📱 스마트폰 화면 맨 아래 5개 메뉴를 누르시면 됩니다!</div>
+      <div class="nav-grid">
+        <div class="nav-item">
+          <span class="icon">📢</span>
+          <span class="label">공지사항</span>
+        </div>
+        <div class="nav-item">
+          <span class="icon">🎵</span>
+          <span class="label">찬양/음원</span>
+        </div>
+        <div class="nav-item">
+          <span class="icon">📅</span>
+          <span class="label">주요일정</span>
+        </div>
+        <div class="nav-item">
+          <span class="icon">👥</span>
+          <span class="label">대원소개</span>
+        </div>
+        <div class="nav-item">
+          <span class="icon">🙏</span>
+          <span class="label">중보기도</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 주요 기능 5가지 상세 설명 -->
+    <div class="section-grid">
+
+      <!-- 📢 1. 공지사항 -->
+      <div class="feature-row">
+        <div class="feature-title">
+          <span>📢 1. 공지사항 보기 (성가대 소식 & 악보/PDF)</span>
+        </div>
+        <ul class="feature-desc">
+          <li><strong>글 읽기</strong>: 화면을 위아래로 살짝 밀어 성가대 소식을 읽습니다.</li>
+          <li><strong>PDF 악보 보기</strong>: 공지글에 악보가 있으면 <span class="badge-btn">👁️ 미리보기 열기</span> 버튼을 터치해 화면에서 바로 봅니다.</li>
+          <li><strong>보관하기</strong>: 중요한 공지는 카드 우측 별(☆) 아이콘을 눌러 <strong>노란 별(⭐)</strong>로 만들어 두시면 <span style="font-weight:700; color:#D97706;">⭐ 즐겨찾기</span> 탭에 모아볼 수 있습니다.</li>
+        </ul>
+      </div>
+
+      <!-- 🎵 2. 찬양/음원 -->
+      <div class="feature-row">
+        <div class="feature-title">
+          <span>🎵 2. 찬양 & 파트별 연습실 (소프라노·알토·테너·베이스)</span>
+        </div>
+        <ul class="feature-desc">
+          <li><strong>성가대 찬양 영상</strong>: 주일에 부른 성가대 찬양 영상을 바로 재생하여 감상하실 수 있습니다.</li>
+          <li><strong>🎼 파트별 연습실</strong>: <span class="badge-part badge-s">소프라노</span> <span class="badge-part badge-a">알토</span> <span class="badge-part badge-t">테너</span> <span class="badge-part badge-b">베이스</span> 파트 버튼을 누르면 내 파트 전용 음원으로 반복 연습이 가능합니다.</li>
+        </ul>
+      </div>
+
+      <!-- 📅 3. 주요일정 -->
+      <div class="feature-row">
+        <div class="feature-title">
+          <span>📅 3. 주요 일정 확인 & 참석 신청하기</span>
+        </div>
+        <ul class="feature-desc">
+          <li><strong>일정 확인</strong>: 성가대 연습 날짜 및 행사 일정을 한눈에 확인합니다.</li>
+          <li><strong>참석 신청</strong>: <span class="badge-btn" style="background:#0F172A;">✍️ 참석 신청서 작성하기</span> 버튼을 누르고, 성함과 파트를 입력하신 후 신청합니다. (본인이 쓴 글은 언제든 ✏️ 수정/삭제 가능)</li>
+        </ul>
+      </div>
+
+      <!-- 👥 4. 대원소개 -->
+      <div class="feature-row">
+        <div class="feature-title">
+          <span>👥 4. 대원소개 & 연락처 확인 (접근 암호: 1004)</span>
+        </div>
+        <ul class="feature-desc">
+          <li><strong>암호 입력</strong>: 개인정보 보호를 위해 암호창이 뜨면 숫자 <strong>1004</strong> 를 누르고 확인을 터치합니다.</li>
+          <li><strong>명단 열람</strong>: 성가대원님들의 직분, 전화번호, 파트 정보를 편리하게 확인하실 수 있습니다.</li>
+        </ul>
+      </div>
+
+      <!-- 🙏 5. 중보기도방 -->
+      <div class="feature-row">
+        <div class="feature-title">
+          <span>🙏 5. 중보기도방 (기도제목 나누기 & 아멘 응원)</span>
+        </div>
+        <ul class="feature-desc">
+          <li><strong>기도 나누기</strong>: <span class="badge-btn" style="background:#059669;">🙏 기도제목 나누기</span> 버튼을 눌러 기도 부탁글을 올립니다.</li>
+          <li><strong>아멘 응원</strong>: 대원님의 기도글 아래 <span class="badge-btn" style="background:#F59E0B;">🖐️ 아멘</span> 버튼을 누르면 함께 기도하고 있음을 표현합니다.</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- 4. 하단 꿀팁 -->
+    <div class="footer-tip">
+      💡 <strong>어르신 대원분들을 위한 스마트폰 사용 팁!</strong><br>
+      • 글씨나 사진이 작아 보일 때는 스마트폰 화면을 두 손가락으로 가볍게 펼치시면 크게 보입니다.<br>
+      • 앱이 멈추거나 화면이 안 넘어갈 때는 오른쪽 위 <strong>새로고침(🔄) 아이콘</strong>을 터치해 주세요.
+    </div>
+
+  </div>
+
+</body>
+</html>
