@@ -110,10 +110,10 @@
         <!-- 서브 탭: 성가대 찬양 영상 vs 파트별 연습실 -->
         <div class="sub-tab-bar">
           <button class="sub-tab-btn active" data-subtab="all" onclick="app.switchPraiseSubtab('all')">
-            🎬 성가대 찬양 영상
+            성가대 찬양 영상
           </button>
           <button class="sub-tab-btn" data-subtab="part" onclick="app.switchPraiseSubtab('part')">
-            🎼 파트별 연습실 (SATB)
+            파트별 연습실 (다음주곡)
           </button>
         </div>
 
@@ -138,7 +138,7 @@
           <!-- 파트 필터 바 (기본 전체 5개 파트 표시) -->
           <div class="part-filter-bar">
             <button class="part-chip active" data-part="ALL" onclick="app.filterPartPraise('ALL')">전체</button>
-            <button class="part-chip" data-part="ALL_PART" onclick="app.filterPartPraise('ALL_PART')">🎼 4부 합창</button>
+            <button class="part-chip" data-part="ALL_PART" onclick="app.filterPartPraise('ALL_PART')">4부 합창</button>
             <button class="part-chip soprano" data-part="S" onclick="app.filterPartPraise('S')">소프라노</button>
             <button class="part-chip alto" data-part="A" onclick="app.filterPartPraise('A')">알토</button>
             <button class="part-chip tenor" data-part="T" onclick="app.filterPartPraise('T')">테너</button>
@@ -198,7 +198,16 @@
         </div>
         
         <div class="prayer-intro-card">
-          <p>❤️ <strong>"서로를 위해 기도할 때 성가대에 은혜가 넘칩니다."</strong><br>대원 누구나 기도제목을 올리고 함께 '아멘'으로 응원할 수 있습니다.</p>
+          <div class="prayer-intro-header">
+            <span class="prayer-intro-badge">함께하는 중보기도</span>
+            <span class="prayer-intro-sub">임마누엘 성가대</span>
+          </div>
+          <div class="prayer-intro-text">
+            "우리가 서로를 위해 한 마음으로 기도할 때<br>찬양에 은혜가 넘치고, 마음에 평안이 가득 임합니다."
+          </div>
+          <div class="prayer-intro-ref">
+            - 대원 누구나 기도제목을 올리고 '아멘'으로 기도합니다. -
+          </div>
         </div>
 
         <div id="prayerList" class="card-list">
@@ -868,13 +877,13 @@
     </div>
   </div>
 
-  <script src="js/storage.js?v=1050"></script>
-  <script src="js/app.js?v=1050"></script>
+  <script src="js/storage.js?v=1055"></script>
+  <script src="js/app.js?v=1055"></script>
   <script>
     // 서비스 워커 등록 및 실시간 캐시 갱신 (PWA)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=1050')
+        navigator.serviceWorker.register('sw.js?v=1055')
           .then(reg => {
             console.log('PWA ServiceWorker registered', reg);
             reg.update(); // 강제 SW 최신버전 업데이트 검사

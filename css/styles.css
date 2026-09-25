@@ -1146,16 +1146,83 @@ body {
 }
 
 /* ==========================================
-   기도방 소통 & 댓글 시스템
+   🙏 중보기도 상단 안내 카드 스타일 (오늘의 말씀 스타일 적용)
    ========================================== */
 .prayer-intro-card {
-  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
-  border: 1px solid #F59E0B;
-  border-radius: 12px;
-  padding: 12px 14px;
-  margin-bottom: 14px;
-  color: #78350F;
-  font-size: 15px;
+  position: relative;
+  background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 16px;
+  padding: 20px 18px 18px 18px;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.25), 0 0 15px rgba(245, 158, 11, 0.1);
+  overflow: hidden;
+  color: #F8FAFC;
+  margin-bottom: 16px;
+}
+
+.prayer-intro-card::before {
+  content: "“";
+  position: absolute;
+  top: -12px;
+  left: 10px;
+  font-size: 90px;
+  font-family: 'Gowun Batang', 'Nanum Myeongjo', Georgia, serif;
+  color: rgba(245, 158, 11, 0.15);
+  line-height: 1;
+  pointer-events: none;
+}
+
+.prayer-intro-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.prayer-intro-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #FBBF24;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  letter-spacing: -0.2px;
+}
+
+.prayer-intro-sub {
+  font-size: 12px;
+  color: #94A3B8;
+  font-weight: 500;
+}
+
+.prayer-intro-text {
+  font-family: 'Gowun Batang', 'Nanum Myeongjo', Georgia, serif;
+  font-size: 16.5px;
+  font-weight: 700;
+  line-height: 1.7;
+  color: #F8FAFC;
+  word-break: keep-all;
+  margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.prayer-intro-ref {
+  font-family: 'Gowun Batang', 'Nanum Myeongjo', Georgia, serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #FBBF24;
+  text-align: right;
+  letter-spacing: 0.3px;
+  position: relative;
+  z-index: 1;
 }
 
 .amen-button {
@@ -1232,61 +1299,73 @@ body {
 }
 
 /* ==========================================
-   신청자 현황 모바일 카드 리스트 스타일
+   신청자 현황 모바일 카드 리스트 스타일 (v1051)
    ========================================== */
 .applicant-card-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
-.applicant-card {
+.applicant-row-card {
   background: #FFFFFF;
   border: 1px solid #E2E8F0;
-  border-radius: 12px;
-  padding: 12px 14px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   transition: all 0.15s ease;
+  position: relative;
 }
 
-.applicant-card.is-mine {
-  background: #FFFBEB;
-  border: 1.5px solid #F59E0B;
-  border-left: 4px solid #D97706;
+.applicant-row-card.is-mine {
+  background: #F8FAFC;
+  border: 1px solid #CBD5E1;
+  border-left: 4px solid #2563EB;
 }
 
-.applicant-card-header {
+.applicant-row-main {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
   gap: 8px;
+  flex-wrap: nowrap;
 }
 
-.applicant-user-info {
+.applicant-info-group {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  min-width: 0;
+  flex: 1;
 }
 
 .applicant-name {
-  font-size: 16px;
+  font-size: 15.5px;
   font-weight: 800;
   color: #0F172A;
   white-space: nowrap;
+  letter-spacing: -0.3px;
 }
 
 .my-apply-badge {
   font-size: 11px;
-  font-weight: 800;
-  background: #D97706;
+  font-weight: 700;
+  background: #1E293B;
   color: #FFFFFF;
-  padding: 2px 6px;
-  border-radius: 6px;
+  padding: 2px 7px;
+  border-radius: 10px;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.applicant-right-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .applicant-option-badge {
@@ -1294,54 +1373,55 @@ body {
   font-weight: 800;
   background: #E0F2FE;
   color: #0284C7;
-  padding: 3px 8px;
-  border-radius: 6px;
-  white-space: nowrap;
-}
-
-.applicant-note-box {
-  background: #F1F5F9;
+  padding: 3px 9px;
   border-radius: 8px;
-  padding: 6px 10px;
-  font-size: 13.5px;
-  color: #334155;
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  line-height: 1.45;
-  word-break: break-all;
-}
-
-.applicant-card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 2px;
-  padding-top: 6px;
-  border-top: 1px dashed #E2E8F0;
-}
-
-.apply-time-str {
-  font-size: 11.5px;
-  color: #94A3B8;
+  white-space: nowrap;
 }
 
 .applicant-action-btns {
   display: flex;
-  gap: 6px;
-  margin-left: auto;
+  align-items: center;
+  gap: 4px;
 }
 
-.btn-app-action {
-  font-size: 12.5px;
-  font-weight: 800;
-  padding: 4px 10px;
+.btn-app-edit, .btn-app-delete {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3.5px 8px;
   border-radius: 6px;
-  border: none;
   cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.btn-app-edit {
+  background: #F1F5F9;
+  color: #2563EB;
+  border: 1px solid #CBD5E1;
+}
+
+.btn-app-delete {
+  background: #FEF2F2;
+  color: #EF4444;
+  border: 1px solid #FECACA;
+}
+
+.btn-app-edit:active, .btn-app-delete:active {
+  transform: scale(0.94);
+}
+
+.applicant-note-row {
+  background: #F1F5F9;
+  border-left: 3px solid #94A3B8;
+  border-radius: 0 6px 6px 0;
+  padding: 5px 8px;
+  font-size: 12.5px;
+  color: #334155;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 6px;
+  line-height: 1.4;
+  word-break: break-all;
 }
 
 .btn-app-action.edit {

@@ -1933,32 +1933,31 @@ class ChoirApp {
         const displayPart = this.formatPartTag(a.part);
 
         return `
-          <div class="applicant-card ${isMine ? 'is-mine' : ''}">
-            <div class="applicant-card-header">
-              <div class="applicant-user-info">
+          <div class="applicant-row-card ${isMine ? 'is-mine' : ''}">
+            <div class="applicant-row-main">
+              <div class="applicant-info-group">
                 <span class="part-tag ${partClass}">${displayPart}</span>
                 <strong class="applicant-name">${this.escapeHtml(a.name || '')}</strong>
                 ${isMine ? '<span class="my-apply-badge">내 신청</span>' : ''}
               </div>
-              <span class="applicant-option-badge">${this.escapeHtml(a.option || '신청')}</span>
+
+              <div class="applicant-right-group">
+                <span class="applicant-option-badge">${this.escapeHtml(a.option || '신청')}</span>
+                ${canEdit ? `
+                  <div class="applicant-action-btns">
+                    <button type="button" class="btn-app-edit" onclick="app.openEditApplicationModal('${schedId}', '${a.id}')">수정</button>
+                    <button type="button" class="btn-app-delete" onclick="app.deleteApplication('${schedId}', '${a.id}', this)">삭제</button>
+                  </div>
+                ` : ''}
+              </div>
             </div>
 
             ${a.note ? `
-              <div class="applicant-note-box">
-                <span style="font-size:13px;">💬</span>
+              <div class="applicant-note-row">
+                <span style="font-size:12px;">💬</span>
                 <span>${this.escapeHtml(a.note)}</span>
               </div>
             ` : ''}
-
-            <div class="applicant-card-footer">
-              <span class="apply-time-str">${a.time ? '🕒 ' + this.escapeHtml(a.time) : ''}</span>
-              ${canEdit ? `
-                <div class="applicant-action-btns">
-                  <button type="button" class="btn-app-action edit" onclick="app.openEditApplicationModal('${schedId}', '${a.id}')">✏️ 수정</button>
-                  <button type="button" class="btn-app-action delete" onclick="app.deleteApplication('${schedId}', '${a.id}', this)">🗑️ 삭제</button>
-                </div>
-              ` : ''}
-            </div>
           </div>
         `;
       }).join('');
@@ -2081,8 +2080,10 @@ class ChoirApp {
       ? `<div class="item-card"><p class="card-body-text">등록된 대원이 없습니다.</p></div>`
       : members.map(m => {
         const cleanPhone = (m.phone || '').replace(/[^0-9+]/g, '');
+        const isLeader = Boolean(m.role && m.role !== '대원');
+        const showDetails = isLeader || isOfficer;
 
-        const photoUrl = this.formatMemberPhotoUrl(m.photoUrl, m.id);
+        const photoUrl = showDetails ? this.formatMemberPhotoUrl(m.photoUrl, m.id) : null;
 
         return `
         <div class="member-card">
@@ -2098,12 +2099,14 @@ class ChoirApp {
           </div>
 
           <div class="member-contact-buttons">
-            <a href="tel:${cleanPhone}" class="btn-contact-call" title="전화 연결">
-              📞 <span class="btn-text-sm">전화</span>
-            </a>
-            <a href="sms:${cleanPhone}" class="btn-contact-sms" title="문자 보내기">
-              💬 <span class="btn-text-sm">문자</span>
-            </a>
+            ${showDetails ? `
+              <a href="tel:${cleanPhone}" class="btn-contact-call" title="전화 연결">
+                📞 <span class="btn-text-sm">전화</span>
+              </a>
+              <a href="sms:${cleanPhone}" class="btn-contact-sms" title="문자 보내기">
+                💬 <span class="btn-text-sm">문자</span>
+              </a>
+            ` : ''}
             ${isOfficer ? `
               <button class="btn-edit-card" style="position:static; margin-right:4px;" onclick="app.editMember('${m.id}')" title="수정">✏️</button>
               <button class="btn-delete-card" style="position:static;" onclick="app.deleteMember('${m.id}', this)" title="삭제">✕</button>
