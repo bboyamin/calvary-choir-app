@@ -937,19 +937,22 @@ class ChoirApp {
       const hasMore = visibleCount < olderNotices.length;
 
       html += `
-        <details class="archive-accordion" ${this.isNoticeArchiveOpen ? 'open' : ''}>
-          <summary class="archive-summary" onclick="app.onArchiveSummaryClick(event, this)">📁 지난 공지사항 보관함 (총 ${olderNotices.length}개)</summary>
-          <div class="archive-content">
+        <div class="archive-accordion ${this.isNoticeArchiveOpen ? 'is-open' : ''}">
+          <div class="archive-summary" onclick="app.toggleNoticeArchiveFolder(event, this)">
+            <span>📁 지난 공지사항 보관함 (총 ${olderNotices.length}개)</span>
+            <span class="archive-arrow" style="font-size: 12px; opacity: 0.7;">${this.isNoticeArchiveOpen ? '▲ 접기' : '▼ 펼치기'}</span>
+          </div>
+          <div class="archive-content" style="display: ${this.isNoticeArchiveOpen ? 'flex' : 'none'};">
             ${displayedOlder.map(renderNoticeCard).join('')}
             ${hasMore ? `
               <div class="load-more-archive-box">
-                <button type="button" class="btn-load-more-archive" onclick="app.loadMoreNoticeArchive()">
+                <button type="button" class="btn-load-more-archive" onclick="app.loadMoreNoticeArchive(event)">
                   👇 공지사항 더보기
                 </button>
               </div>
             ` : ''}
           </div>
-        </details>
+        </div>
       `;
     }
 
@@ -972,29 +975,26 @@ class ChoirApp {
     } catch (e) {}
   }
 
-  onArchiveSummaryClick(event, summaryEl) {
+  toggleNoticeArchiveFolder(event, summaryEl) {
     if (event) event.preventDefault();
-    const detailsEl = summaryEl ? summaryEl.closest('details') : null;
-    if (!detailsEl) return;
+    this.isNoticeArchiveOpen = !this.isNoticeArchiveOpen;
+    this.renderNotices();
 
-    const willOpen = !detailsEl.open;
-    detailsEl.open = willOpen;
-    this.isNoticeArchiveOpen = willOpen;
-
-    if (willOpen) {
+    if (this.isNoticeArchiveOpen) {
       setTimeout(() => {
-        this.scrollToTargetElement(detailsEl);
+        const folderEl = document.querySelector('.archive-accordion');
+        if (folderEl) {
+          this.scrollToTargetElement(folderEl);
+        }
       }, 50);
     }
   }
 
-  onNoticeArchiveToggle(detailsEl) {
-    if (detailsEl) {
-      this.isNoticeArchiveOpen = detailsEl.open;
+  loadMoreNoticeArchive(event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
     }
-  }
-
-  loadMoreNoticeArchive() {
     this.visibleNoticeArchiveCount = (this.visibleNoticeArchiveCount || 5) + 5;
     this.renderNotices();
   }

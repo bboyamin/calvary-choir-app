@@ -697,7 +697,7 @@ body {
   scroll-margin-top: 75px;
 }
 
-.archive-accordion[open] {
+.archive-accordion[open], .archive-accordion.is-open {
   background: #FFFFFF;
   border-style: solid;
   border-color: #94A3B8;
