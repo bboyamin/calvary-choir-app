@@ -763,64 +763,6 @@ class ChoirApp {
     }
   }
 
-  renderNotices() {
-    this.renderDailyVerse();
-    this.updateNoticeFavBadge();
-
-    const listEl = document.getElementById('noticeList');
-    if (!listEl) return;
-    const rawNotices = this.storage.get(STORAGE_KEYS.NOTICES);
-    const isOfficer = this.storage.isOfficer();
-    const favIds = new Set(this.storage.getFavoriteNoticeIds());
-
-    if (rawNotices.length === 0) {
-      listEl.innerHTML = `<div class="item-card"><p class="card-body-text">등록된 공지사항이 없습니다.</p></div>`;
-      return;
-    }
-
-    const notices = [...rawNotices].sort((a, b) => {
-      const timeDiff = this.getItemTimestamp(b) - this.getItemTimestamp(a);
-      if (timeDiff !== 0) return timeDiff;
-      return (b.date || '').localeCompare(a.date || '');
-    });
-
-    let filteredNotices = notices;
-    if (this.noticeFilter === 'fav') {
-      filteredNotices = filteredNotices.filter(item => favIds.has(item.id));
-    }
-
-    const q = this.noticeSearchQuery;
-    if (q) {
-      filteredNotices = filteredNotices.filter(item => {
-        const title = (item.title || '').toLowerCase();
-        const content = (item.content || '').toLowerCase();
-        return title.includes(q) || content.includes(q);
-      });
-    }
-
-    if (filteredNotices.length === 0) {
-      if (this.noticeFilter === 'fav') {
-        listEl.innerHTML = `
-          <div class="item-card" style="text-align: center; padding: 30px 16px;">
-            <p style="font-size: 36px; margin-bottom: 8px;">⭐</p>
-            <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">즐겨찾기한 공지사항이 없습니다</h4>
-            <p class="card-body-text" style="color: var(--text-sub);">중요한 공지 카드 상단의 별(☆) 아이콘을 눌러 즐겨찾기에 추가해 보세요!</p>
-          </div>
-        `;
-        return;
-      }
-      if (q) {
-        listEl.innerHTML = `
-          <div class="item-card" style="text-align: center; padding: 30px 16px;">
-            <p style="font-size: 36px; margin-bottom: 8px;">🔍</p>
-            <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">검색 결과가 없습니다</h4>
-            <p class="card-body-text" style="color: var(--text-sub);">'${this.escapeHtml(q)}' 와(과) 일치하는 공지사항이 없습니다.</p>
-          </div>
-        `;
-        return;
-      }
-    }
-
   renderNoticeCardHtml(item, isOfficer, favIds) {
     const content = item.content || '';
     const isLong = content.length > 120 || (content.match(/\n/g) || []).length >= 3;
@@ -915,45 +857,55 @@ class ChoirApp {
   }
 
   renderNotices() {
-    const listEl = document.getElementById('noticeListContainer');
+    this.renderDailyVerse();
+    this.updateNoticeFavBadge();
+
+    const listEl = document.getElementById('noticeList');
     if (!listEl) return;
 
-    const notices = this.storage.get(STORAGE_KEYS.NOTICES);
+    const rawNotices = this.storage.get(STORAGE_KEYS.NOTICES) || [];
+    const isOfficer = this.storage.isOfficer();
+    const favIds = new Set(this.storage.getFavoriteNoticeIds() || []);
 
-    if (!notices || notices.length === 0) {
-      listEl.innerHTML = `
-        <div class="empty-state">
-          <p class="empty-icon">📢</p>
-          <p class="empty-title">등록된 공지사항이 없습니다.</p>
-        </div>
-      `;
+    if (rawNotices.length === 0) {
+      listEl.innerHTML = `<div class="item-card"><p class="card-body-text">등록된 공지사항이 없습니다.</p></div>`;
       return;
     }
 
-    const q = (document.getElementById('searchNotice') ? document.getElementById('searchNotice').value : '').trim().toLowerCase();
-    const favIds = new Set(this.storage.get(STORAGE_KEYS.FAV_NOTICES) || []);
-    const isOfficer = this.storage.isOfficer();
-
-    let filteredNotices = notices.filter(n => {
-      const matchSearch = !q || (n.title && n.title.toLowerCase().includes(q)) || (n.content && n.content.toLowerCase().includes(q));
-      const matchFav = this.noticeFilter !== 'fav' || favIds.has(n.id);
-      return matchSearch && matchFav;
+    const notices = [...rawNotices].sort((a, b) => {
+      const timeDiff = this.getItemTimestamp(b) - this.getItemTimestamp(a);
+      if (timeDiff !== 0) return timeDiff;
+      return (b.date || '').localeCompare(a.date || '');
     });
+
+    let filteredNotices = notices;
+    if (this.noticeFilter === 'fav') {
+      filteredNotices = filteredNotices.filter(item => favIds.has(item.id));
+    }
+
+    const q = this.noticeSearchQuery ? this.noticeSearchQuery.trim().toLowerCase() : '';
+    if (q) {
+      filteredNotices = filteredNotices.filter(item => {
+        const title = (item.title || '').toLowerCase();
+        const content = (item.content || '').toLowerCase();
+        return title.includes(q) || content.includes(q);
+      });
+    }
 
     if (filteredNotices.length === 0) {
       if (this.noticeFilter === 'fav') {
         listEl.innerHTML = `
-          <div class="empty-state">
+          <div class="item-card" style="text-align: center; padding: 30px 16px;">
             <p style="font-size: 36px; margin-bottom: 8px;">⭐</p>
-            <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">즐겨찾기한 공지가 없습니다</h4>
-            <p class="card-body-text" style="color: var(--text-sub);">중요한 공지사항 카드의 별표(⭐) 아이콘을 눌러 보관해보세요.</p>
+            <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">즐겨찾기한 공지사항이 없습니다</h4>
+            <p class="card-body-text" style="color: var(--text-sub);">중요한 공지 카드 상단의 별(☆) 아이콘을 눌러 즐겨찾기에 추가해 보세요!</p>
           </div>
         `;
         return;
       }
       if (q) {
         listEl.innerHTML = `
-          <div class="empty-state">
+          <div class="item-card" style="text-align: center; padding: 30px 16px;">
             <p style="font-size: 36px; margin-bottom: 8px;">🔍</p>
             <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">검색 결과가 없습니다</h4>
             <p class="card-body-text" style="color: var(--text-sub);">'${this.escapeHtml(q)}' 와(과) 일치하는 공지사항이 없습니다.</p>
@@ -1043,9 +995,14 @@ class ChoirApp {
     }
 
     const notices = this.storage.get(STORAGE_KEYS.NOTICES) || [];
-    const q = (document.getElementById('searchNotice') ? document.getElementById('searchNotice').value : '').trim().toLowerCase();
-    const favIds = new Set(this.storage.get(STORAGE_KEYS.FAV_NOTICES) || []);
-    const filteredNotices = notices.filter(n => {
+    const favIds = new Set(this.storage.getFavoriteNoticeIds() || []);
+    const q = this.noticeSearchQuery ? this.noticeSearchQuery.trim().toLowerCase() : '';
+    const sortedNotices = [...notices].sort((a, b) => {
+      const timeDiff = this.getItemTimestamp(b) - this.getItemTimestamp(a);
+      if (timeDiff !== 0) return timeDiff;
+      return (b.date || '').localeCompare(a.date || '');
+    });
+    const filteredNotices = sortedNotices.filter(n => {
       const matchSearch = !q || (n.title && n.title.toLowerCase().includes(q)) || (n.content && n.content.toLowerCase().includes(q));
       const matchFav = this.noticeFilter !== 'fav' || favIds.has(n.id);
       return matchSearch && matchFav;
