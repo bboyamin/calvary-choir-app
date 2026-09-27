@@ -666,6 +666,26 @@ body {
 .badge-part-b { background: #D1FAE5; color: var(--bass-color); }
 .opacity-80 { opacity: 0.88; }
 
+.item-card {
+  scroll-margin-top: 75px;
+}
+
+@keyframes highlightNoticeFade {
+  0% {
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.45), 0 6px 16px rgba(37, 99, 235, 0.2);
+    transform: translateY(-2px);
+  }
+  100% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transform: translateY(0);
+  }
+}
+
+.highlight-newly-loaded {
+  animation: highlightNoticeFade 1.6s ease-out;
+  border-color: #3b82f6 !important;
+}
+
 /* 보관함 (지나간 글/일정 접기/펼치기 폴더) */
 .archive-accordion {
   margin-top: 16px;
@@ -674,6 +694,7 @@ body {
   border-radius: 12px;
   overflow: hidden;
   transition: all 0.2s ease;
+  scroll-margin-top: 75px;
 }
 
 .archive-accordion[open] {

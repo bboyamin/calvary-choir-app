@@ -958,15 +958,62 @@ class ChoirApp {
     }
   }
 
+  scrollToTargetElement(targetEl) {
+    if (!targetEl) return;
+    const appContent = document.querySelector('.app-content');
+    if (appContent) {
+      const cardTop = targetEl.getBoundingClientRect().top;
+      const containerTop = appContent.getBoundingClientRect().top;
+      const offset = Math.max(0, cardTop - containerTop + appContent.scrollTop - 12);
+      appContent.scrollTo({ top: offset, behavior: 'smooth' });
+    }
+    try {
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (e) {}
+  }
+
   onNoticeArchiveToggle(detailsEl) {
     if (detailsEl) {
       this.isNoticeArchiveOpen = detailsEl.open;
+      if (detailsEl.open) {
+        setTimeout(() => {
+          this.scrollToTargetElement(detailsEl);
+        }, 100);
+      }
     }
   }
 
   loadMoreNoticeArchive() {
-    this.visibleNoticeArchiveCount = (this.visibleNoticeArchiveCount || 5) + 5;
+    const previousCount = this.visibleNoticeArchiveCount || 5;
+    this.visibleNoticeArchiveCount = previousCount + 5;
+
+    const rawNotices = this.storage.get(STORAGE_KEYS.NOTICES) || [];
+    const notices = [...rawNotices].sort((a, b) => {
+      const timeDiff = this.getItemTimestamp(b) - this.getItemTimestamp(a);
+      if (timeDiff !== 0) return timeDiff;
+      return (b.date || '').localeCompare(a.date || '');
+    });
+    const MAX_RECENT = 4;
+    const olderNotices = notices.slice(MAX_RECENT);
+    const firstNewlyLoadedItem = olderNotices[previousCount];
+
     this.renderNotices();
+
+    setTimeout(() => {
+      if (firstNewlyLoadedItem && firstNewlyLoadedItem.id) {
+        const targetCard = document.getElementById(`notice_card_${firstNewlyLoadedItem.id}`);
+        if (targetCard) {
+          this.scrollToTargetElement(targetCard);
+          targetCard.classList.add('highlight-newly-loaded');
+          setTimeout(() => targetCard.classList.remove('highlight-newly-loaded'), 1800);
+          return;
+        }
+      }
+      const accordion = document.querySelector('.archive-accordion');
+      if (accordion) {
+        this.scrollToTargetElement(accordion);
+      }
+    }, 120);
   }
 
   renderDailyVerse() {
