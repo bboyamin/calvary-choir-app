@@ -984,36 +984,8 @@ class ChoirApp {
   }
 
   loadMoreNoticeArchive() {
-    const previousCount = this.visibleNoticeArchiveCount || 5;
-    this.visibleNoticeArchiveCount = previousCount + 5;
-
-    const rawNotices = this.storage.get(STORAGE_KEYS.NOTICES) || [];
-    const notices = [...rawNotices].sort((a, b) => {
-      const timeDiff = this.getItemTimestamp(b) - this.getItemTimestamp(a);
-      if (timeDiff !== 0) return timeDiff;
-      return (b.date || '').localeCompare(a.date || '');
-    });
-    const MAX_RECENT = 4;
-    const olderNotices = notices.slice(MAX_RECENT);
-    const firstNewlyLoadedItem = olderNotices[previousCount];
-
+    this.visibleNoticeArchiveCount = (this.visibleNoticeArchiveCount || 5) + 5;
     this.renderNotices();
-
-    setTimeout(() => {
-      if (firstNewlyLoadedItem && firstNewlyLoadedItem.id) {
-        const targetCard = document.getElementById(`notice_card_${firstNewlyLoadedItem.id}`);
-        if (targetCard) {
-          this.scrollToTargetElement(targetCard);
-          targetCard.classList.add('highlight-newly-loaded');
-          setTimeout(() => targetCard.classList.remove('highlight-newly-loaded'), 1800);
-          return;
-        }
-      }
-      const accordion = document.querySelector('.archive-accordion');
-      if (accordion) {
-        this.scrollToTargetElement(accordion);
-      }
-    }, 120);
   }
 
   renderDailyVerse() {
