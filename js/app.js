@@ -821,14 +821,26 @@ class ChoirApp {
       }
     }
 
-    const renderNoticeMediaItems = (item) => {
-      if (item.mediaList && Array.isArray(item.mediaList) && item.mediaList.length > 0) {
-        return item.mediaList.map(m => {
+  renderNoticeCardHtml(item, isOfficer, favIds) {
+    const content = item.content || '';
+    const isLong = content.length > 120 || (content.match(/\n/g) || []).length >= 3;
+    const isExpanded = this.expandedNoticeIds && this.expandedNoticeIds.has(item.id);
+    const isFav = favIds ? favIds.has(item.id) : false;
+
+    const starButtonHtml = `
+      <button type="button" class="btn-star-notice ${isFav ? 'is-starred' : ''}" onclick="app.toggleNoticeFavorite('${item.id}', event)" title="${isFav ? '즐겨찾기 해제' : '즐겨찾기 추가'}">
+        ${this.getStarSvg(isFav)}
+      </button>
+    `;
+
+    const renderNoticeMediaItems = (notice) => {
+      if (notice.mediaList && Array.isArray(notice.mediaList) && notice.mediaList.length > 0) {
+        return notice.mediaList.map(m => {
           if (m.type === 'youtube' && m.url) {
             return `<div class="video-responsive" style="margin-top: 10px;">${this.getYoutubeIframe(m.url)}</div>`;
           }
           if (m.type === 'media' && m.url) {
-            return `<div style="margin-top: 10px;">${this.getNoticeMediaHtml(m.url, item.title)}</div>`;
+            return `<div style="margin-top: 10px;">${this.getNoticeMediaHtml(m.url, notice.title)}</div>`;
           }
           if (m.type === 'link' && m.url) {
             return `<div style="margin-top: 10px;">${this.getNoticeLinkCardHtml(m.url)}</div>`;
@@ -838,51 +850,15 @@ class ChoirApp {
       }
 
       let html = '';
-      if (item.imageUrl) html += this.getNoticeMediaHtml(item.imageUrl, item.title);
-      if (item.youtubeUrl) html += `<div class="video-responsive">${this.getYoutubeIframe(item.youtubeUrl)}</div>`;
-      if (item.linkUrl) html += `<div style="margin-top: 10px;">${this.getNoticeLinkCardHtml(item.linkUrl)}</div>`;
+      if (notice.imageUrl) html += this.getNoticeMediaHtml(notice.imageUrl, notice.title);
+      if (notice.youtubeUrl) html += `<div class="video-responsive">${this.getYoutubeIframe(notice.youtubeUrl)}</div>`;
+      if (notice.linkUrl) html += `<div style="margin-top: 10px;">${this.getNoticeLinkCardHtml(notice.linkUrl)}</div>`;
       return html;
     };
 
-    const renderNoticeCard = (item) => {
-      const content = item.content || '';
-      const isLong = content.length > 120 || (content.match(/\n/g) || []).length >= 3;
-      const isExpanded = this.expandedNoticeIds && this.expandedNoticeIds.has(item.id);
-      const isFav = favIds.has(item.id);
-
-      const starButtonHtml = `
-        <button type="button" class="btn-star-notice ${isFav ? 'is-starred' : ''}" onclick="app.toggleNoticeFavorite('${item.id}', event)" title="${isFav ? '즐겨찾기 해제' : '즐겨찾기 추가'}">
-          ${this.getStarSvg(isFav)}
-        </button>
-      `;
-
-      if (!isLong) {
-        return `
-          <div class="item-card" id="notice_card_${item.id}">
-            <div class="card-top">
-              <span class="card-badge badge-notice">📢 성가대 공지</span>
-              <div class="card-top-right">
-                <span class="card-date">${item.date}</span>
-                ${starButtonHtml}
-                ${isOfficer ? `
-                  <div class="card-admin-actions">
-                    <button type="button" class="btn-card-edit" onclick="app.openEditNoticeModal('${item.id}')" title="수정">✏️</button>
-                    <button type="button" class="btn-card-delete" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>
-                  </div>
-                ` : ''}
-              </div>
-            </div>
-            <h3 class="card-title">${item.title}</h3>
-            <div class="card-body-text">${this.formatNoticeContentWithLinks(content)}</div>
-            ${renderNoticeMediaItems(item)}
-          </div>
-        `;
-      }
-
-      const previewText = content.slice(0, 120).replace(/\r?\n/g, ' ').trim() + '...';
-
+    if (!isLong) {
       return `
-        <div class="item-card notice-card-collapsible ${isExpanded ? 'is-expanded' : ''}" id="notice_card_${item.id}">
+        <div class="item-card" id="notice_card_${item.id}">
           <div class="card-top">
             <span class="card-badge badge-notice">📢 성가대 공지</span>
             <div class="card-top-right">
@@ -897,22 +873,97 @@ class ChoirApp {
             </div>
           </div>
           <h3 class="card-title">${item.title}</h3>
-
-          <div class="notice-preview-box" style="display: ${isExpanded ? 'none' : 'block'};">
-            <div class="card-body-text notice-text-preview">${this.formatNoticeContentWithLinks(previewText)}</div>
-          </div>
-
-          <div class="notice-full-box" style="display: ${isExpanded ? 'block' : 'none'};">
-            <div class="card-body-text notice-text-full">${this.formatNoticeContentWithLinks(content)}</div>
-            ${renderNoticeMediaItems(item)}
-          </div>
-
-          <button type="button" class="btn-toggle-expand" onclick="app.toggleNoticeExpand('${item.id}', this)">
-            ${isExpanded ? '🔼 내용 접기' : '🔽 자세히 보기'}
-          </button>
+          <div class="card-body-text">${this.formatNoticeContentWithLinks(content)}</div>
+          ${renderNoticeMediaItems(item)}
         </div>
       `;
-    };
+    }
+
+    const previewText = content.slice(0, 120).replace(/\r?\n/g, ' ').trim() + '...';
+
+    return `
+      <div class="item-card notice-card-collapsible ${isExpanded ? 'is-expanded' : ''}" id="notice_card_${item.id}">
+        <div class="card-top">
+          <span class="card-badge badge-notice">📢 성가대 공지</span>
+          <div class="card-top-right">
+            <span class="card-date">${item.date}</span>
+            ${starButtonHtml}
+            ${isOfficer ? `
+              <div class="card-admin-actions">
+                <button type="button" class="btn-card-edit" onclick="app.openEditNoticeModal('${item.id}')" title="수정">✏️</button>
+                <button type="button" class="btn-card-delete" onclick="app.deleteNotice('${item.id}', this)" title="삭제">✕</button>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+        <h3 class="card-title">${item.title}</h3>
+
+        <div class="notice-preview-box" style="display: ${isExpanded ? 'none' : 'block'};">
+          <div class="card-body-text notice-text-preview">${this.formatNoticeContentWithLinks(previewText)}</div>
+        </div>
+
+        <div class="notice-full-box" style="display: ${isExpanded ? 'block' : 'none'};">
+          <div class="card-body-text notice-text-full">${this.formatNoticeContentWithLinks(content)}</div>
+          ${renderNoticeMediaItems(item)}
+        </div>
+
+        <button type="button" class="btn-toggle-expand" onclick="app.toggleNoticeExpand('${item.id}', this)">
+          ${isExpanded ? '🔼 내용 접기' : '🔽 자세히 보기'}
+        </button>
+      </div>
+    `;
+  }
+
+  renderNotices() {
+    const listEl = document.getElementById('noticeListContainer');
+    if (!listEl) return;
+
+    const notices = this.storage.get(STORAGE_KEYS.NOTICES);
+
+    if (!notices || notices.length === 0) {
+      listEl.innerHTML = `
+        <div class="empty-state">
+          <p class="empty-icon">📢</p>
+          <p class="empty-title">등록된 공지사항이 없습니다.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const q = (document.getElementById('searchNotice') ? document.getElementById('searchNotice').value : '').trim().toLowerCase();
+    const favIds = new Set(this.storage.get(STORAGE_KEYS.FAV_NOTICES) || []);
+    const isOfficer = this.storage.isOfficer();
+
+    let filteredNotices = notices.filter(n => {
+      const matchSearch = !q || (n.title && n.title.toLowerCase().includes(q)) || (n.content && n.content.toLowerCase().includes(q));
+      const matchFav = this.noticeFilter !== 'fav' || favIds.has(n.id);
+      return matchSearch && matchFav;
+    });
+
+    if (filteredNotices.length === 0) {
+      if (this.noticeFilter === 'fav') {
+        listEl.innerHTML = `
+          <div class="empty-state">
+            <p style="font-size: 36px; margin-bottom: 8px;">⭐</p>
+            <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">즐겨찾기한 공지가 없습니다</h4>
+            <p class="card-body-text" style="color: var(--text-sub);">중요한 공지사항 카드의 별표(⭐) 아이콘을 눌러 보관해보세요.</p>
+          </div>
+        `;
+        return;
+      }
+      if (q) {
+        listEl.innerHTML = `
+          <div class="empty-state">
+            <p style="font-size: 36px; margin-bottom: 8px;">🔍</p>
+            <h4 style="font-size: 16px; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">검색 결과가 없습니다</h4>
+            <p class="card-body-text" style="color: var(--text-sub);">'${this.escapeHtml(q)}' 와(과) 일치하는 공지사항이 없습니다.</p>
+          </div>
+        `;
+        return;
+      }
+    }
+
+    const renderNoticeCard = (item) => this.renderNoticeCardHtml(item, isOfficer, favIds);
 
     if (q || this.noticeFilter === 'fav') {
       const html = filteredNotices.map(renderNoticeCard).join('');
@@ -964,16 +1015,25 @@ class ChoirApp {
   toggleNoticeArchiveFolder(event) {
     if (event) event.preventDefault();
     this.isNoticeArchiveOpen = !this.isNoticeArchiveOpen;
-    this.renderNotices();
 
-    if (this.isNoticeArchiveOpen) {
-      setTimeout(() => {
-        const folderEl = document.querySelector('.archive-accordion');
-        if (folderEl && typeof folderEl.scrollIntoView === 'function') {
-          folderEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      }, 50);
+    const folderEl = document.querySelector('.archive-accordion');
+    const contentEl = document.querySelector('.archive-content');
+    const arrowEl = document.querySelector('.archive-arrow');
+
+    if (folderEl && contentEl) {
+      if (this.isNoticeArchiveOpen) {
+        folderEl.classList.add('is-open');
+        contentEl.style.display = 'flex';
+        if (arrowEl) arrowEl.textContent = '▲ 접기';
+      } else {
+        folderEl.classList.remove('is-open');
+        contentEl.style.display = 'none';
+        if (arrowEl) arrowEl.textContent = '▼ 펼치기';
+      }
+      return;
     }
+
+    this.renderNotices();
   }
 
   loadMoreNoticeArchive(event) {
@@ -981,7 +1041,49 @@ class ChoirApp {
       event.preventDefault();
       event.stopPropagation();
     }
-    this.visibleNoticeArchiveCount = (this.visibleNoticeArchiveCount || 5) + 5;
+
+    const notices = this.storage.get(STORAGE_KEYS.NOTICES) || [];
+    const q = (document.getElementById('searchNotice') ? document.getElementById('searchNotice').value : '').trim().toLowerCase();
+    const favIds = new Set(this.storage.get(STORAGE_KEYS.FAV_NOTICES) || []);
+    const filteredNotices = notices.filter(n => {
+      const matchSearch = !q || (n.title && n.title.toLowerCase().includes(q)) || (n.content && n.content.toLowerCase().includes(q));
+      const matchFav = this.noticeFilter !== 'fav' || favIds.has(n.id);
+      return matchSearch && matchFav;
+    });
+
+    const MAX_RECENT = 4;
+    const olderNotices = filteredNotices.slice(MAX_RECENT);
+    if (!olderNotices.length) return;
+
+    const prevCount = this.visibleNoticeArchiveCount || 5;
+    const nextCount = prevCount + 5;
+    this.visibleNoticeArchiveCount = nextCount;
+
+    const newItemsToAppend = olderNotices.slice(prevCount, nextCount);
+
+    const contentEl = document.querySelector('.archive-content');
+    const loadMoreBox = document.querySelector('.load-more-archive-box');
+
+    if (contentEl && newItemsToAppend.length) {
+      const isOfficer = this.storage.isOfficer();
+
+      const tempWrapper = document.createElement('div');
+      tempWrapper.innerHTML = newItemsToAppend.map(item => this.renderNoticeCardHtml(item, isOfficer, favIds)).join('');
+
+      while (tempWrapper.firstChild) {
+        if (loadMoreBox) {
+          contentEl.insertBefore(tempWrapper.firstChild, loadMoreBox);
+        } else {
+          contentEl.appendChild(tempWrapper.firstChild);
+        }
+      }
+
+      if (nextCount >= olderNotices.length && loadMoreBox) {
+        loadMoreBox.remove();
+      }
+      return;
+    }
+
     this.renderNotices();
   }
 
