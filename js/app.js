@@ -1258,9 +1258,9 @@ class ChoirApp {
     praises = praises.filter(p => p.date && p.date >= '2026-01-01');
 
     praises.sort((a, b) => {
-      const timeDiff = this.getItemTimestamp(b) - this.getItemTimestamp(a);
-      if (timeDiff !== 0) return timeDiff;
-      return (b.date || '').localeCompare(a.date || '');
+      const dateDiff = (b.date || '').localeCompare(a.date || '');
+      if (dateDiff !== 0) return dateDiff;
+      return this.getItemTimestamp(b) - this.getItemTimestamp(a);
     });
 
     // 1. 성가대 찬양 영상 필터링 (type === 'all') - 월별/최신 주일 필터 적용
