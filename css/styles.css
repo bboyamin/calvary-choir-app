@@ -2105,3 +2105,80 @@ body {
   transform: scale(0.9);
   background: rgba(255, 255, 255, 0.45);
 }
+
+/* 🔗 공지사항 외부 웹페이지 링크 카드 스타일 */
+.notice-link-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-top: 10px;
+  text-decoration: none !important;
+  color: var(--text-dark, #1e293b);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.notice-link-card:hover, .notice-link-card:active {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+}
+
+.notice-link-card-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.notice-link-favicon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #ffffff;
+  padding: 2px;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.notice-link-card-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.notice-link-domain {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary-color, #2563eb);
+  line-height: 1.3;
+}
+
+.notice-link-url {
+  font-size: 11.5px;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.notice-link-btn-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 5px 10px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  margin-left: 8px;
+}

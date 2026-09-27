@@ -830,6 +830,9 @@ class ChoirApp {
           if (m.type === 'media' && m.url) {
             return `<div style="margin-top: 10px;">${this.getNoticeMediaHtml(m.url, item.title)}</div>`;
           }
+          if (m.type === 'link' && m.url) {
+            return `<div style="margin-top: 10px;">${this.getNoticeLinkCardHtml(m.url)}</div>`;
+          }
           return '';
         }).join('');
       }
@@ -837,6 +840,7 @@ class ChoirApp {
       let html = '';
       if (item.imageUrl) html += this.getNoticeMediaHtml(item.imageUrl, item.title);
       if (item.youtubeUrl) html += `<div class="video-responsive">${this.getYoutubeIframe(item.youtubeUrl)}</div>`;
+      if (item.linkUrl) html += `<div style="margin-top: 10px;">${this.getNoticeLinkCardHtml(item.linkUrl)}</div>`;
       return html;
     };
 
@@ -869,7 +873,7 @@ class ChoirApp {
               </div>
             </div>
             <h3 class="card-title">${item.title}</h3>
-            <p class="card-body-text">${content}</p>
+            <div class="card-body-text">${this.formatNoticeContentWithLinks(content)}</div>
             ${renderNoticeMediaItems(item)}
           </div>
         `;
@@ -895,11 +899,11 @@ class ChoirApp {
           <h3 class="card-title">${item.title}</h3>
 
           <div class="notice-preview-box" style="display: ${isExpanded ? 'none' : 'block'};">
-            <p class="card-body-text notice-text-preview">${previewText}</p>
+            <div class="card-body-text notice-text-preview">${this.formatNoticeContentWithLinks(previewText)}</div>
           </div>
 
           <div class="notice-full-box" style="display: ${isExpanded ? 'block' : 'none'};">
-            <p class="card-body-text notice-text-full">${content}</p>
+            <div class="card-body-text notice-text-full">${this.formatNoticeContentWithLinks(content)}</div>
             ${renderNoticeMediaItems(item)}
           </div>
 
@@ -1109,13 +1113,13 @@ class ChoirApp {
           <input type="url" id="noticeYoutube_${id}" placeholder="https://www.youtube.com/watch?v=..." value="${this.escapeHtml(savedData[id]?.yt || '')}">
         </div>
         <div class="form-group" style="margin-bottom: 0;">
-          <label for="noticeFilePhoto_${id}" style="font-size: 12.5px;">📷 사진 파일 / 📄 PDF 첨부 (선택)</label>
+          <label for="noticeFilePhoto_${id}" style="font-size: 12.5px;">📷 사진 파일 / 📄 PDF / 🔗 외부 URL 링크 (선택)</label>
           <input type="file" id="noticeFilePhoto_${id}" accept="image/*,.pdf" class="file-upload-input" onclick="this.value=''" onchange="app.handleImageUpload(event, 'noticePhotoPreview_${id}', 'noticePhotoData_${id}', 'noticeImageUrl_${id}')">
           <input type="hidden" id="noticePhotoData_${id}" value="${this.escapeHtml(savedData[id]?.dataUrl || '')}">
           <div id="noticePhotoPreview_${id}" class="photo-upload-preview ${savedData[id]?.previewHidden !== false ? 'hidden' : ''}">
             ${savedData[id]?.previewHtml || ''}
           </div>
-          <input type="text" id="noticeImageUrl_${id}" placeholder="또는 사진 주소 및 PDF / 구글드라이브 URL 직접 입력" style="margin-top: 6px;" value="${this.escapeHtml(savedData[id]?.imgUrl || '')}" oninput="app.clearFileInputOnly('noticeFilePhoto_${id}', 'noticePhotoPreview_${id}', 'noticePhotoData_${id}')">
+          <input type="text" id="noticeImageUrl_${id}" placeholder="예: https://brunch.co.kr/@yehunkim/162 또는 사진/PDF/구글드라이브 URL" style="margin-top: 6px;" value="${this.escapeHtml(savedData[id]?.imgUrl || '')}" oninput="app.clearFileInputOnly('noticeFilePhoto_${id}', 'noticePhotoPreview_${id}', 'noticePhotoData_${id}')">
         </div>
       </div>
     `).join('');
@@ -1152,10 +1156,20 @@ class ChoirApp {
         const imageUrl = uploadedDataUrl || this.convertGoogleDriveUrl(inputUrl);
 
         if (youtubeUrl) {
-          mediaList.push({ type: 'youtube', url: youtubeUrl });
+          if (youtubeUrl.includes('youtube.com/') || youtubeUrl.includes('youtu.be/')) {
+            mediaList.push({ type: 'youtube', url: youtubeUrl });
+          } else {
+            mediaList.push({ type: 'link', url: youtubeUrl });
+          }
         }
         if (imageUrl) {
-          mediaList.push({ type: 'media', url: imageUrl });
+          if (imageUrl.includes('youtube.com/') || imageUrl.includes('youtu.be/')) {
+            mediaList.push({ type: 'youtube', url: imageUrl });
+          } else if (uploadedDataUrl || imageUrl.startsWith('data:image/') || /\.(jpg|jpeg|png|gif|webp|svg)($|\?)/i.test(imageUrl) || imageUrl.includes('drive.google.com/')) {
+            mediaList.push({ type: 'media', url: imageUrl });
+          } else {
+            mediaList.push({ type: 'link', url: imageUrl });
+          }
         }
       });
     }
@@ -3005,14 +3019,61 @@ class ChoirApp {
     return url;
   }
 
+  getNoticeLinkCardHtml(url) {
+    if (!url) return '';
+    url = url.trim();
+    let targetUrl = url;
+    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+      targetUrl = 'https://' + targetUrl;
+    }
+
+    let domain = '';
+    try {
+      const parsed = new URL(targetUrl);
+      domain = parsed.hostname.replace('www.', '');
+    } catch (e) {
+      domain = '관련 웹 사이트';
+    }
+
+    const faviconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
+    const cleanUrlDisplay = url.length > 55 ? url.substring(0, 52) + '...' : url;
+
+    return `
+      <a href="${this.escapeHtml(targetUrl)}" target="_blank" rel="noopener noreferrer" class="notice-link-card" onclick="event.stopPropagation();">
+        <div class="notice-link-card-left">
+          <img src="${faviconUrl}" class="notice-link-favicon" onerror="this.src='./assets/church-symbol.svg'" alt="favicon">
+          <div class="notice-link-card-info">
+            <div class="notice-link-domain">🔗 ${this.escapeHtml(domain)}</div>
+            <div class="notice-link-url">${this.escapeHtml(cleanUrlDisplay)}</div>
+          </div>
+        </div>
+        <span class="notice-link-btn-text">바로가기 ↗</span>
+      </a>
+    `;
+  }
+
+  formatNoticeContentWithLinks(text) {
+    if (!text) return '';
+    const escaped = this.escapeHtml(text);
+    const urlRegex = /(https?:\/\/[^\s<]+)/g;
+    return escaped.replace(urlRegex, (url) => {
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #2563eb; font-weight: 700; text-decoration: underline;" onclick="event.stopPropagation();">${url}</a>`;
+    }).replace(/\r?\n/g, '<br>');
+  }
+
   getNoticeMediaHtml(url, title) {
     if (!url) return '';
     url = url.trim();
 
+    // 1. YouTube URL 체크
+    if (url.includes('youtube.com/') || url.includes('youtu.be/')) {
+      return `<div class="video-responsive" style="margin-top: 10px;">${this.getYoutubeIframe(url)}</div>`;
+    }
+
+    // 2. Google Drive / PDF 체크
     const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/) || url.match(/\/d\/([a-zA-Z0-9_-]+)/);
     const fileId = fileIdMatch ? fileIdMatch[1] : '';
 
-    // 1. URL에 .pdf가 명시되어 있거나 백그라운드 검사 결과 PDF로 판명된 경우 즉시 PDF 뷰어로 표시
     if (url.toLowerCase().includes('.pdf') || (fileId && this.drivePdfCache?.[fileId] === true)) {
       let embedUrl = url;
       let openUrl = url;
@@ -3025,7 +3086,15 @@ class ChoirApp {
       return this.getPdfViewerHtml(embedUrl, openUrl);
     }
 
-    // 2. 구글 드라이브 주소인 경우 1차 이미지 표시 + 백그라운드 실시간 PDF 파일 타입 검사 수행
+    // 3. 사진/이미지 확장자 또는 Data URL, Google Drive 이미지 체크
+    const isDataImg = url.startsWith('data:image/');
+    const isImgExt = /\.(jpg|jpeg|png|gif|webp|svg)($|\?)/i.test(url);
+    const isDriveImg = Boolean(fileId);
+
+    if (!isDataImg && !isImgExt && !isDriveImg) {
+      return this.getNoticeLinkCardHtml(url);
+    }
+
     const convertedImg = this.convertGoogleDriveUrl(url);
     const escapedTitle = this.escapeHtml(title);
     const wrapId = fileId ? `media_wrap_${fileId}` : ('media_wrap_' + Math.random().toString(36).substring(2, 9));
