@@ -937,8 +937,8 @@ class ChoirApp {
       const hasMore = visibleCount < olderNotices.length;
 
       html += `
-        <details class="archive-accordion" ${this.isNoticeArchiveOpen ? 'open' : ''} ontoggle="app.onNoticeArchiveToggle(this)">
-          <summary class="archive-summary">📁 지난 공지사항 보관함 (총 ${olderNotices.length}개)</summary>
+        <details class="archive-accordion" ${this.isNoticeArchiveOpen ? 'open' : ''}>
+          <summary class="archive-summary" onclick="app.onArchiveSummaryClick(event, this)">📁 지난 공지사항 보관함 (총 ${olderNotices.length}개)</summary>
           <div class="archive-content">
             ${displayedOlder.map(renderNoticeCard).join('')}
             ${hasMore ? `
@@ -972,14 +972,25 @@ class ChoirApp {
     } catch (e) {}
   }
 
+  onArchiveSummaryClick(event, summaryEl) {
+    if (event) event.preventDefault();
+    const detailsEl = summaryEl ? summaryEl.closest('details') : null;
+    if (!detailsEl) return;
+
+    const willOpen = !detailsEl.open;
+    detailsEl.open = willOpen;
+    this.isNoticeArchiveOpen = willOpen;
+
+    if (willOpen) {
+      setTimeout(() => {
+        this.scrollToTargetElement(detailsEl);
+      }, 50);
+    }
+  }
+
   onNoticeArchiveToggle(detailsEl) {
     if (detailsEl) {
       this.isNoticeArchiveOpen = detailsEl.open;
-      if (detailsEl.open) {
-        setTimeout(() => {
-          this.scrollToTargetElement(detailsEl);
-        }, 100);
-      }
     }
   }
 
