@@ -902,6 +902,14 @@ class ChoirStorage {
         }
       }
 
+      // 관리자 비밀번호 클라우드 단일 동기화
+      if (cloudData.officer_pin && typeof cloudData.officer_pin === 'string' && cloudData.officer_pin.trim().length > 0) {
+        const localPin = localStorage.getItem('calvary_choir_officer_pin');
+        if (cloudData.officer_pin !== localPin) {
+          localStorage.setItem('calvary_choir_officer_pin', cloudData.officer_pin);
+        }
+      }
+
       // 변경사항이 감지되면 UI 및 안읽은 배포 건수 즉시 갱신
       if (hasChanges && window.app) {
         if (typeof window.app.renderAll === 'function') window.app.renderAll();
@@ -996,6 +1004,7 @@ class ChoirStorage {
 
   setOfficerPin(pin) {
     localStorage.setItem('calvary_choir_officer_pin', pin);
+    this.pushCategoryToCloud('officer_pin', pin);
   }
 
   getMemberPin() {

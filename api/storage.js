@@ -86,12 +86,13 @@ export default async function handler(req, res) {
     const key = req.query.key || 'all';
 
     if (key === 'all') {
-      const categories = ['notices', 'praises', 'schedules', 'members', 'prayers'];
+      const categories = ['notices', 'praises', 'schedules', 'members', 'prayers', 'officer_pin'];
       const result = { lastUpdated: globalData.lastUpdated || Date.now() };
 
       for (const cat of categories) {
         const kvVal = await kvGet(`calvary_${cat}`);
-        result[cat] = (kvVal !== null && kvVal !== undefined) ? kvVal : (globalData[cat] !== null ? globalData[cat] : []);
+        const defaultFallback = cat === 'officer_pin' ? null : [];
+        result[cat] = (kvVal !== null && kvVal !== undefined) ? kvVal : (globalData[cat] !== null ? globalData[cat] : defaultFallback);
       }
 
       return res.status(200).json(result);
