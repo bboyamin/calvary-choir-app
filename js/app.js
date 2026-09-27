@@ -938,7 +938,7 @@ class ChoirApp {
 
       html += `
         <div class="archive-accordion ${this.isNoticeArchiveOpen ? 'is-open' : ''}">
-          <div class="archive-summary" onclick="app.toggleNoticeArchiveFolder(event, this)">
+          <div class="archive-summary" onclick="app.toggleNoticeArchiveFolder(event)">
             <span>📁 지난 공지사항 보관함 (총 ${olderNotices.length}개)</span>
             <span class="archive-arrow" style="font-size: 12px; opacity: 0.7;">${this.isNoticeArchiveOpen ? '▲ 접기' : '▼ 펼치기'}</span>
           </div>
@@ -961,21 +961,7 @@ class ChoirApp {
     }
   }
 
-  scrollToTargetElement(targetEl) {
-    if (!targetEl) return;
-    const appContent = document.querySelector('.app-content');
-    if (appContent) {
-      const cardTop = targetEl.getBoundingClientRect().top;
-      const containerTop = appContent.getBoundingClientRect().top;
-      const offset = Math.max(0, cardTop - containerTop + appContent.scrollTop - 12);
-      appContent.scrollTo({ top: offset, behavior: 'smooth' });
-    }
-    try {
-      targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } catch (e) {}
-  }
-
-  toggleNoticeArchiveFolder(event, summaryEl) {
+  toggleNoticeArchiveFolder(event) {
     if (event) event.preventDefault();
     this.isNoticeArchiveOpen = !this.isNoticeArchiveOpen;
     this.renderNotices();
@@ -983,8 +969,8 @@ class ChoirApp {
     if (this.isNoticeArchiveOpen) {
       setTimeout(() => {
         const folderEl = document.querySelector('.archive-accordion');
-        if (folderEl) {
-          this.scrollToTargetElement(folderEl);
+        if (folderEl && typeof folderEl.scrollIntoView === 'function') {
+          folderEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
       }, 50);
     }
