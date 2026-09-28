@@ -883,33 +883,44 @@ class ChoirApp {
   scrollToTargetCard(cardEl) {
     if (!cardEl) return;
     const appContent = document.querySelector('.app-content');
-
-    const performScroll = () => {
-      if (!cardEl) return;
-
-      // 1. 표준 scrollIntoView (중앙 정렬)
+    if (!appContent) {
       try {
-        cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        cardEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
       } catch (e) {}
+      return;
+    }
 
-      // 2. .app-content 개별 오버플로우 스크롤 컨테이너 계산 정밀 이동
-      if (appContent) {
-        const cardRect = cardEl.getBoundingClientRect();
-        const containerRect = appContent.getBoundingClientRect();
-        const currentScrollTop = appContent.scrollTop;
-        const targetScrollTop = cardRect.top - containerRect.top + currentScrollTop - 25;
-
-        appContent.scrollTo({
-          top: Math.max(0, targetScrollTop),
-          behavior: 'smooth'
-        });
-      }
+    // 1. .app-content 오버플로우 컨테이너 기준 정밀 상단 좌표 계산
+    const getTargetScrollTop = () => {
+      const cardRect = cardEl.getBoundingClientRect();
+      const containerRect = appContent.getBoundingClientRect();
+      // 카드가 상단 16px 오프셋에 즉각 시원하게 보이도록 위치
+      return Math.max(0, cardRect.top - containerRect.top + appContent.scrollTop - 16);
     };
 
-    // 폰트/이미지/유튜브 아이프레임 로딩 완료 전후 멀티스테이지 정밀 스크롤
-    performScroll();
-    setTimeout(performScroll, 200);
-    setTimeout(performScroll, 550);
+    // 2. 1단계: 즉각(0ms) 해당 위치로 스크롤하여 사용자가 바로 카드를 인식하게 함 (밑으로 남지 않음)
+    const initialTop = getTargetScrollTop();
+    appContent.scrollTop = initialTop;
+
+    // 3. 2단계: 이미지/유튜브 높이 렌더링 후 부드럽게 미세 정밀 이동
+    setTimeout(() => {
+      if (!cardEl || !appContent) return;
+      const finalTop = getTargetScrollTop();
+      appContent.scrollTo({
+        top: finalTop,
+        behavior: 'smooth'
+      });
+    }, 150);
+
+    // 4. 3단계: 화면 이탈 방지 안전 보정
+    setTimeout(() => {
+      if (!cardEl || !appContent) return;
+      const cardRect = cardEl.getBoundingClientRect();
+      const containerRect = appContent.getBoundingClientRect();
+      if (cardRect.top < containerRect.top || cardRect.bottom > containerRect.bottom + 60) {
+        appContent.scrollTop = Math.max(0, cardRect.top - containerRect.top + appContent.scrollTop - 16);
+      }
+    }, 450);
   }
 
   checkDeepLink() {
@@ -930,6 +941,8 @@ class ChoirApp {
     if (targetTab === 'notice') {
       this.noticeFilter = 'all';
       this.noticeSearchQuery = '';
+      const searchInput = document.getElementById('noticeSearchInput');
+      if (searchInput) searchInput.value = '';
 
       const notices = this.storage.get(STORAGE_KEYS.NOTICES) || [];
       const sortedNotices = [...notices].sort((a, b) => {
