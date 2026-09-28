@@ -884,11 +884,13 @@ class ChoirApp {
     if (!cardEl) return;
     const appContent = document.querySelector('.app-content');
 
-    const doScroll = () => {
+    const executeScroll = () => {
+      if (!cardEl || !cardEl.isConnected) return;
       if (appContent) {
         const cardRect = cardEl.getBoundingClientRect();
         const contentRect = appContent.getBoundingClientRect();
-        const targetTop = appContent.scrollTop + (cardRect.top - contentRect.top) - 12;
+        const relativeTop = cardRect.top - contentRect.top;
+        const targetTop = appContent.scrollTop + relativeTop - 16;
         appContent.scrollTop = Math.max(0, targetTop);
       }
       try {
@@ -898,11 +900,12 @@ class ChoirApp {
       }
     };
 
-    doScroll();
-    requestAnimationFrame(doScroll);
-    setTimeout(doScroll, 80);
-    setTimeout(doScroll, 200);
-    setTimeout(doScroll, 450);
+    executeScroll();
+    requestAnimationFrame(executeScroll);
+    setTimeout(executeScroll, 50);
+    setTimeout(executeScroll, 150);
+    setTimeout(executeScroll, 350);
+    setTimeout(executeScroll, 700);
   }
 
   checkDeepLink() {
@@ -942,14 +945,13 @@ class ChoirApp {
         return (b.date || '').localeCompare(a.date || '');
       });
 
+      const sortedIdx = sortedNotices.findIndex(n => n.id === targetId);
       const MAX_RECENT = 4;
-      const olderNotices = sortedNotices.slice(MAX_RECENT);
-      const olderIdx = olderNotices.findIndex(n => n.id === targetId);
 
-      // 보관함 내부 공지인 경우 보관함 열기 + 렌더링 개수 확장
-      if (olderIdx !== -1) {
+      // 보관함 내부 공지이거나 4번째 이상 항목인 경우 보관함 열기 및 렌더링 개수 확보
+      if (sortedIdx >= MAX_RECENT || sortedIdx !== -1) {
         this.isNoticeArchiveOpen = true;
-        this.visibleNoticeArchiveCount = Math.max(this.visibleNoticeArchiveCount || 5, olderIdx + 1);
+        this.visibleNoticeArchiveCount = Math.max(this.visibleNoticeArchiveCount || 5, sortedIdx + 5);
       }
 
       // 공유받은 공지는 바로 읽을 수 있도록 내용 접기/펼치기 자동 확장
@@ -1019,8 +1021,8 @@ class ChoirApp {
         }, 3500);
 
         this.pendingDeepLink = null;
-      } else if (retryCount < 10) {
-        setTimeout(() => attemptScroll(retryCount + 1), 100);
+      } else if (retryCount < 12) {
+        setTimeout(() => attemptScroll(retryCount + 1), 80);
       }
     };
 
@@ -1225,18 +1227,25 @@ class ChoirApp {
       `;
     }
 
-    if (listEl.innerHTML !== html) {
-      listEl.innerHTML = html;
-    }
+    listEl.innerHTML = html;
 
     if (this.pendingDeepLink && this.pendingDeepLink.tab === 'notice') {
-      const cardEl = document.getElementById(`notice_card_${this.pendingDeepLink.id}`);
-      if (cardEl) {
-        this.scrollToTargetCard(cardEl);
-        cardEl.classList.add('highlight-shared-item');
-        setTimeout(() => { cardEl.classList.remove('highlight-shared-item'); }, 3500);
-        this.pendingDeepLink = null;
-      }
+      const targetId = this.pendingDeepLink.id;
+      setTimeout(() => {
+        const cardEl = document.getElementById(`notice_card_${targetId}`);
+        if (cardEl) {
+          const parentAccordion = cardEl.closest('.archive-accordion');
+          if (parentAccordion && !parentAccordion.classList.contains('is-open')) {
+            parentAccordion.classList.add('is-open');
+            const archiveContent = parentAccordion.querySelector('.archive-content');
+            if (archiveContent) archiveContent.style.display = 'flex';
+          }
+          this.scrollToTargetCard(cardEl);
+          cardEl.classList.add('highlight-shared-item');
+          setTimeout(() => { cardEl.classList.remove('highlight-shared-item'); }, 3500);
+          this.pendingDeepLink = null;
+        }
+      }, 50);
     }
   }
 
