@@ -785,6 +785,81 @@ class ChoirApp {
     `;
   }
 
+  getYoutubeVideoId(url) {
+    if (!url) return null;
+    const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    return match ? match[1] : null;
+  }
+
+  getItemShareImageUrl(type, item) {
+    if (!item) return '';
+
+    if (type === 'notice') {
+      if (item.mediaList && Array.isArray(item.mediaList) && item.mediaList.length > 0) {
+        for (const m of item.mediaList) {
+          if (m.type === 'media' && m.url) return m.url;
+          if (m.type === 'youtube' && m.url) {
+            const vid = this.getYoutubeVideoId(m.url);
+            if (vid) return `https://img.youtube.com/vi/${vid}/hqdefault.jpg`;
+          }
+          if (m.type === 'link' && m.url && /\.(jpg|jpeg|png|gif|webp|svg)($|\?)/i.test(m.url)) {
+            return m.url;
+          }
+        }
+      }
+      if (item.imageUrl) return item.imageUrl;
+      if (item.youtubeUrl) {
+        const vid = this.getYoutubeVideoId(item.youtubeUrl);
+        if (vid) return `https://img.youtube.com/vi/${vid}/hqdefault.jpg`;
+      }
+    } else if (type === 'praise') {
+      if (item.youtubeUrl) {
+        const vid = this.getYoutubeVideoId(item.youtubeUrl);
+        if (vid) return `https://img.youtube.com/vi/${vid}/hqdefault.jpg`;
+      }
+      if (item.imageUrl) return item.imageUrl;
+    } else if (type === 'schedule') {
+      if (item.imageUrl) return item.imageUrl;
+    } else if (type === 'prayer') {
+      if (item.imageUrl) return item.imageUrl;
+    }
+
+    return `${window.location.origin}${window.location.pathname.replace(/\/[^\/]*$/, '/')}/assets/icon-512.png`;
+  }
+
+  updateOpenGraphMetaTags(title, description, imageUrl, url) {
+    const setMeta = (property, content) => {
+      if (!content) return;
+      let meta = document.querySelector(`meta[property="${property}"]`) || document.querySelector(`meta[name="${property}"]`);
+      if (!meta) {
+        meta = document.createElement('meta');
+        if (property.startsWith('og:')) {
+          meta.setAttribute('property', property);
+        } else {
+          meta.setAttribute('name', property);
+        }
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    };
+
+    if (title) {
+      setMeta('og:title', title);
+      setMeta('twitter:title', title);
+    }
+    if (description) {
+      setMeta('og:description', description);
+      setMeta('twitter:description', description);
+    }
+    if (imageUrl) {
+      setMeta('og:image', imageUrl);
+      setMeta('twitter:image', imageUrl);
+    }
+    if (url) {
+      setMeta('og:url', url);
+    }
+  }
+
   shareItem(type, id, event) {
     if (event) {
       event.preventDefault();
@@ -829,13 +904,16 @@ class ChoirApp {
 
     if (!item) return;
 
+    const imageUrl = this.getItemShareImageUrl(type, item);
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const shareUrl = `${baseUrl}?tab=${type}&id=${id}`;
+
+    this.updateOpenGraphMetaTags(title, text, imageUrl, shareUrl);
 
     if (navigator.share) {
       navigator.share({
         title: title,
-        text: `${title}\n${text}`,
+        text: text ? `${title}\n${text}` : title,
         url: shareUrl
       }).catch(err => {
         if (err.name !== 'AbortError') {
