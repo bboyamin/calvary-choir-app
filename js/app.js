@@ -76,9 +76,16 @@ class ChoirApp {
     this.initReadTimestamps();
     this.setupPwaInstall();
     this.checkOfficerStatus();
-    this.populatePraiseMonthDropdown();
-    this.renderCurrentTab();
-    this.checkDeepLink();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetTab = urlParams.get('tab');
+    if (targetTab && ['notice', 'praise', 'schedule', 'prayer'].includes(targetTab)) {
+      this.checkDeepLink();
+    } else {
+      this.populatePraiseMonthDropdown();
+      this.renderCurrentTab();
+    }
+
     this.updateUnreadBadges();
     this.requestNotificationPermission();
     this.markTabAsRead(this.currentTab);
@@ -931,13 +938,20 @@ class ChoirApp {
     }
 
     this.pendingDeepLink = { tab: targetTab, id: targetId };
+    this.currentTab = targetTab;
 
-    // 1. 해당 메뉴 탭으로 우선 전환
-    this.switchTab(targetTab);
+    document.querySelectorAll('.tab-item').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === targetTab);
+    });
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+      pane.classList.toggle('active', pane.id === `tab-${targetTab}`);
+    });
 
-    if (!targetId) return;
+    if (!targetId) {
+      this.renderTab(targetTab);
+      return;
+    }
 
-    // 2. 탭별 상세 데이터 및 보관함 상태 사전 준비 & 스크롤 이동
     this.applyPendingDeepLink();
   }
 
