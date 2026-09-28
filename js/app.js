@@ -937,7 +937,6 @@ class ChoirApp {
     if (navigator.share) {
       navigator.share({
         title: title,
-        text: text ? `${title}\n${text}` : title,
         url: shareUrl
       }).catch(err => {
         if (err.name !== 'AbortError') {
