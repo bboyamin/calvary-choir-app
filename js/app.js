@@ -1461,7 +1461,7 @@ class ChoirApp {
           if (item.type === 'youtube') {
             const ytInput = document.getElementById(`noticeYoutube_${slotId}`);
             if (ytInput) ytInput.value = item.url || '';
-          } else if (item.type === 'media') {
+          } else if (item.type === 'media' || item.type === 'link') {
             const imgInput = document.getElementById(`noticeImageUrl_${slotId}`);
             if (imgInput) imgInput.value = item.url || '';
           }
