@@ -903,13 +903,13 @@ class ChoirApp {
     // 1. 단 1회 즉시 스크롤
     alignCardToTop();
 
-    // 2. 상단 공지/이미지/말씀 카드의 동적 높이 변화(이미지 로딩 등)를 관찰하여 최종 위치 100% 정밀 고정
+    // 2. 해당 탭 내 동적 높이 변화(미디어/이미지 로딩 등)를 관찰하여 최종 위치 100% 정밀 고정
     if (window.ResizeObserver) {
-      const noticeListEl = document.getElementById('noticeList') || appContent;
+      const activePane = cardEl.closest('.tab-pane') || appContent;
       let ro = new ResizeObserver(() => {
         alignCardToTop();
       });
-      ro.observe(noticeListEl);
+      ro.observe(activePane);
       setTimeout(() => {
         if (ro) {
           ro.disconnect();
