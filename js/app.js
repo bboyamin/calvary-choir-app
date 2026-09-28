@@ -883,16 +883,16 @@ class ChoirApp {
   scrollToTargetCard(cardEl) {
     if (!cardEl) return;
     const appContent = document.querySelector('.app-content');
+    if (!appContent) return;
 
-    const executeScroll = () => {
+    const alignCardToTop = () => {
       if (!cardEl || !cardEl.isConnected) return;
-      if (appContent) {
-        const cardRect = cardEl.getBoundingClientRect();
-        const contentRect = appContent.getBoundingClientRect();
-        const relativeTop = cardRect.top - contentRect.top;
-        const targetTop = appContent.scrollTop + relativeTop - 16;
-        appContent.scrollTop = Math.max(0, targetTop);
-      }
+      const cardRect = cardEl.getBoundingClientRect();
+      const contentRect = appContent.getBoundingClientRect();
+      const relativeTop = cardRect.top - contentRect.top;
+      const targetTop = appContent.scrollTop + relativeTop - 14;
+      appContent.scrollTop = Math.max(0, targetTop);
+
       try {
         cardEl.scrollIntoView({ behavior: 'instant', block: 'start' });
       } catch (e) {
@@ -900,12 +900,25 @@ class ChoirApp {
       }
     };
 
-    executeScroll();
-    requestAnimationFrame(executeScroll);
-    setTimeout(executeScroll, 50);
-    setTimeout(executeScroll, 150);
-    setTimeout(executeScroll, 350);
-    setTimeout(executeScroll, 700);
+    // 1. 단 1회 즉시 스크롤
+    alignCardToTop();
+
+    // 2. 상단 공지/이미지/말씀 카드의 동적 높이 변화(이미지 로딩 등)를 관찰하여 최종 위치 100% 정밀 고정
+    if (window.ResizeObserver) {
+      const noticeListEl = document.getElementById('noticeList') || appContent;
+      let ro = new ResizeObserver(() => {
+        alignCardToTop();
+      });
+      ro.observe(noticeListEl);
+      setTimeout(() => {
+        if (ro) {
+          ro.disconnect();
+          ro = null;
+        }
+      }, 1500);
+    } else {
+      setTimeout(alignCardToTop, 250);
+    }
   }
 
   checkDeepLink() {
@@ -948,13 +961,11 @@ class ChoirApp {
       const sortedIdx = sortedNotices.findIndex(n => n.id === targetId);
       const MAX_RECENT = 4;
 
-      // 보관함 내부 공지이거나 4번째 이상 항목인 경우 보관함 열기 및 렌더링 개수 확보
       if (sortedIdx >= MAX_RECENT || sortedIdx !== -1) {
         this.isNoticeArchiveOpen = true;
         this.visibleNoticeArchiveCount = Math.max(this.visibleNoticeArchiveCount || 5, sortedIdx + 5);
       }
 
-      // 공유받은 공지는 바로 읽을 수 있도록 내용 접기/펼치기 자동 확장
       if (!this.expandedNoticeIds) this.expandedNoticeIds = new Set();
       this.expandedNoticeIds.add(targetId);
 
@@ -1022,11 +1033,11 @@ class ChoirApp {
 
         this.pendingDeepLink = null;
       } else if (retryCount < 12) {
-        setTimeout(() => attemptScroll(retryCount + 1), 80);
+        setTimeout(() => attemptScroll(retryCount + 1), 60);
       }
     };
 
-    setTimeout(() => attemptScroll(0), 50);
+    setTimeout(() => attemptScroll(0), 40);
   }
 
   renderNoticeCardHtml(item, isOfficer, favIds) {
