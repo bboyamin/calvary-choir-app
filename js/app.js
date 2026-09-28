@@ -794,37 +794,60 @@ class ChoirApp {
   getItemShareImageUrl(type, item) {
     if (!item) return '';
 
+    const resolveUrl = (rawUrl) => {
+      if (!rawUrl) return null;
+      const trimmed = String(rawUrl).trim();
+      const vid = this.getYoutubeVideoId(trimmed);
+      if (vid) {
+        return `https://img.youtube.com/vi/${vid}/hqdefault.jpg`;
+      }
+      const driveUrl = this.convertGoogleDriveUrl(trimmed);
+      if (driveUrl !== trimmed || trimmed.startsWith('data:image/') || /\.(jpg|jpeg|png|gif|webp|svg)($|\?)/i.test(trimmed)) {
+        return driveUrl;
+      }
+      return null;
+    };
+
     if (type === 'notice') {
       if (item.mediaList && Array.isArray(item.mediaList) && item.mediaList.length > 0) {
         for (const m of item.mediaList) {
-          if (m.type === 'media' && m.url) return m.url;
-          if (m.type === 'youtube' && m.url) {
-            const vid = this.getYoutubeVideoId(m.url);
-            if (vid) return `https://img.youtube.com/vi/${vid}/hqdefault.jpg`;
-          }
-          if (m.type === 'link' && m.url && /\.(jpg|jpeg|png|gif|webp|svg)($|\?)/i.test(m.url)) {
-            return m.url;
+          if (m && m.url) {
+            const found = resolveUrl(m.url);
+            if (found) return found;
           }
         }
       }
-      if (item.imageUrl) return item.imageUrl;
+      if (item.imageUrl) {
+        const found = resolveUrl(item.imageUrl);
+        if (found) return found;
+      }
       if (item.youtubeUrl) {
-        const vid = this.getYoutubeVideoId(item.youtubeUrl);
-        if (vid) return `https://img.youtube.com/vi/${vid}/hqdefault.jpg`;
+        const found = resolveUrl(item.youtubeUrl);
+        if (found) return found;
       }
     } else if (type === 'praise') {
       if (item.youtubeUrl) {
-        const vid = this.getYoutubeVideoId(item.youtubeUrl);
-        if (vid) return `https://img.youtube.com/vi/${vid}/hqdefault.jpg`;
+        const found = resolveUrl(item.youtubeUrl);
+        if (found) return found;
       }
-      if (item.imageUrl) return item.imageUrl;
+      if (item.imageUrl) {
+        const found = resolveUrl(item.imageUrl);
+        if (found) return found;
+      }
     } else if (type === 'schedule') {
-      if (item.imageUrl) return item.imageUrl;
+      if (item.imageUrl) {
+        const found = resolveUrl(item.imageUrl);
+        if (found) return found;
+      }
     } else if (type === 'prayer') {
-      if (item.imageUrl) return item.imageUrl;
+      if (item.imageUrl) {
+        const found = resolveUrl(item.imageUrl);
+        if (found) return found;
+      }
     }
 
-    return `${window.location.origin}${window.location.pathname.replace(/\/[^\/]*$/, '/')}/assets/icon-512.png`;
+    const defaultImg = `${window.location.origin}${window.location.pathname.replace(/\/[^\/]*$/, '/')}/assets/icon-512.png`;
+    return defaultImg;
   }
 
   updateOpenGraphMetaTags(title, description, imageUrl, url) {
@@ -905,8 +928,9 @@ class ChoirApp {
     if (!item) return;
 
     const imageUrl = this.getItemShareImageUrl(type, item);
-    const baseUrl = `${window.location.origin}${window.location.pathname}`;
-    const shareUrl = `${baseUrl}?tab=${type}&id=${id}`;
+    const originUrl = window.location.origin;
+    const basePath = window.location.pathname.replace(/\/[^\/]*$/, '/');
+    const shareUrl = `${originUrl}${basePath}share?tab=${type}&id=${id}`;
 
     this.updateOpenGraphMetaTags(title, text, imageUrl, shareUrl);
 
