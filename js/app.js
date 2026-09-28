@@ -884,22 +884,32 @@ class ChoirApp {
     if (!cardEl) return;
     const appContent = document.querySelector('.app-content');
 
-    // 1. 표준 scrollIntoView (중앙 정렬)
-    try {
-      cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } catch (e) {}
+    const performScroll = () => {
+      if (!cardEl) return;
 
-    // 2. .app-content 개별 오버플로우 스크롤 컨테이너 계산 정밀 이동
-    if (appContent) {
-      const cardRect = cardEl.getBoundingClientRect();
-      const containerRect = appContent.getBoundingClientRect();
-      const offsetTop = cardRect.top - containerRect.top + appContent.scrollTop - 40;
+      // 1. 표준 scrollIntoView (중앙 정렬)
+      try {
+        cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } catch (e) {}
 
-      appContent.scrollTo({
-        top: Math.max(0, offsetTop),
-        behavior: 'smooth'
-      });
-    }
+      // 2. .app-content 개별 오버플로우 스크롤 컨테이너 계산 정밀 이동
+      if (appContent) {
+        const cardRect = cardEl.getBoundingClientRect();
+        const containerRect = appContent.getBoundingClientRect();
+        const currentScrollTop = appContent.scrollTop;
+        const targetScrollTop = cardRect.top - containerRect.top + currentScrollTop - 25;
+
+        appContent.scrollTo({
+          top: Math.max(0, targetScrollTop),
+          behavior: 'smooth'
+        });
+      }
+    };
+
+    // 폰트/이미지/유튜브 아이프레임 로딩 완료 전후 멀티스테이지 정밀 스크롤
+    performScroll();
+    setTimeout(performScroll, 200);
+    setTimeout(performScroll, 550);
   }
 
   checkDeepLink() {
@@ -918,6 +928,9 @@ class ChoirApp {
 
     // 2. 탭별 상세 데이터 및 보관함(Archive) 상태 사전 준비
     if (targetTab === 'notice') {
+      this.noticeFilter = 'all';
+      this.noticeSearchQuery = '';
+
       const notices = this.storage.get(STORAGE_KEYS.NOTICES) || [];
       const sortedNotices = [...notices].sort((a, b) => {
         const timeDiff = this.getItemTimestamp(b) - this.getItemTimestamp(a);
@@ -943,14 +956,17 @@ class ChoirApp {
     } else if (targetTab === 'praise') {
       const praises = this.storage.get(STORAGE_KEYS.PRAISES) || [];
       const item = praises.find(p => p.id === targetId);
+      this.targetPraiseId = targetId;
+
       if (item) {
         if (item.type === 'part') {
-          this.praiseSubtab = 'part';
-          this.partPraiseFilter = 'ALL';
+          this.switchPraiseSubtab('part');
+          this.filterPartPraise(item.partTarget || 'ALL');
         } else {
-          this.praiseSubtab = 'all';
+          this.switchPraiseSubtab('all');
           this.praiseMonthFilter = '';
         }
+      } else {
         this.renderPraises();
       }
     } else if (targetTab === 'schedule') {
@@ -1000,8 +1016,8 @@ class ChoirApp {
         setTimeout(() => {
           cardEl.classList.remove('highlight-shared-item');
         }, 3500);
-      } else if (retryCount < 6) {
-        setTimeout(() => attemptScroll(retryCount + 1), 150);
+      } else if (retryCount < 8) {
+        setTimeout(() => attemptScroll(retryCount + 1), 100);
       }
     };
 
@@ -1645,6 +1661,18 @@ class ChoirApp {
           displayPartPraises.push(latestPartMap[pt]);
         }
       });
+    }
+
+    // 딥링크 공유 접속 시 해당 찬양 항목이 필터에 의해 숨겨지지 않도록 무조건 포함 보장
+    if (this.targetPraiseId) {
+      const targetPraise = praises.find(p => p.id === this.targetPraiseId);
+      if (targetPraise) {
+        if (targetPraise.type === 'all' && !allPraises.some(p => p.id === this.targetPraiseId)) {
+          allPraises.unshift(targetPraise);
+        } else if (targetPraise.type === 'part' && !displayPartPraises.some(p => p.id === this.targetPraiseId)) {
+          displayPartPraises.unshift(targetPraise);
+        }
+      }
     }
 
     if (listPartEl) {
