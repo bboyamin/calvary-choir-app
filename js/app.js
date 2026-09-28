@@ -981,11 +981,14 @@ class ChoirApp {
           this.filterPartPraise(item.partTarget || 'ALL');
         } else {
           this.switchPraiseSubtab('all');
-          this.praiseMonthFilter = '';
+          if (item.date && item.date.length >= 7) {
+            this.praiseMonthFilter = item.date.substring(0, 7);
+          } else {
+            this.praiseMonthFilter = 'LATEST';
+          }
         }
-      } else {
-        this.renderPraises();
       }
+      this.renderPraises();
     } else if (targetTab === 'schedule') {
       this.renderSchedules();
     } else if (targetTab === 'prayer') {
@@ -1715,6 +1718,19 @@ class ChoirApp {
       if (listPartEl.innerHTML !== htmlPart) {
         listPartEl.innerHTML = htmlPart;
       }
+    }
+
+    if (this.pendingDeepLink && this.pendingDeepLink.tab === 'praise') {
+      const targetId = this.pendingDeepLink.id;
+      this.pendingDeepLink = null;
+      requestAnimationFrame(() => {
+        const cardEl = document.getElementById(`praise_card_${targetId}`);
+        if (cardEl) {
+          this.scrollToTargetCard(cardEl);
+          cardEl.classList.add('highlight-shared-item');
+          setTimeout(() => { cardEl.classList.remove('highlight-shared-item'); }, 3500);
+        }
+      });
     }
   }
 
