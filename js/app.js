@@ -977,15 +977,26 @@ class ChoirApp {
 
       if (item) {
         if (item.type === 'part') {
-          this.switchPraiseSubtab('part');
-          this.filterPartPraise(item.partTarget || 'ALL');
+          this.praiseSubtab = 'part';
+          this.partPraiseFilter = item.partTarget || 'ALL';
         } else {
-          this.switchPraiseSubtab('all');
+          this.praiseSubtab = 'all';
           if (item.date && item.date.length >= 7) {
             this.praiseMonthFilter = item.date.substring(0, 7);
           } else {
             this.praiseMonthFilter = 'LATEST';
           }
+        }
+        document.querySelectorAll('.sub-tab-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.subtab === this.praiseSubtab);
+        });
+        const subAll = document.getElementById('praiseSubtabAll');
+        const subPart = document.getElementById('praiseSubtabPart');
+        if (subAll) subAll.classList.toggle('active', this.praiseSubtab === 'all');
+        if (subPart) subPart.classList.toggle('active', this.praiseSubtab === 'part');
+        const dateFilterBox = document.getElementById('praiseDateFilterBox');
+        if (dateFilterBox) {
+          dateFilterBox.style.display = (this.praiseSubtab === 'all') ? 'flex' : 'none';
         }
       }
       this.renderPraises();
