@@ -1,4 +1,4 @@
-const CACHE_NAME = 'calvary-choir-v1070';
+const CACHE_NAME = 'calvary-choir-v1071';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

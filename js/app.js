@@ -883,39 +883,26 @@ class ChoirApp {
   scrollToTargetCard(cardEl) {
     if (!cardEl) return;
     const appContent = document.querySelector('.app-content');
-    if (!appContent) {
-      try { cardEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
-      return;
-    }
 
-    // .app-content 컨테이너 내부의 카드 상단 offsetTop 정밀 계산 (Viewport 및 CSS Animation 영향 0%)
-    const getCardScrollTop = () => {
-      let top = 0;
-      let curr = cardEl;
-      while (curr && curr !== appContent && curr !== document.body) {
-        top += curr.offsetTop;
-        curr = curr.offsetParent;
+    const doScroll = () => {
+      if (appContent) {
+        const cardRect = cardEl.getBoundingClientRect();
+        const contentRect = appContent.getBoundingClientRect();
+        const targetTop = appContent.scrollTop + (cardRect.top - contentRect.top) - 12;
+        appContent.scrollTop = Math.max(0, targetTop);
       }
-      return Math.max(0, top - 12);
+      try {
+        cardEl.scrollIntoView({ behavior: 'instant', block: 'start' });
+      } catch (e) {
+        try { cardEl.scrollIntoView(true); } catch (err) {}
+      }
     };
 
-    // 1단계: 즉각(0ms) 해당 공지 카드 상단 위치로 정확히 스크롤 이동
-    const initialTop = getCardScrollTop();
-    appContent.scrollTop = initialTop;
-
-    // 2단계: 이미지/유튜브 렌더링 후 2차 정밀 재조정 (150ms)
-    setTimeout(() => {
-      if (appContent && cardEl) {
-        appContent.scrollTop = getCardScrollTop();
-      }
-    }, 150);
-
-    // 3단계: 미디어 로딩 완료 후 최종 정밀 재조정 (400ms)
-    setTimeout(() => {
-      if (appContent && cardEl) {
-        appContent.scrollTop = getCardScrollTop();
-      }
-    }, 400);
+    doScroll();
+    requestAnimationFrame(doScroll);
+    setTimeout(doScroll, 80);
+    setTimeout(doScroll, 200);
+    setTimeout(doScroll, 450);
   }
 
   checkDeepLink() {
@@ -927,12 +914,21 @@ class ChoirApp {
       return;
     }
 
+    this.pendingDeepLink = { tab: targetTab, id: targetId };
+
     // 1. 해당 메뉴 탭으로 우선 전환
     this.switchTab(targetTab);
 
     if (!targetId) return;
 
-    // 2. 탭별 상세 데이터 및 보관함(Archive) 상태 사전 준비
+    // 2. 탭별 상세 데이터 및 보관함 상태 사전 준비 & 스크롤 이동
+    this.applyPendingDeepLink();
+  }
+
+  applyPendingDeepLink() {
+    if (!this.pendingDeepLink || !this.pendingDeepLink.id) return;
+    const { tab: targetTab, id: targetId } = this.pendingDeepLink;
+
     if (targetTab === 'notice') {
       this.noticeFilter = 'all';
       this.noticeSearchQuery = '';
@@ -999,17 +995,14 @@ class ChoirApp {
       this.renderPrayers();
     }
 
-    // 3. DOM 렌더링 완료 후 해당 공지/콘텐츠 카드로 자동 부드러운 스크롤 & 초록색 강조
     const attemptScroll = (retryCount = 0) => {
       const cardEl = document.getElementById(`${targetTab}_card_${targetId}`);
       if (cardEl) {
-        // HTML5 <details> 내부에 위치한 경우 open 속성 자동 활성화
         const parentDetails = cardEl.closest('details');
         if (parentDetails) {
           parentDetails.open = true;
         }
 
-        // 보관함 accordion 내부에 위치한 경우 is-open 클래스 및 display 처리
         const parentAccordion = cardEl.closest('.archive-accordion');
         if (parentAccordion && !parentAccordion.classList.contains('is-open')) {
           parentAccordion.classList.add('is-open');
@@ -1024,12 +1017,14 @@ class ChoirApp {
         setTimeout(() => {
           cardEl.classList.remove('highlight-shared-item');
         }, 3500);
-      } else if (retryCount < 8) {
+
+        this.pendingDeepLink = null;
+      } else if (retryCount < 10) {
         setTimeout(() => attemptScroll(retryCount + 1), 100);
       }
     };
 
-    setTimeout(() => attemptScroll(0), 100);
+    setTimeout(() => attemptScroll(0), 50);
   }
 
   renderNoticeCardHtml(item, isOfficer, favIds) {
@@ -1232,6 +1227,16 @@ class ChoirApp {
 
     if (listEl.innerHTML !== html) {
       listEl.innerHTML = html;
+    }
+
+    if (this.pendingDeepLink && this.pendingDeepLink.tab === 'notice') {
+      const cardEl = document.getElementById(`notice_card_${this.pendingDeepLink.id}`);
+      if (cardEl) {
+        this.scrollToTargetCard(cardEl);
+        cardEl.classList.add('highlight-shared-item');
+        setTimeout(() => { cardEl.classList.remove('highlight-shared-item'); }, 3500);
+        this.pendingDeepLink = null;
+      }
     }
   }
 
