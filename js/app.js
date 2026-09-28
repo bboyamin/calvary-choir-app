@@ -880,36 +880,132 @@ class ChoirApp {
     }, 3200);
   }
 
+  scrollToTargetCard(cardEl) {
+    if (!cardEl) return;
+    const appContent = document.querySelector('.app-content');
+
+    // 1. 표준 scrollIntoView (중앙 정렬)
+    try {
+      cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (e) {}
+
+    // 2. .app-content 개별 오버플로우 스크롤 컨테이너 계산 정밀 이동
+    if (appContent) {
+      const cardRect = cardEl.getBoundingClientRect();
+      const containerRect = appContent.getBoundingClientRect();
+      const offsetTop = cardRect.top - containerRect.top + appContent.scrollTop - 40;
+
+      appContent.scrollTo({
+        top: Math.max(0, offsetTop),
+        behavior: 'smooth'
+      });
+    }
+  }
+
   checkDeepLink() {
     const urlParams = new URLSearchParams(window.location.search);
     const targetTab = urlParams.get('tab');
     const targetId = urlParams.get('id');
 
-    if (targetTab && ['notice', 'praise', 'schedule', 'prayer'].includes(targetTab)) {
-      this.switchTab(targetTab);
-
-      if (targetId) {
-        setTimeout(() => {
-          let cardEl = document.getElementById(`${targetTab}_card_${targetId}`);
-
-          if (!cardEl && targetTab === 'notice') {
-            const folderEl = document.querySelector('.archive-accordion');
-            if (folderEl && !this.isNoticeArchiveOpen) {
-              this.toggleNoticeArchiveFolder();
-              cardEl = document.getElementById(`notice_card_${targetId}`);
-            }
-          }
-
-          if (cardEl) {
-            cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            cardEl.classList.add('highlight-shared-item');
-            setTimeout(() => {
-              cardEl.classList.remove('highlight-shared-item');
-            }, 3000);
-          }
-        }, 350);
-      }
+    if (!targetTab || !['notice', 'praise', 'schedule', 'prayer'].includes(targetTab)) {
+      return;
     }
+
+    // 1. 해당 메뉴 탭으로 우선 전환
+    this.switchTab(targetTab);
+
+    if (!targetId) return;
+
+    // 2. 탭별 상세 데이터 및 보관함(Archive) 상태 사전 준비
+    if (targetTab === 'notice') {
+      const notices = this.storage.get(STORAGE_KEYS.NOTICES) || [];
+      const sortedNotices = [...notices].sort((a, b) => {
+        const timeDiff = this.getItemTimestamp(b) - this.getItemTimestamp(a);
+        if (timeDiff !== 0) return timeDiff;
+        return (b.date || '').localeCompare(a.date || '');
+      });
+
+      const MAX_RECENT = 4;
+      const olderNotices = sortedNotices.slice(MAX_RECENT);
+      const olderIdx = olderNotices.findIndex(n => n.id === targetId);
+
+      // 보관함 내부 공지인 경우 보관함 열기 + 렌더링 개수 확장
+      if (olderIdx !== -1) {
+        this.isNoticeArchiveOpen = true;
+        this.visibleNoticeArchiveCount = Math.max(this.visibleNoticeArchiveCount || 5, olderIdx + 1);
+      }
+
+      // 공유받은 공지는 바로 읽을 수 있도록 내용 접기/펼치기 자동 확장
+      if (!this.expandedNoticeIds) this.expandedNoticeIds = new Set();
+      this.expandedNoticeIds.add(targetId);
+
+      this.renderNotices();
+    } else if (targetTab === 'praise') {
+      const praises = this.storage.get(STORAGE_KEYS.PRAISES) || [];
+      const item = praises.find(p => p.id === targetId);
+      if (item) {
+        if (item.type === 'part') {
+          this.praiseSubtab = 'part';
+          this.partPraiseFilter = 'ALL';
+        } else {
+          this.praiseSubtab = 'all';
+          this.praiseMonthFilter = '';
+        }
+        this.renderPraises();
+      }
+    } else if (targetTab === 'schedule') {
+      this.renderSchedules();
+    } else if (targetTab === 'prayer') {
+      const prayers = this.storage.get(STORAGE_KEYS.PRAYERS) || [];
+      const sortedPrayers = [...prayers].sort((a, b) => {
+        const timeDiff = this.getItemTimestamp(b) - this.getItemTimestamp(a);
+        if (timeDiff !== 0) return timeDiff;
+        return (b.date || '').localeCompare(a.date || '');
+      });
+
+      const MAX_RECENT = 4;
+      const olderPrayers = sortedPrayers.slice(MAX_RECENT);
+      const olderIdx = olderPrayers.findIndex(p => p.id === targetId);
+
+      if (olderIdx !== -1) {
+        this.isPrayerArchiveOpen = true;
+        this.visiblePrayerArchiveCount = Math.max(this.visiblePrayerArchiveCount || 5, olderIdx + 1);
+      }
+
+      this.renderPrayers();
+    }
+
+    // 3. DOM 렌더링 완료 후 해당 공지/콘텐츠 카드로 자동 부드러운 스크롤 & 초록색 강조
+    const attemptScroll = (retryCount = 0) => {
+      const cardEl = document.getElementById(`${targetTab}_card_${targetId}`);
+      if (cardEl) {
+        // HTML5 <details> 내부에 위치한 경우 open 속성 자동 활성화
+        const parentDetails = cardEl.closest('details');
+        if (parentDetails) {
+          parentDetails.open = true;
+        }
+
+        // 보관함 accordion 내부에 위치한 경우 is-open 클래스 및 display 처리
+        const parentAccordion = cardEl.closest('.archive-accordion');
+        if (parentAccordion && !parentAccordion.classList.contains('is-open')) {
+          parentAccordion.classList.add('is-open');
+          const archiveContent = parentAccordion.querySelector('.archive-content');
+          if (archiveContent) archiveContent.style.display = 'flex';
+          const archiveArrow = parentAccordion.querySelector('.archive-arrow');
+          if (archiveArrow) archiveArrow.textContent = '▲ 접기';
+        }
+
+        this.scrollToTargetCard(cardEl);
+        cardEl.classList.add('highlight-shared-item');
+        setTimeout(() => {
+          cardEl.classList.remove('highlight-shared-item');
+        }, 3500);
+      } else if (retryCount < 6) {
+        setTimeout(() => attemptScroll(retryCount + 1), 150);
+      }
+    };
+
+    setTimeout(() => attemptScroll(0), 100);
   }
 
   renderNoticeCardHtml(item, isOfficer, favIds) {
