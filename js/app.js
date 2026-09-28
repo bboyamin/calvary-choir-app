@@ -78,6 +78,7 @@ class ChoirApp {
     this.checkOfficerStatus();
     this.populatePraiseMonthDropdown();
     this.renderCurrentTab();
+    this.checkDeepLink();
     this.updateUnreadBadges();
     this.requestNotificationPermission();
     this.markTabAsRead(this.currentTab);
@@ -763,6 +764,154 @@ class ChoirApp {
     }
   }
 
+  getShareButtonHtml(type, id) {
+    return `
+      <button type="button" class="btn-card-share" onclick="app.shareItem('${type}', '${id}', event)" title="공유하기">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="18" cy="5" r="3"></circle>
+          <circle cx="6" cy="12" r="3"></circle>
+          <circle cx="18" cy="19" r="3"></circle>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+        </svg>
+      </button>
+    `;
+  }
+
+  shareItem(type, id, event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+
+    let title = '';
+    let text = '';
+    let item = null;
+
+    if (type === 'notice') {
+      const notices = this.storage.get(STORAGE_KEYS.NOTICES) || [];
+      item = notices.find(n => n.id === id);
+      if (item) {
+        title = `[갈보리교회 임마누엘성가대] 공지사항: ${item.title}`;
+        text = item.content ? item.content.slice(0, 100).replace(/\r?\n/g, ' ').trim() + '...' : item.title;
+      }
+    } else if (type === 'praise') {
+      const praises = this.storage.get(STORAGE_KEYS.PRAISES) || [];
+      item = praises.find(p => p.id === id);
+      if (item) {
+        const partNames = { 'ALL_PART': '4부 합창', 'S': '소프라노', 'A': '알토', 'T': '테너', 'B': '베이스' };
+        const partStr = item.type === 'part' ? ` (${partNames[item.partTarget] || '파트'} 연습)` : '';
+        title = `[갈보리교회 임마누엘성가대] 찬양: ${item.title}${partStr}`;
+        text = `${item.date || ''} 성가대 찬양 음원/영상입니다.`;
+      }
+    } else if (type === 'schedule') {
+      const schedules = this.storage.get(STORAGE_KEYS.SCHEDULES) || [];
+      item = schedules.find(s => s.id === id);
+      if (item) {
+        title = `[갈보리교회 임마누엘성가대] 주요일정: ${item.title}`;
+        text = `📍 장소: ${item.location || ''}`;
+      }
+    } else if (type === 'prayer') {
+      const prayers = this.storage.get(STORAGE_KEYS.PRAYERS) || [];
+      item = prayers.find(p => p.id === id);
+      if (item) {
+        title = `[갈보리교회 임마누엘성가대] 중보기도 (${item.author || '익명'} 대원)`;
+        text = item.content ? item.content.slice(0, 100).replace(/\r?\n/g, ' ').trim() + '...' : '';
+      }
+    }
+
+    if (!item) return;
+
+    const baseUrl = `${window.location.origin}${window.location.pathname}`;
+    const shareUrl = `${baseUrl}?tab=${type}&id=${id}`;
+
+    if (navigator.share) {
+      navigator.share({
+        title: title,
+        text: `${title}\n${text}`,
+        url: shareUrl
+      }).catch(err => {
+        if (err.name !== 'AbortError') {
+          this.copyToClipboard(shareUrl);
+        }
+      });
+    } else {
+      this.copyToClipboard(shareUrl);
+    }
+  }
+
+  copyToClipboard(url) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        this.showToast('🔗 공유 링크가 복사되었습니다! 카카오톡이나 메시지에 붙여넣어 공유해보세요.');
+      }).catch(() => {
+        this.fallbackCopyText(url);
+      });
+    } else {
+      this.fallbackCopyText(url);
+    }
+  }
+
+  fallbackCopyText(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      this.showToast('🔗 공유 링크가 복사되었습니다! 카카오톡이나 메시지에 붙여넣어 공유해보세요.');
+    } catch (err) {
+      alert(`공유 링크: ${text}`);
+    }
+    document.body.removeChild(textArea);
+  }
+
+  showToast(msg) {
+    const toast = document.getElementById('appToast');
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.classList.add('show');
+    if (this.toastTimeout) clearTimeout(this.toastTimeout);
+    this.toastTimeout = setTimeout(() => {
+      toast.classList.remove('show');
+    }, 3200);
+  }
+
+  checkDeepLink() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetTab = urlParams.get('tab');
+    const targetId = urlParams.get('id');
+
+    if (targetTab && ['notice', 'praise', 'schedule', 'prayer'].includes(targetTab)) {
+      this.switchTab(targetTab);
+
+      if (targetId) {
+        setTimeout(() => {
+          let cardEl = document.getElementById(`${targetTab}_card_${targetId}`);
+
+          if (!cardEl && targetTab === 'notice') {
+            const folderEl = document.querySelector('.archive-accordion');
+            if (folderEl && !this.isNoticeArchiveOpen) {
+              this.toggleNoticeArchiveFolder();
+              cardEl = document.getElementById(`notice_card_${targetId}`);
+            }
+          }
+
+          if (cardEl) {
+            cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            cardEl.classList.add('highlight-shared-item');
+            setTimeout(() => {
+              cardEl.classList.remove('highlight-shared-item');
+            }, 3000);
+          }
+        }, 350);
+      }
+    }
+  }
+
   renderNoticeCardHtml(item, isOfficer, favIds) {
     const content = item.content || '';
     const isLong = content.length > 120 || (content.match(/\n/g) || []).length >= 3;
@@ -806,6 +955,7 @@ class ChoirApp {
             <div class="card-top-right">
               <span class="card-date">${item.date}</span>
               ${starButtonHtml}
+              ${this.getShareButtonHtml('notice', item.id)}
               ${isOfficer ? `
                 <div class="card-admin-actions">
                   <button type="button" class="btn-card-edit" onclick="app.openEditNoticeModal('${item.id}')" title="수정">✏️</button>
@@ -830,6 +980,7 @@ class ChoirApp {
           <div class="card-top-right">
             <span class="card-date">${item.date}</span>
             ${starButtonHtml}
+            ${this.getShareButtonHtml('notice', item.id)}
             ${isOfficer ? `
               <div class="card-admin-actions">
                 <button type="button" class="btn-card-edit" onclick="app.openEditNoticeModal('${item.id}')" title="수정">✏️</button>
@@ -1418,11 +1569,12 @@ class ChoirApp {
     const badgeText = item.type === 'part' ? `🎼 ${partNames[item.partTarget] || '파트'} 연습` : '🎬 성가대 찬양 영상';
 
     return `
-      <div class="item-card">
+      <div class="item-card" id="praise_card_${item.id}">
         <div class="card-top">
           <span class="card-badge ${badgeClass}">${badgeText}</span>
           <div class="card-top-right">
             <span class="card-date">🗓️ ${item.date}</span>
+            ${this.getShareButtonHtml('praise', item.id)}
             ${isOfficer ? `
               <div class="card-admin-actions">
                 <button type="button" class="btn-card-edit" onclick="app.openEditPraiseModal('${item.id}')" title="수정">✏️</button>
@@ -1664,10 +1816,11 @@ class ChoirApp {
       const ticketInfoStr = totalTickets > 0 ? ` · 티켓 총 ${totalTickets}매` : '';
 
       return `
-        <div class="item-card ${isPast ? 'opacity-80' : ''}">
+        <div class="item-card ${isPast ? 'opacity-80' : ''}" id="schedule_card_${s.id}">
           <div class="card-top">
             <span class="card-badge ${isPast ? 'badge-past' : 'badge-praise'}">${isPast ? '📜 지난 일정' : '📅 주요 일정'} · ${dateStr} ${timeStr}</span>
             <div class="card-top-right">
+              ${this.getShareButtonHtml('schedule', s.id)}
               ${isOfficer ? `
                 <div class="card-admin-actions">
                   <button type="button" class="btn-card-edit" onclick="app.openEditScheduleModal('${s.id}')" title="수정">✏️</button>
@@ -2786,11 +2939,12 @@ class ChoirApp {
       const canEditPrayer = isMyPrayer || isOfficer;
 
       return `
-        <div class="item-card">
+        <div class="item-card" id="prayer_card_${p.id}">
           <div class="card-top">
             <span class="card-badge badge-notice">🙏 ${this.escapeHtml(p.author || '익명')} 대원</span>
             <div class="card-top-right">
               <span class="card-date">${p.date || ''}</span>
+              ${this.getShareButtonHtml('prayer', p.id)}
               ${canEditPrayer ? `
                 <div class="card-admin-actions">
                   <button type="button" class="btn-card-edit" onclick="app.openEditPrayerModal('${p.id}')" title="수정">✏️</button>
