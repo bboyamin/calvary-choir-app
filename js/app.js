@@ -884,43 +884,38 @@ class ChoirApp {
     if (!cardEl) return;
     const appContent = document.querySelector('.app-content');
     if (!appContent) {
-      try {
-        cardEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } catch (e) {}
+      try { cardEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {}
       return;
     }
 
-    // 1. .app-content 오버플로우 컨테이너 기준 정밀 상단 좌표 계산
-    const getTargetScrollTop = () => {
-      const cardRect = cardEl.getBoundingClientRect();
-      const containerRect = appContent.getBoundingClientRect();
-      // 카드가 상단 16px 오프셋에 즉각 시원하게 보이도록 위치
-      return Math.max(0, cardRect.top - containerRect.top + appContent.scrollTop - 16);
+    // .app-content 컨테이너 내부의 카드 상단 offsetTop 정밀 계산 (Viewport 및 CSS Animation 영향 0%)
+    const getCardScrollTop = () => {
+      let top = 0;
+      let curr = cardEl;
+      while (curr && curr !== appContent && curr !== document.body) {
+        top += curr.offsetTop;
+        curr = curr.offsetParent;
+      }
+      return Math.max(0, top - 12);
     };
 
-    // 2. 1단계: 즉각(0ms) 해당 위치로 스크롤하여 사용자가 바로 카드를 인식하게 함 (밑으로 남지 않음)
-    const initialTop = getTargetScrollTop();
+    // 1단계: 즉각(0ms) 해당 공지 카드 상단 위치로 정확히 스크롤 이동
+    const initialTop = getCardScrollTop();
     appContent.scrollTop = initialTop;
 
-    // 3. 2단계: 이미지/유튜브 높이 렌더링 후 부드럽게 미세 정밀 이동
+    // 2단계: 이미지/유튜브 렌더링 후 2차 정밀 재조정 (150ms)
     setTimeout(() => {
-      if (!cardEl || !appContent) return;
-      const finalTop = getTargetScrollTop();
-      appContent.scrollTo({
-        top: finalTop,
-        behavior: 'smooth'
-      });
+      if (appContent && cardEl) {
+        appContent.scrollTop = getCardScrollTop();
+      }
     }, 150);
 
-    // 4. 3단계: 화면 이탈 방지 안전 보정
+    // 3단계: 미디어 로딩 완료 후 최종 정밀 재조정 (400ms)
     setTimeout(() => {
-      if (!cardEl || !appContent) return;
-      const cardRect = cardEl.getBoundingClientRect();
-      const containerRect = appContent.getBoundingClientRect();
-      if (cardRect.top < containerRect.top || cardRect.bottom > containerRect.bottom + 60) {
-        appContent.scrollTop = Math.max(0, cardRect.top - containerRect.top + appContent.scrollTop - 16);
+      if (appContent && cardEl) {
+        appContent.scrollTop = getCardScrollTop();
       }
-    }, 450);
+    }, 400);
   }
 
   checkDeepLink() {
