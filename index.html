@@ -781,7 +781,7 @@
         </p>
         <div class="form-group">
           <label for="inputNewMemberPin">새 비밀번호 4자리 *</label>
-          <input type="password" id="inputNewMemberPin" required pattern="[0-9]{4}" inputmode="numeric" maxlength="4" placeholder="예: 1004" style="font-size: 20px; text-align: center; letter-spacing: 6px;">
+          <input type="password" id="inputNewMemberPin" required pattern="[0-9]{4}" inputmode="numeric" maxlength="4" placeholder="숫자 4자리" style="font-size: 20px; text-align: center; letter-spacing: 6px;">
         </div>
         <div class="form-actions">
           <button type="button" class="btn-secondary-large" onclick="app.closeModal('modalChangeMemberPin')">취소</button>
@@ -800,11 +800,11 @@
       </div>
       <form id="formChangeOfficerPin" onsubmit="app.saveNewOfficerPin(event)" class="modal-body">
         <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.5;">
-          관리자 모드 접속 시 입력할 새 비밀번호 4자리를 지정하세요. (기본: 1234)
+          관리자 모드 접속 시 입력할 새 비밀번호 4자리를 지정하세요.
         </p>
         <div class="form-group">
           <label for="inputNewOfficerPin">새 비밀번호 4자리 *</label>
-          <input type="password" id="inputNewOfficerPin" required pattern="[0-9]{4}" inputmode="numeric" maxlength="4" placeholder="예: 1234" style="font-size: 20px; text-align: center; letter-spacing: 6px;">
+          <input type="password" id="inputNewOfficerPin" required pattern="[0-9]{4}" inputmode="numeric" maxlength="4" placeholder="숫자 4자리" style="font-size: 20px; text-align: center; letter-spacing: 6px;">
         </div>
         <div class="form-actions">
           <button type="button" class="btn-secondary-large" onclick="app.closeModal('modalChangeOfficerPin')">취소</button>
