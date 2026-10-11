@@ -3527,7 +3527,23 @@ class ChoirApp {
 
     if (!videoId) return `<p style="padding:10px; color:#DC2626; font-size: 13.5px; text-align: center;">⚠️ 잘못된 유튜브 주소입니다.</p>`;
 
-    return `<iframe src="https://www.youtube.com/embed/${videoId}?rel=0" loading="lazy" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`;
+    // 5. 시작 시간(t= 또는 start=) 파싱 지원 (예: t=22m35s, t=1h22m35s, t=1355s, t=1355, start=1355)
+    let startSeconds = 0;
+    const timeMatch = cleanUrl.match(/[?&#](?:t|start)=([0-9hmsHMS]+)/i);
+    if (timeMatch && timeMatch[1]) {
+      const timeVal = timeMatch[1];
+      if (/^\d+$/.test(timeVal)) {
+        startSeconds = parseInt(timeVal, 10);
+      } else {
+        const hours = (timeVal.match(/(\d+)h/i) || [])[1] || 0;
+        const minutes = (timeVal.match(/(\d+)m/i) || [])[1] || 0;
+        const seconds = (timeVal.match(/(\d+)s/i) || [])[1] || 0;
+        startSeconds = (parseInt(hours, 10) * 3600) + (parseInt(minutes, 10) * 60) + parseInt(seconds, 10);
+      }
+    }
+
+    const startParam = startSeconds > 0 ? `&start=${startSeconds}` : '';
+    return `<iframe src="https://www.youtube.com/embed/${videoId}?rel=0${startParam}" loading="lazy" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`;
   }
 
   convertGoogleDriveUrl(url) {
