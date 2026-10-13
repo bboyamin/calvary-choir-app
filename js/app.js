@@ -2835,8 +2835,8 @@ class ChoirApp {
       ? `<div class="item-card"><p class="card-body-text">등록된 대원이 없습니다.</p></div>`
       : members.map(m => {
         const cleanPhone = (m.phone || '').replace(/[^0-9+]/g, '');
-        const isLeader = Boolean(m.role && m.role !== '대원');
-        const showDetails = isLeader || isOfficer;
+        const isConsentPublic = Boolean(m.isPublic);
+        const showDetails = isOfficer || isConsentPublic;
 
         const photoUrl = showDetails ? this.formatMemberPhotoUrl(m.photoUrl, m.id) : null;
 
@@ -2848,6 +2848,7 @@ class ChoirApp {
               <div class="member-name-row">
                 <span class="member-name">${m.name}</span>
                 ${m.role ? `<span class="member-role">(${m.role})</span>` : ''}
+                ${isOfficer && isConsentPublic ? `<span style="background:#ECFDF5; color:#059669; font-size:11px; font-weight:700; padding:2px 6px; border-radius:4px; border:1px solid #A7F3D0; margin-left:4px;">🔓공개</span>` : ''}
               </div>
               <span class="part-tag ${m.part}">${this.formatPartTag(m.part)}</span>
             </div>
@@ -3033,6 +3034,8 @@ class ChoirApp {
     document.getElementById('formMember').reset();
     const editingIdEl = document.getElementById('editingMemberId');
     if (editingIdEl) editingIdEl.value = '';
+    const isPublicEl = document.getElementById('memIsPublic');
+    if (isPublicEl) isPublicEl.checked = false;
     this.clearMemberPhoto(true);
     this.openModal('modalMember');
   }
@@ -3052,6 +3055,9 @@ class ChoirApp {
     document.getElementById('memPart').value = member.part || '소프라노';
     document.getElementById('memRole').value = member.role || '';
     document.getElementById('memPhone').value = member.phone || '';
+
+    const isPublicEl = document.getElementById('memIsPublic');
+    if (isPublicEl) isPublicEl.checked = Boolean(member.isPublic);
 
     const currentPhoto = this.formatMemberPhotoUrl(member.photoUrl, member.id);
     const previewEl = document.getElementById('memPhotoPreview');
@@ -3118,6 +3124,7 @@ class ChoirApp {
     const uploadedDataUrl = document.getElementById('memPhotoData').value.trim();
     const inputUrl = document.getElementById('memPhoto').value.trim();
     const photoUrl = uploadedDataUrl || this.convertGoogleDriveUrl(inputUrl);
+    const isPublic = document.getElementById('memIsPublic') ? document.getElementById('memIsPublic').checked : false;
 
     let members = this.storage.get(STORAGE_KEYS.MEMBERS);
 
@@ -3136,6 +3143,7 @@ class ChoirApp {
           role,
           phone,
           photoUrl,
+          isPublic,
           photoUpdatedAt: Date.now()
         };
       } else {
@@ -3146,6 +3154,7 @@ class ChoirApp {
           role,
           phone,
           photoUrl,
+          isPublic,
           photoUpdatedAt: Date.now()
         });
       }
@@ -3159,6 +3168,7 @@ class ChoirApp {
         role,
         phone,
         photoUrl,
+        isPublic,
         photoUpdatedAt: Date.now()
       });
       alert(`👥 ${name} 대원이 성공적으로 등록되었습니다.`);
