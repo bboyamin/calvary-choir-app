@@ -2396,6 +2396,7 @@ class ChoirApp {
   }
 
   openApplyListModal(schedId) {
+    this.currentApplyListSchedId = schedId;
     const schedules = this.storage.get(STORAGE_KEYS.SCHEDULES);
     const sched = schedules.find(s => s.id === schedId);
     if (!sched) return;
@@ -2505,6 +2506,219 @@ class ChoirApp {
     }
 
     this.openModal('modalApplyList');
+  }
+
+  shareApplyListText() {
+    if (!this.currentApplyListSchedId) return;
+    const schedules = this.storage.get(STORAGE_KEYS.SCHEDULES) || [];
+    const sched = schedules.find(s => s.id === this.currentApplyListSchedId);
+    if (!sched) return;
+
+    const apps = sched.applications || [];
+    if (apps.length === 0) {
+      this.showToast('📋 아직 등록된 신청자가 없습니다.');
+      return;
+    }
+
+    const shareText = this.generateApplyListShareText(sched);
+
+    if (navigator.share) {
+      navigator.share({
+        title: `[신청 현황] ${sched.title}`,
+        text: shareText
+      }).catch(err => {
+        if (err.name !== 'AbortError') {
+          this.copyApplyListText(shareText);
+        }
+      });
+    } else {
+      this.copyApplyListText(shareText);
+    }
+  }
+
+  generateApplyListShareText(sched) {
+    const isTicket = sched.applyType === 'ticket';
+    const apps = sched.applications || [];
+    const headerTitle = isTicket ? `[티켓 신청 현황] ${sched.title}` : `[참석 신청 현황] ${sched.title}`;
+
+    // 1. 일시 및 장소 정보 구성
+    const metaLines = [];
+    if (sched.datetime) {
+      try {
+        const dt = new Date(sched.datetime);
+        if (!isNaN(dt.getTime())) {
+          const days = ['일', '월', '화', '수', '목', '금', '토'];
+          const dateStr = `${dt.getFullYear()}년 ${dt.getMonth() + 1}월 ${dt.getDate()}일 (${days[dt.getDay()]})`;
+          const timeStr = dt.toTimeString().slice(0, 5);
+          metaLines.push(`📅 일시: ${dateStr}${timeStr !== '00:00' ? ' ' + timeStr : ''}`);
+        }
+      } catch (e) {}
+    } else if (sched.date) {
+      metaLines.push(`📅 일시: ${sched.date}`);
+    }
+    if (sched.location) {
+      metaLines.push(`📍 장소: ${sched.location}`);
+    }
+
+    // 2. 신청 현황 집계
+    let totalTickets = 0;
+    let attendCount = 0;
+    let absentCount = 0;
+
+    const partCounts = {
+      '소프라노': 0,
+      '알토': 0,
+      '테너': 0,
+      '베이스': 0,
+      '지휘/반주': 0
+    };
+    const partTicketCounts = {
+      '소프라노': 0,
+      '알토': 0,
+      '테너': 0,
+      '베이스': 0,
+      '지휘/반주': 0
+    };
+
+    const normalizePart = (p) => {
+      if (!p) return '소프라노';
+      if (p === '소프') return '소프라노';
+      if (p === '임원' || p === '지휘' || p === '반주' || p === '지휘자' || p === '반주자' || p === '지휘/반주') return '지휘/반주';
+      return p;
+    };
+
+    apps.forEach(a => {
+      const part = normalizePart(a.part);
+      if (isTicket) {
+        let ticketNum = 1;
+        if (a.option) {
+          const match = a.option.match(/(\d+)매/);
+          if (match) ticketNum = parseInt(match[1], 10);
+        }
+        totalTickets += ticketNum;
+        partCounts[part] = (partCounts[part] || 0) + 1;
+        partTicketCounts[part] = (partTicketCounts[part] || 0) + ticketNum;
+      } else {
+        if (a.option === '불참') {
+          absentCount++;
+        } else {
+          attendCount++;
+          partCounts[part] = (partCounts[part] || 0) + 1;
+        }
+      }
+    });
+
+    const summaryLines = [];
+    if (isTicket) {
+      summaryLines.push(`• 총 신청: ${apps.length}명 (티켓 총 ${totalTickets}매)`);
+      const partSummary = ['소프라노', '알토', '테너', '베이스', '지휘/반주']
+        .filter(p => partCounts[p] > 0)
+        .map(p => `${p} ${partCounts[p]}명 (${partTicketCounts[p]}매)`)
+        .join(', ');
+      if (partSummary) summaryLines.push(`• 파트별: ${partSummary}`);
+    } else {
+      if (absentCount > 0) {
+        summaryLines.push(`• 참석: ${attendCount}명 / 불참: ${absentCount}명 (총 ${apps.length}명 응답)`);
+      } else {
+        summaryLines.push(`• 참석: ${attendCount}명 신청 완료`);
+      }
+      const partSummary = ['소프라노', '알토', '테너', '베이스', '지휘/반주']
+        .filter(p => partCounts[p] > 0)
+        .map(p => `${p} ${partCounts[p]}명`)
+        .join(', ');
+      if (partSummary) summaryLines.push(`• 파트별 참석: ${partSummary}`);
+    }
+
+    // 3. 파트별 신청자 명단
+    const partOrder = ['소프라노', '알토', '테너', '베이스', '지휘/반주'];
+    const groups = {};
+    partOrder.forEach(p => { groups[p] = []; });
+    const absentList = [];
+
+    apps.forEach(a => {
+      if (!isTicket && a.option === '불참') {
+        absentList.push(a);
+        return;
+      }
+      const p = normalizePart(a.part);
+      if (!groups[p]) groups[p] = [];
+      groups[p].push(a);
+    });
+
+    const memberSection = [];
+    partOrder.forEach(p => {
+      const list = groups[p] || [];
+      if (list.length === 0) return;
+
+      list.sort((x, y) => (x.name || '').localeCompare(y.name || '', 'ko'));
+
+      let partHeader = '';
+      if (isTicket) {
+        partHeader = `[${p}] ${list.length}명 (${partTicketCounts[p]}매)`;
+      } else {
+        partHeader = `[${p}] ${list.length}명`;
+      }
+
+      const rows = list.map(item => {
+        const optStr = item.option ? `: ${item.option}` : '';
+        const noteStr = item.note ? ` (${item.note})` : '';
+        return `• ${item.name}${optStr}${noteStr}`;
+      });
+
+      memberSection.push(`${partHeader}\n${rows.join('\n')}`);
+    });
+
+    if (absentList.length > 0) {
+      absentList.sort((x, y) => (x.name || '').localeCompare(y.name || '', 'ko'));
+      const rows = absentList.map(item => {
+        const p = normalizePart(item.part);
+        const noteStr = item.note ? ` - ${item.note}` : '';
+        return `• ${item.name} (${p})${noteStr}`;
+      });
+      memberSection.push(`[불참 대원] ${absentList.length}명\n${rows.join('\n')}`);
+    }
+
+    // 4. 최종 텍스트 조립
+    const parts = [
+      `📋 ${headerTitle}`,
+      metaLines.length > 0 ? metaLines.join('\n') : '',
+      `━━━━━━━━━━━━━━━━━━`,
+      `📊 전체 현황 요약\n${summaryLines.join('\n')}`,
+      `━━━━━━━━━━━━━━━━━━`,
+      `👥 신청자 명단\n\n${memberSection.join('\n\n')}`,
+      `━━━━━━━━━━━━━━━━━━\n갈보리교회 임마누엘 성가대`
+    ].filter(Boolean);
+
+    return parts.join('\n\n');
+  }
+
+  copyApplyListText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        this.showToast('📋 신청 현황 텍스트가 복사되었습니다! 카톡이나 문자에 붙여넣어 보세요.');
+      }).catch(() => {
+        this.fallbackCopyApplyListText(text);
+      });
+    } else {
+      this.fallbackCopyApplyListText(text);
+    }
+  }
+
+  fallbackCopyApplyListText(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      this.showToast('📋 신청 현황 텍스트가 복사되었습니다! 카톡이나 문자에 붙여넣어 보세요.');
+    } catch (err) {
+      alert(`신청 현황 내용:\n\n${text}`);
+    }
+    document.body.removeChild(textArea);
   }
 
   openEditApplicationModal(schedId, appId) {
