@@ -856,70 +856,84 @@ class ChoirStorage {
   }
 
   async syncFromCloud() {
-    if (this.isSyncing) return;
+    if (this.isSyncing && this.activeSyncPromise) {
+      return this.activeSyncPromise;
+    }
     this.isSyncing = true;
 
-    try {
-      const apiBaseUrl = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'https://calvary-ch.vercel.app/api/storage' : './api/storage';
-      const resp = await fetch(`${apiBaseUrl}?key=all`);
-      if (!resp.ok) {
-        this.isSyncing = false;
-        return;
-      }
-
-      const cloudData = await resp.json();
-      let hasChanges = false;
-
-      const categoryMap = [
-        { cat: 'notices', key: STORAGE_KEYS.NOTICES },
-        { cat: 'praises', key: STORAGE_KEYS.PRAISES },
-        { cat: 'schedules', key: STORAGE_KEYS.SCHEDULES },
-        { cat: 'members', key: STORAGE_KEYS.MEMBERS },
-        { cat: 'prayers', key: STORAGE_KEYS.PRAYERS }
-      ];
-
-      const now = Date.now();
-      for (const item of categoryMap) {
-        const lastMut = this.lastMutationTime[item.cat] || 0;
-        const pendingCount = this.pendingPushCount[item.cat] || 0;
-        const isRecentlyMutatedByMe = (now - lastMut) < 10000; // 최근 10초 이내에 내가 직접 등록/수정/삭제한 카테고리
-
-        // 내가 방금 수정 중이거나 전송(Push) 중이라면 서버의 지연된 이전 데이터로 순간 롤백되는 현상 방지
-        if (pendingCount > 0 || isRecentlyMutatedByMe) {
-          continue;
+    this.activeSyncPromise = (async () => {
+      try {
+        const apiBaseUrl = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'https://calvary-ch.vercel.app/api/storage' : './api/storage';
+        const resp = await fetch(`${apiBaseUrl}?key=all`);
+        if (!resp.ok) {
+          return false;
         }
 
-        if (cloudData[item.cat] !== undefined && cloudData[item.cat] !== null && Array.isArray(cloudData[item.cat])) {
-          const localObj = this.get(item.key);
-          const cloudObj = cloudData[item.cat];
-          const localStr = JSON.stringify(localObj);
-          const cloudStr = JSON.stringify(cloudObj);
+        const cloudData = await resp.json();
+        let hasChanges = false;
 
-          if (localStr !== cloudStr) {
-            localStorage.setItem(item.key, cloudStr);
-            hasChanges = true;
+        const categoryMap = [
+          { cat: 'notices', key: STORAGE_KEYS.NOTICES },
+          { cat: 'praises', key: STORAGE_KEYS.PRAISES },
+          { cat: 'schedules', key: STORAGE_KEYS.SCHEDULES },
+          { cat: 'members', key: STORAGE_KEYS.MEMBERS },
+          { cat: 'prayers', key: STORAGE_KEYS.PRAYERS }
+        ];
+
+        const now = Date.now();
+        for (const item of categoryMap) {
+          const lastMut = this.lastMutationTime[item.cat] || 0;
+          const pendingCount = this.pendingPushCount[item.cat] || 0;
+          const isRecentlyMutatedByMe = (now - lastMut) < 10000; // 최근 10초 이내에 내가 직접 등록/수정/삭제한 카테고리
+
+          // 내가 방금 수정 중이거나 전송(Push) 중이라면 서버의 지연된 이전 데이터로 순간 롤백되는 현상 방지
+          if (pendingCount > 0 || isRecentlyMutatedByMe) {
+            continue;
+          }
+
+          if (cloudData[item.cat] !== undefined && cloudData[item.cat] !== null && Array.isArray(cloudData[item.cat])) {
+            const localObj = this.get(item.key);
+            const cloudObj = cloudData[item.cat];
+            const localStr = JSON.stringify(localObj);
+            const cloudStr = JSON.stringify(cloudObj);
+
+            if (localStr !== cloudStr) {
+              localStorage.setItem(item.key, cloudStr);
+              hasChanges = true;
+            }
           }
         }
-      }
 
-      // 관리자 비밀번호 클라우드 단일 동기화
-      if (cloudData.officer_pin && typeof cloudData.officer_pin === 'string' && cloudData.officer_pin.trim().length > 0) {
-        const localPin = localStorage.getItem('calvary_choir_officer_pin');
-        if (cloudData.officer_pin !== localPin) {
-          localStorage.setItem('calvary_choir_officer_pin', cloudData.officer_pin);
+        // 관리자 비밀번호 클라우드 단일 동기화
+        if (cloudData.officer_pin && typeof cloudData.officer_pin === 'string' && cloudData.officer_pin.trim().length > 0) {
+          const localPin = localStorage.getItem('calvary_choir_officer_pin');
+          if (cloudData.officer_pin !== localPin) {
+            localStorage.setItem('calvary_choir_officer_pin', cloudData.officer_pin);
+          }
         }
-      }
 
-      // 변경사항이 감지되면 UI 및 안읽은 배포 건수 즉시 갱신
-      if (hasChanges && window.app) {
-        if (typeof window.app.renderAll === 'function') window.app.renderAll();
-        if (typeof window.app.updateUnreadBadges === 'function') window.app.updateUnreadBadges();
+        // 변경사항이 감지되면 UI 및 안읽은 배포 건수 즉시 갱신
+        if (hasChanges && window.app) {
+          if (window.app.pendingDeepLink && window.app.pendingDeepLink.id) {
+            if (typeof window.app.applyPendingDeepLink === 'function') {
+              window.app.applyPendingDeepLink();
+            }
+          } else if (typeof window.app.renderAll === 'function') {
+            window.app.renderAll();
+          }
+          if (typeof window.app.updateUnreadBadges === 'function') window.app.updateUnreadBadges();
+        }
+        return hasChanges;
+      } catch (e) {
+        console.warn('Cloud sync offline or error:', e);
+        return false;
+      } finally {
+        this.isSyncing = false;
+        this.activeSyncPromise = null;
       }
-    } catch (e) {
-      console.warn('Cloud sync offline or error:', e);
-    } finally {
-      this.isSyncing = false;
-    }
+    })();
+
+    return this.activeSyncPromise;
   }
 
   async pushCategoryToCloud(category, data) {

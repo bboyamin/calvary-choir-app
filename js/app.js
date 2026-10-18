@@ -416,7 +416,7 @@ class ChoirApp {
 
     sortedMonths.forEach(m => {
       const [year, month] = m.split('-');
-      html += `<option value="${m}">📅 ${year}년 ${parseInt(month, 10)}월 찬양 모음</option>`;
+      html += `<option value="${m}">${year}년 ${parseInt(month, 10)}월 찬양 모음</option>`;
     });
 
     selectEl.innerHTML = html;
@@ -1056,10 +1056,74 @@ class ChoirApp {
     this.applyPendingDeepLink();
   }
 
-  applyPendingDeepLink() {
+  showDeepLinkLoading(targetTab) {
+    const loadingLabels = {
+      praise: '공유된 찬양 음원을 확인하는 중입니다...',
+      notice: '공유된 공지사항을 확인하는 중입니다...',
+      schedule: '공유된 주요 일정을 확인하는 중입니다...',
+      prayer: '공유된 중보기도를 확인하는 중입니다...'
+    };
+    const msg = loadingLabels[targetTab] || '공유된 항목을 확인하는 중입니다...';
+    const html = `
+      <div class="item-card" style="text-align:center; padding: 44px 20px; background: #FFFFFF; border-radius: 14px; border: 1.5px solid #E2E8F0; margin: 16px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">
+        <div style="font-size: 32px; margin-bottom: 12px; display: inline-block;">⏳</div>
+        <p style="font-weight: 800; color: #0F172A; font-size: 16px; margin: 0 0 6px 0;">${msg}</p>
+        <p style="font-size: 13px; color: #64748B; margin: 0;">최신 등록 데이터를 실시간으로 안전하게 동기화하고 있습니다.</p>
+      </div>
+    `;
+
+    if (targetTab === 'notice') {
+      const el = document.getElementById('noticeList');
+      if (el) el.innerHTML = html;
+    } else if (targetTab === 'praise') {
+      const elAll = document.getElementById('praiseListAll');
+      const elPart = document.getElementById('praiseListPart');
+      if (elAll) elAll.innerHTML = html;
+      if (elPart) elPart.innerHTML = html;
+    } else if (targetTab === 'schedule') {
+      const el = document.getElementById('scheduleList');
+      if (el) el.innerHTML = html;
+    } else if (targetTab === 'prayer') {
+      const el = document.getElementById('prayerList');
+      if (el) el.innerHTML = html;
+    }
+  }
+
+  async applyPendingDeepLink() {
     if (!this.pendingDeepLink || !this.pendingDeepLink.id) return;
     const { tab: targetTab, id: targetId } = this.pendingDeepLink;
 
+    // 1. 현재 로컬 저장소에 해당 ID를 가진 글이 존재하는지 4개 메뉴 전수 검사
+    let targetExists = false;
+    if (targetTab === 'notice') {
+      const notices = this.storage.get(STORAGE_KEYS.NOTICES) || [];
+      targetExists = notices.some(n => n.id === targetId);
+    } else if (targetTab === 'praise') {
+      const praises = this.storage.get(STORAGE_KEYS.PRAISES) || [];
+      targetExists = praises.some(p => p.id === targetId);
+    } else if (targetTab === 'schedule') {
+      const schedules = this.storage.get(STORAGE_KEYS.SCHEDULES) || [];
+      targetExists = schedules.some(s => s.id === targetId);
+    } else if (targetTab === 'prayer') {
+      const prayers = this.storage.get(STORAGE_KEYS.PRAYERS) || [];
+      targetExists = prayers.some(p => p.id === targetId);
+    }
+
+    // 2. 신규 글 등록 직후 등 로컬에 데이터가 아직 없는 경우:
+    // 엉뚱한 기본 최신글이 화면에 노출되지 않도록 로딩 피드백을 보여주고,
+    // 클라우드 동기화 완료를 대기한 뒤 100% 최신 데이터로 재실행!
+    if (!targetExists && !this._deepLinkSyncDone) {
+      this._deepLinkSyncDone = true;
+      this.showDeepLinkLoading(targetTab);
+      try {
+        await this.storage.syncFromCloud();
+      } catch (err) {
+        console.warn('Deep link cloud sync wait error:', err);
+      }
+      return this.applyPendingDeepLink();
+    }
+
+    // 3. 각 메뉴별 상세 렌더링 및 하위 탭/보관함/필터 자동 전환
     if (targetTab === 'notice') {
       this.noticeFilter = 'all';
       this.noticeSearchQuery = '';
@@ -1113,6 +1177,17 @@ class ChoirApp {
         if (dateFilterBox) {
           dateFilterBox.style.display = (this.praiseSubtab === 'all') ? 'flex' : 'none';
         }
+
+        // 파트별 필터 칩 활성화 상태 동기화
+        if (item.type === 'part') {
+          const partTarget = item.partTarget || 'ALL';
+          document.querySelectorAll('.part-chip').forEach(chip => {
+            chip.classList.toggle('active', chip.dataset.part === partTarget);
+          });
+        } else if (item.date && item.date.length >= 7) {
+          const monthSelect = document.getElementById('praiseMonthFilter');
+          if (monthSelect) monthSelect.value = this.praiseMonthFilter;
+        }
       }
       this.renderPraises();
     } else if (targetTab === 'schedule') {
@@ -1137,6 +1212,7 @@ class ChoirApp {
       this.renderPrayers();
     }
 
+    // 4. 해당 카드 위치로 스크롤 및 하이라이트 (최대 20회 재시도, 약 2초간 DOM 안정화 대기)
     const attemptScroll = (retryCount = 0) => {
       const cardEl = document.getElementById(`${targetTab}_card_${targetId}`);
       if (cardEl) {
@@ -1161,12 +1237,12 @@ class ChoirApp {
         }, 3500);
 
         this.pendingDeepLink = null;
-      } else if (retryCount < 12) {
-        setTimeout(() => attemptScroll(retryCount + 1), 60);
+      } else if (retryCount < 20) {
+        setTimeout(() => attemptScroll(retryCount + 1), 100);
       }
     };
 
-    setTimeout(() => attemptScroll(0), 40);
+    setTimeout(() => attemptScroll(0), 50);
   }
 
   renderNoticeCardHtml(item, isOfficer, favIds) {
