@@ -2213,11 +2213,17 @@ class ChoirApp {
           <!-- 🎟️ 신청 기능 활성화 시 버튼 표시 -->
           ${s.enableApply ? `
             <div class="sched-apply-box">
-              <button class="btn-card-apply" onclick="app.openApplyModal('${s.id}')">
-                🎟️ ${s.applyTitle || '신청하기'}
-              </button>
+              ${s.isApplyClosed ? `
+                <button type="button" class="btn-card-apply disabled" disabled title="신청이 마감되었습니다">
+                  🔒 신청 마감
+                </button>
+              ` : `
+                <button type="button" class="btn-card-apply" onclick="app.openApplyModal('${s.id}')">
+                  🎟️ ${s.applyTitle || '신청하기'}
+                </button>
+              `}
               
-              <button class="btn-card-apply-list" onclick="app.openApplyListModal('${s.id}')">
+              <button type="button" class="btn-card-apply-list" onclick="app.openApplyListModal('${s.id}')">
                 📋 신청 현황 보기 (총 ${totalApps}명 신청${ticketInfoStr})
               </button>
             </div>
@@ -2265,6 +2271,8 @@ class ChoirApp {
 
     this.clearUploadedImage('schedFilePhoto', 'schedPhotoPreview', 'schedPhotoData');
     this.toggleSchedApplyFields(false);
+    const isApplyClosedEl = document.getElementById('schedIsApplyClosed');
+    if (isApplyClosedEl) isApplyClosedEl.checked = false;
     this.openModal('modalSchedule');
   }
 
@@ -2305,6 +2313,9 @@ class ChoirApp {
     if (enableApplyCheckbox) enableApplyCheckbox.checked = isApplyEnabled;
     this.toggleSchedApplyFields(isApplyEnabled);
 
+    const isApplyClosedEl = document.getElementById('schedIsApplyClosed');
+    if (isApplyClosedEl) isApplyClosedEl.checked = !!sched.isApplyClosed;
+
     if (isApplyEnabled) {
       document.getElementById('schedApplyTitle').value = sched.applyTitle || '';
       document.getElementById('schedApplyType').value = sched.applyType || 'ticket';
@@ -2319,6 +2330,8 @@ class ChoirApp {
       fields.classList.remove('hidden');
     } else {
       fields.classList.add('hidden');
+      const isApplyClosedEl = document.getElementById('schedIsApplyClosed');
+      if (isApplyClosedEl) isApplyClosedEl.checked = false;
     }
   }
 
@@ -2330,6 +2343,7 @@ class ChoirApp {
     const location = document.getElementById('schedLocation').value.trim();
     const note = document.getElementById('schedNote').value.trim();
     const enableApply = document.getElementById('schedEnableApply').checked;
+    const isApplyClosed = enableApply && !!document.getElementById('schedIsApplyClosed')?.checked;
     const applyTitle = document.getElementById('schedApplyTitle').value.trim() || '🎟️ 참석/티켓 신청하기';
     const applyType = document.getElementById('schedApplyType').value;
 
@@ -2350,6 +2364,7 @@ class ChoirApp {
         sched.youtubeUrl = youtubeUrl;
         sched.imageUrl = imageUrl;
         sched.enableApply = enableApply;
+        sched.isApplyClosed = isApplyClosed;
         sched.applyTitle = applyTitle;
         sched.applyType = applyType;
 
@@ -2371,6 +2386,7 @@ class ChoirApp {
       youtubeUrl,
       imageUrl,
       enableApply,
+      isApplyClosed,
       applyTitle,
       applyType,
       applications: []
@@ -2402,6 +2418,11 @@ class ChoirApp {
     const schedules = this.storage.get(STORAGE_KEYS.SCHEDULES);
     const sched = schedules.find(s => s.id === schedId);
     if (!sched) return;
+
+    if (sched.isApplyClosed) {
+      alert('🔒 해당 일정의 신청이 마감되었습니다.');
+      return;
+    }
 
     document.getElementById('formApplySchedule').reset();
     document.getElementById('applyTargetSchedId').value = schedId;
@@ -2451,24 +2472,29 @@ class ChoirApp {
 
     const schedules = this.storage.get(STORAGE_KEYS.SCHEDULES);
     const sched = schedules.find(s => s.id === schedId);
-    if (sched) {
-      if (!sched.applications) sched.applications = [];
-      const appId = 'app_' + Date.now();
-      sched.applications.push({
-        id: appId,
-        part,
-        name,
-        option,
-        note,
-        time: new Date().toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-      });
+    if (!sched) return;
 
-      this.storage.save(STORAGE_KEYS.SCHEDULES, schedules);
-      this.storage.addMyItemId(appId);
-      this.closeModal('modalApplySchedule');
-      this.renderSchedules();
-      alert(`🎉 ${name} 대원님의 신청이 성공적으로 접수되었습니다!`);
+    if (sched.isApplyClosed) {
+      alert('🔒 해당 일정의 신청이 이미 마감되었습니다.');
+      return;
     }
+
+    if (!sched.applications) sched.applications = [];
+    const appId = 'app_' + Date.now();
+    sched.applications.push({
+      id: appId,
+      part,
+      name,
+      option,
+      note,
+      time: new Date().toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    });
+
+    this.storage.save(STORAGE_KEYS.SCHEDULES, schedules);
+    this.storage.addMyItemId(appId);
+    this.closeModal('modalApplySchedule');
+    this.renderSchedules();
+    alert(`🎉 ${name} 대원님의 신청이 성공적으로 접수되었습니다!`);
   }
 
   openApplyListModal(schedId) {
@@ -2477,7 +2503,11 @@ class ChoirApp {
     const sched = schedules.find(s => s.id === schedId);
     if (!sched) return;
 
-    document.getElementById('applyListSchedTitle').textContent = sched.title;
+    const isClosed = Boolean(sched.isApplyClosed);
+    const titleEl = document.getElementById('applyListSchedTitle');
+    if (titleEl) {
+      titleEl.innerHTML = `${this.escapeHtml(sched.title)} ${isClosed ? '<span style="background:#FEE2E2; color:#DC2626; font-size:12px; font-weight:800; padding:2px 8px; border-radius:6px; border:1px solid #FECACA; margin-left:6px; vertical-align:middle;">🔒 신청마감</span>' : ''}`;
+    }
     const apps = sched.applications || [];
     let totalTickets = 0;
 
@@ -2546,7 +2576,7 @@ class ChoirApp {
 
       container.innerHTML = apps.map(a => {
         const isMine = this.storage.isMyItem(a.id);
-        const canEdit = isMine || isOfficer;
+        const canEdit = isOfficer || (!isClosed && isMine);
         const partClass = a.part || '';
         const displayPart = this.formatPartTag(a.part);
 
@@ -2798,13 +2828,20 @@ class ChoirApp {
   }
 
   openEditApplicationModal(schedId, appId) {
-    if (!this.storage.isMyItem(appId) && !this.storage.isOfficer()) {
-      alert('🔒 본인이 작성한 신청 내역만 수정할 수 있습니다.');
-      return;
-    }
+    const isOfficer = this.storage.isOfficer();
     const schedules = this.storage.get(STORAGE_KEYS.SCHEDULES);
     const sched = schedules.find(s => s.id === schedId);
     if (!sched || !sched.applications) return;
+
+    if (sched.isApplyClosed && !isOfficer) {
+      alert('🔒 신청이 마감되어 대원은 수정할 수 없습니다. (관리자에게 문의해주세요)');
+      return;
+    }
+
+    if (!this.storage.isMyItem(appId) && !isOfficer) {
+      alert('🔒 본인이 작성한 신청 내역만 수정할 수 있습니다.');
+      return;
+    }
     const appItem = sched.applications.find(a => a.id === appId);
     if (!appItem) return;
 
@@ -2846,38 +2883,51 @@ class ChoirApp {
     const option = document.getElementById('editAppOptionSelect').value;
     const note = document.getElementById('editAppNote').value.trim();
 
-    if (!this.storage.isMyItem(appId) && !this.storage.isOfficer()) {
+    const isOfficer = this.storage.isOfficer();
+    const schedules = this.storage.get(STORAGE_KEYS.SCHEDULES);
+    const sched = schedules.find(s => s.id === schedId);
+    if (!sched || !sched.applications) return;
+
+    if (sched.isApplyClosed && !isOfficer) {
+      alert('🔒 신청이 마감되어 대원은 수정할 수 없습니다. (관리자에게 문의해주세요)');
+      return;
+    }
+
+    if (!this.storage.isMyItem(appId) && !isOfficer) {
       alert('🔒 본인이 작성한 신청 내역만 수정할 수 있습니다.');
       return;
     }
 
-    const schedules = this.storage.get(STORAGE_KEYS.SCHEDULES);
-    const sched = schedules.find(s => s.id === schedId);
-    if (sched && sched.applications) {
-      const appItem = sched.applications.find(a => a.id === appId);
-      if (appItem) {
-        appItem.part = part;
-        appItem.name = name;
-        appItem.option = option;
-        appItem.note = note;
-        this.storage.save(STORAGE_KEYS.SCHEDULES, schedules);
-        this.closeModal('modalEditApplication');
-        this.openApplyListModal(schedId);
-        this.renderSchedules();
-        alert('✏️ 신청 내역이 성공적으로 수정되었습니다.');
-      }
+    const appItem = sched.applications.find(a => a.id === appId);
+    if (appItem) {
+      appItem.part = part;
+      appItem.name = name;
+      appItem.option = option;
+      appItem.note = note;
+      this.storage.save(STORAGE_KEYS.SCHEDULES, schedules);
+      this.closeModal('modalEditApplication');
+      this.openApplyListModal(schedId);
+      this.renderSchedules();
+      alert('✏️ 신청 내역이 성공적으로 수정되었습니다.');
     }
   }
 
   deleteApplication(schedId, appId, btn) {
-    if (!this.storage.isMyItem(appId) && !this.storage.isOfficer()) {
+    const isOfficer = this.storage.isOfficer();
+    const schedules = this.storage.get(STORAGE_KEYS.SCHEDULES);
+    const sched = schedules.find(s => s.id === schedId);
+
+    if (sched && sched.isApplyClosed && !isOfficer) {
+      alert('🔒 신청이 마감되어 대원은 삭제(취소)할 수 없습니다. (관리자에게 문의해주세요)');
+      return;
+    }
+
+    if (!this.storage.isMyItem(appId) && !isOfficer) {
       alert('🔒 본인이 작성한 신청 내역만 삭제할 수 있습니다.');
       return;
     }
     this.confirmAction('🎟️ 해당 신청 내역을 삭제하시겠습니까?', () => {
       this.animateRemoveCard(btn, () => {
-        const schedules = this.storage.get(STORAGE_KEYS.SCHEDULES);
-        const sched = schedules.find(s => s.id === schedId);
         if (sched && sched.applications) {
           sched.applications = sched.applications.filter(a => a.id !== appId);
           this.storage.save(STORAGE_KEYS.SCHEDULES, schedules);

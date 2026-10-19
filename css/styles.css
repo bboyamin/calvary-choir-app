@@ -949,6 +949,16 @@ body {
   transform: scale(0.98);
 }
 
+.btn-card-apply:disabled,
+.btn-card-apply.disabled {
+  background: #E2E8F0 !important;
+  color: #64748B !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+  transform: none !important;
+  opacity: 0.9 !important;
+}
+
 .btn-card-apply-list {
   height: 42px;
   background: #F1F5F9;
