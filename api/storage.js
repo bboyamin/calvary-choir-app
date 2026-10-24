@@ -83,17 +83,19 @@ export default async function handler(req, res) {
 
   // GET: 클라우드 전체 또는 개별 데이터 조회
   if (req.method === 'GET') {
+    res.setHeader('Cache-Control', 'public, s-maxage=3, stale-while-revalidate=15');
     const key = req.query.key || 'all';
 
     if (key === 'all') {
       const categories = ['notices', 'praises', 'schedules', 'members', 'prayers', 'officer_pin'];
+      const values = await Promise.all(categories.map(cat => kvGet(`calvary_${cat}`)));
       const result = { lastUpdated: globalData.lastUpdated || Date.now() };
 
-      for (const cat of categories) {
-        const kvVal = await kvGet(`calvary_${cat}`);
+      categories.forEach((cat, idx) => {
+        const kvVal = values[idx];
         const defaultFallback = cat === 'officer_pin' ? null : [];
         result[cat] = (kvVal !== null && kvVal !== undefined) ? kvVal : (globalData[cat] !== null ? globalData[cat] : defaultFallback);
-      }
+      });
 
       return res.status(200).json(result);
     } else {

@@ -77,6 +77,14 @@ class ChoirApp {
     this.setupPwaInstall();
     this.checkOfficerStatus();
 
+    // 초기 클라우드 동기화 6초 이상 지연 시 도움말 노출 타이머 (네트워크 지연 대비)
+    setTimeout(() => {
+      if (this.storage && !this.storage.initialSyncDone && !this.storage.hasAnyLocalData()) {
+        const helpEl = document.getElementById('initialSyncTimeoutHelp');
+        if (helpEl) helpEl.classList.remove('hidden');
+      }
+    }, 6000);
+
     const urlParams = new URLSearchParams(window.location.search);
     const targetTab = urlParams.get('tab');
     if (targetTab && ['notice', 'praise', 'schedule', 'prayer'].includes(targetTab)) {
@@ -91,6 +99,37 @@ class ChoirApp {
     this.markTabAsRead(this.currentTab);
     this.startAutoUpdateChecker();
     this.checkFirstVisitManual();
+  }
+
+  getInitialLoadingHtml(categoryName = '자료') {
+    return `
+      <div class="item-card initial-welcome-loader" style="text-align: center; padding: 48px 20px 42px 20px; background: #FFFFFF; border-radius: 16px; border: 1.5px solid #E2E8F0; margin: 12px 0; box-shadow: 0 4px 16px rgba(0,0,0,0.05);">
+        <div class="welcome-symbol-spin" style="font-size: 42px; margin-bottom: 14px; display: inline-block; animation: softPulse 1.8s infinite ease-in-out;">🕊️</div>
+        <h3 style="font-size: 20px; font-weight: 800; color: #1E3A8A; margin: 0 0 8px 0; letter-spacing: -0.3px;">임마누엘 성가대</h3>
+        <p style="font-weight: 700; color: #0F172A; font-size: 16.5px; margin: 0 0 10px 0; line-height: 1.45;">
+          최신 찬양 음원과 ${categoryName}을<br>안전하게 불러오는 중입니다...
+        </p>
+        <div class="welcome-loader-bar" style="width: 140px; height: 5px; background: #E2E8F0; border-radius: 4px; margin: 16px auto 14px auto; overflow: hidden; position: relative;">
+          <div class="welcome-loader-progress" style="width: 60%; height: 100%; background: linear-gradient(90deg, #3B82F6, #1D4ED8); border-radius: 4px; animation: progressSlide 1.2s infinite ease-in-out;"></div>
+        </div>
+        <p style="font-size: 13.5px; color: #64748B; margin: 0;">잠시만 기다려주시면 바로 열립니다 🎵</p>
+        <div id="initialSyncTimeoutHelp" class="hidden" style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed #CBD5E1;">
+          <p style="font-size: 13px; color: #DC2626; margin: 0 0 8px 0; font-weight: 600;">인터넷 연결이 지연되고 있습니다.</p>
+          <button type="button" class="btn-primary-large" style="padding: 10px 18px; font-size: 14.5px; display: inline-block; width: auto; font-weight: 700;" onclick="app.retryInitialSync()">🔄 다시 불러오기</button>
+        </div>
+      </div>
+    `;
+  }
+
+  retryInitialSync() {
+    const helpEl = document.getElementById('initialSyncTimeoutHelp');
+    if (helpEl) helpEl.classList.add('hidden');
+    if (this.storage) {
+      this.storage.isSyncing = false;
+      this.storage.syncFromCloud().then(() => {
+        this.renderAll();
+      });
+    }
   }
 
   startAutoUpdateChecker() {
@@ -1004,7 +1043,7 @@ class ChoirApp {
       try {
         cardEl.scrollIntoView({ behavior: 'instant', block: 'start' });
       } catch (e) {
-        try { cardEl.scrollIntoView(true); } catch (err) {}
+        try { cardEl.scrollIntoView(true); } catch (err) { }
       }
     };
 
@@ -1352,6 +1391,10 @@ class ChoirApp {
     const favIds = new Set(this.storage.getFavoriteNoticeIds() || []);
 
     if (rawNotices.length === 0) {
+      if (!this.storage.initialSyncDone) {
+        listEl.innerHTML = this.getInitialLoadingHtml('공지사항');
+        return;
+      }
       listEl.innerHTML = `<div class="item-card"><p class="card-body-text">등록된 공지사항이 없습니다.</p></div>`;
       return;
     }
@@ -1847,6 +1890,12 @@ class ChoirApp {
     // 26년 1월부터만 보여지도록 필터링
     praises = praises.filter(p => p.date && p.date >= '2026-01-01');
 
+    if (praises.length === 0 && !this.storage.initialSyncDone) {
+      if (listAllEl) listAllEl.innerHTML = this.getInitialLoadingHtml('찬양 음원 & 영상');
+      if (listPartEl) listPartEl.innerHTML = this.getInitialLoadingHtml('파트별 연습실');
+      return;
+    }
+
     praises.sort((a, b) => {
       const dateDiff = (b.date || '').localeCompare(a.date || '');
       if (dateDiff !== 0) return dateDiff;
@@ -2136,6 +2185,10 @@ class ChoirApp {
     const isOfficer = this.storage.isOfficer();
 
     if (schedules.length === 0) {
+      if (!this.storage.initialSyncDone) {
+        listEl.innerHTML = this.getInitialLoadingHtml('주요 일정');
+        return;
+      }
       listEl.innerHTML = `<div class="item-card"><p class="card-body-text">등록된 일정이 없습니다.</p></div>`;
       return;
     }
@@ -2658,7 +2711,7 @@ class ChoirApp {
           const timeStr = dt.toTimeString().slice(0, 5);
           metaLines.push(`📅 일시: ${dateStr}${timeStr !== '00:00' ? ' ' + timeStr : ''}`);
         }
-      } catch (e) {}
+      } catch (e) { }
     } else if (sched.date) {
       metaLines.push(`📅 일시: ${sched.date}`);
     }
@@ -2956,6 +3009,11 @@ class ChoirApp {
     }
 
     members.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+
+    if (allMembers.length === 0 && !this.storage.initialSyncDone) {
+      listEl.innerHTML = this.getInitialLoadingHtml('대원 명단');
+      return;
+    }
 
     const html = members.length === 0
       ? `<div class="item-card"><p class="card-body-text">등록된 대원이 없습니다.</p></div>`
@@ -3566,6 +3624,10 @@ class ChoirApp {
     const prayers = this.storage.get(STORAGE_KEYS.PRAYERS) || [];
 
     if (prayers.length === 0) {
+      if (!this.storage.initialSyncDone) {
+        listEl.innerHTML = this.getInitialLoadingHtml('중보기도');
+        return;
+      }
       listEl.innerHTML = `<div class="item-card"><p class="card-body-text">등록된 기도제목이 없습니다.</p></div>`;
       return;
     }
@@ -3613,9 +3675,9 @@ class ChoirApp {
           <div class="comment-section">
             <div class="comment-list">
               ${(p.comments || []).map(c => {
-                const commentId = c.id || '';
-                const canEditComment = (commentId && this.storage.isMyItem(commentId)) || isOfficer;
-                return `
+        const commentId = c.id || '';
+        const canEditComment = (commentId && this.storage.isMyItem(commentId)) || isOfficer;
+        return `
                   <div class="comment-item" style="display: flex; justify-content: space-between; align-items: center;">
                     <div>
                       <span class="comment-author">${this.escapeHtml(c.author || '익명')}:</span>
@@ -3629,7 +3691,7 @@ class ChoirApp {
                     ` : ''}
                   </div>
                 `;
-              }).join('')}
+      }).join('')}
             </div>
 
             <!-- 댓글 입력 폼 -->
@@ -4031,9 +4093,9 @@ class ChoirApp {
         return;
       }
       const html = await res.text();
-      const isPdf = /itemprop="name"\s+content="[^"]*\.pdf"/i.test(html) || 
-                    /property="og:title"\s+content="[^"]*\.pdf"/i.test(html) || 
-                    /<title>[^<]*\.pdf\s*(?:-[^<]*)?<\/title>/i.test(html);
+      const isPdf = /itemprop="name"\s+content="[^"]*\.pdf"/i.test(html) ||
+        /property="og:title"\s+content="[^"]*\.pdf"/i.test(html) ||
+        /<title>[^<]*\.pdf\s*(?:-[^<]*)?<\/title>/i.test(html);
 
       this.drivePdfCache[fileId] = isPdf;
 

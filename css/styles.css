@@ -149,6 +149,21 @@ body {
   box-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
 }
 
+@keyframes softPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.85; }
+}
+
+@keyframes progressSlide {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(50%); }
+  100% { transform: translateX(200%); }
+}
+
+.initial-welcome-loader {
+  animation: fadeIn 0.3s ease;
+}
+
 /* 임원 활성화 배너 */
 .officer-active-banner {
   background-color: var(--gold-accent, #F59E0B);
