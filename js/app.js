@@ -398,6 +398,7 @@ class ChoirApp {
   }
 
   switchPraiseSubtab(subtab) {
+    this.targetPraiseId = null;
     this.praiseSubtab = subtab;
     document.querySelectorAll('.sub-tab-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.subtab === subtab);
@@ -414,6 +415,7 @@ class ChoirApp {
   }
 
   filterPartPraise(part) {
+    this.targetPraiseId = null;
     this.partPraiseFilter = part;
     document.querySelectorAll('.part-chip').forEach(chip => {
       chip.classList.toggle('active', chip.dataset.part === part);
@@ -430,6 +432,7 @@ class ChoirApp {
   }
 
   filterPraiseByMonth(val) {
+    this.targetPraiseId = null;
     this.praiseMonthFilter = val;
     this.renderPraises();
   }
@@ -1950,14 +1953,20 @@ class ChoirApp {
       });
     }
 
-    // 딥링크 공유 접속 시 해당 찬양 항목이 필터에 의해 숨겨지지 않도록 무조건 포함 보장
+    // 딥링크 공유 접속 시 해당 찬양 항목이 필터에 의해 숨겨지지 않도록 포함 보장
     if (this.targetPraiseId) {
       const targetPraise = praises.find(p => p.id === this.targetPraiseId);
       if (targetPraise) {
         if (targetPraise.type === 'all' && !allPraises.some(p => p.id === this.targetPraiseId)) {
-          allPraises.unshift(targetPraise);
+          const targetMonth = targetPraise.date ? targetPraise.date.substring(0, 7) : '';
+          if (this.praiseMonthFilter === 'LATEST' || this.praiseMonthFilter === targetMonth) {
+            allPraises.unshift(targetPraise);
+          }
         } else if (targetPraise.type === 'part' && !displayPartPraises.some(p => p.id === this.targetPraiseId)) {
-          displayPartPraises.unshift(targetPraise);
+          const targetPart = targetPraise.partTarget || 'ALL_PART';
+          if (this.partPraiseFilter === 'ALL' || this.partPraiseFilter === targetPart) {
+            displayPartPraises.unshift(targetPraise);
+          }
         }
       }
     }
