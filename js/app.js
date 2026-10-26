@@ -61,6 +61,11 @@ class ChoirApp {
     this.enteredPin = '';
     this.deferredPrompt = null;
 
+    // 🔍 찬양곡 실시간 검색 상태
+    this.isPraiseSearchOpen = false;
+    this.praiseSearchQuery = '';
+    this.isClearingPraiseSearch = false;
+
     // 파트별 음원 5개 연속 등록 시 제목 및 주일 일자 자동 입력용 상태
     this.lastBatchTitle = '';
     this.lastBatchDate = '';
@@ -68,6 +73,11 @@ class ChoirApp {
 
     // 지연 렌더링(Lazy rendering) 관리용 셋
     this.renderedTabs = new Set();
+
+    // 🎧 파트 연습 도우미 (A-B 반복 & 배속 제어) 상태
+    this.ytPlayers = {};
+    this.loopIntervals = {};
+    this.practiceConfigs = {};
 
     this.init();
   }
@@ -406,9 +416,24 @@ class ChoirApp {
     document.getElementById('praiseSubtabAll').classList.toggle('active', subtab === 'all');
     document.getElementById('praiseSubtabPart').classList.toggle('active', subtab === 'part');
 
+    const isAll = (subtab === 'all');
     const dateFilterBox = document.getElementById('praiseDateFilterBox');
     if (dateFilterBox) {
-      dateFilterBox.style.display = (subtab === 'all') ? 'flex' : 'none';
+      dateFilterBox.style.display = (isAll && !this.praiseSearchQuery) ? 'flex' : 'none';
+    }
+
+    // 돋보기 검색 버튼과 검색창은 성가대 찬양 영상 메뉴에만 노출
+    const searchBtn = document.getElementById('btnTogglePraiseSearch');
+    const searchBox = document.getElementById('praiseSearchBox');
+    if (searchBtn) {
+      searchBtn.style.display = isAll ? 'flex' : 'none';
+    }
+    if (searchBox) {
+      if (!isAll) {
+        searchBox.classList.add('hidden');
+      } else if (this.isPraiseSearchOpen) {
+        searchBox.classList.remove('hidden');
+      }
     }
 
     this.renderPraises();
@@ -435,6 +460,78 @@ class ChoirApp {
     this.targetPraiseId = null;
     this.praiseMonthFilter = val;
     this.renderPraises();
+  }
+
+  // ----------------------------------------------------
+  // 🔍 7. 찬양곡 실시간 초간편 곡명 검색
+  // ----------------------------------------------------
+  togglePraiseSearch() {
+    this.isPraiseSearchOpen = !this.isPraiseSearchOpen;
+    const searchBox = document.getElementById('praiseSearchBox');
+    const searchBtn = document.getElementById('btnTogglePraiseSearch');
+    const searchInput = document.getElementById('praiseSearchInput');
+    const clearBtn = document.getElementById('btnClearPraiseSearch');
+
+    if (searchBox) {
+      searchBox.classList.toggle('hidden', !this.isPraiseSearchOpen);
+    }
+    if (searchBtn) {
+      searchBtn.classList.toggle('active', this.isPraiseSearchOpen);
+    }
+    if (this.isPraiseSearchOpen) {
+      if (searchInput) {
+        setTimeout(() => searchInput.focus(), 100);
+      }
+      if (clearBtn) {
+        const hasText = searchInput && searchInput.value.trim().length > 0;
+        clearBtn.style.display = hasText ? 'flex' : 'none';
+      }
+    } else {
+      if (this.praiseSearchQuery || (searchInput && searchInput.value)) {
+        this.clearPraiseSearch();
+      }
+    }
+  }
+
+  onPraiseSearchInput(val) {
+    const rawVal = val || '';
+    const cleaned = rawVal.trim().toLowerCase();
+
+    const clearBtn = document.getElementById('btnClearPraiseSearch');
+    if (clearBtn) {
+      clearBtn.style.display = rawVal.length > 0 ? 'flex' : 'none';
+    }
+
+    if (this.praiseSearchQuery === cleaned) return;
+    this.praiseSearchQuery = cleaned;
+    this.renderPraises();
+  }
+
+  clearPraiseSearch() {
+    const searchInput = document.getElementById('praiseSearchInput');
+    const clearBtn = document.getElementById('btnClearPraiseSearch');
+    const currentVal = searchInput ? searchInput.value : '';
+
+    if (clearBtn) clearBtn.style.display = 'none';
+
+    if (!this.praiseSearchQuery && !currentVal) {
+      if (searchInput) searchInput.value = '';
+      return;
+    }
+
+    if (this.isClearingPraiseSearch) return;
+    this.isClearingPraiseSearch = true;
+
+    this.praiseSearchQuery = '';
+    if (searchInput) {
+      searchInput.value = '';
+      searchInput.focus();
+    }
+    this.renderPraises();
+
+    setTimeout(() => {
+      this.isClearingPraiseSearch = false;
+    }, 200);
   }
 
   populatePraiseMonthDropdown() {
@@ -1889,11 +1986,19 @@ class ChoirApp {
 
     const dateFilterBox = document.getElementById('praiseDateFilterBox');
     if (dateFilterBox) {
-      dateFilterBox.style.display = (this.praiseSubtab === 'all') ? 'flex' : 'none';
+      dateFilterBox.style.display = (this.praiseSubtab === 'all' && !this.praiseSearchQuery) ? 'flex' : 'none';
     }
 
-    // 26년 1월부터만 보여지도록 필터링
-    praises = praises.filter(p => p.date && p.date >= '2026-01-01');
+    // 돋보기 검색 버튼 표시 여부 관리
+    const searchBtn = document.getElementById('btnTogglePraiseSearch');
+    if (searchBtn) {
+      searchBtn.style.display = (this.praiseSubtab === 'all') ? 'flex' : 'none';
+    }
+
+    // 26년 1월부터만 보여지도록 필터링 (곡명 검색 시에는 등록된 전체 찬양곡 대상 검색)
+    if (!this.praiseSearchQuery) {
+      praises = praises.filter(p => p.date && p.date >= '2026-01-01');
+    }
 
     if (praises.length === 0 && !this.storage.initialSyncDone) {
       if (listAllEl) listAllEl.innerHTML = this.getInitialLoadingHtml('찬양 음원 & 영상');
@@ -1907,20 +2012,29 @@ class ChoirApp {
       return this.getItemTimestamp(b) - this.getItemTimestamp(a);
     });
 
-    // 1. 성가대 찬양 영상 필터링 (type === 'all') - 월별/최신 주일 필터 적용
+    // 1. 성가대 찬양 영상 필터링 (type === 'all') - 검색어 또는 월별/최신 주일 필터 적용
     let allPraises = praises.filter(p => p.type === 'all');
-    if (this.praiseMonthFilter === 'LATEST') {
-      if (allPraises.length > 0) {
-        const latestDate = allPraises[0].date;
-        allPraises = allPraises.filter(p => p.date === latestDate);
+    if (this.praiseSearchQuery) {
+      const q = this.praiseSearchQuery.toLowerCase();
+      allPraises = allPraises.filter(p => (p.title || '').toLowerCase().includes(q));
+    } else {
+      if (this.praiseMonthFilter === 'LATEST') {
+        if (allPraises.length > 0) {
+          const latestDate = allPraises[0].date;
+          allPraises = allPraises.filter(p => p.date === latestDate);
+        }
+      } else if (this.praiseMonthFilter) {
+        allPraises = allPraises.filter(p => p.date.startsWith(this.praiseMonthFilter));
       }
-    } else if (this.praiseMonthFilter) {
-      allPraises = allPraises.filter(p => p.date.startsWith(this.praiseMonthFilter));
     }
 
     if (listAllEl) {
+      let emptyMsg = '선택하신 일자의 성가대 찬양 영상이 없습니다.';
+      if (this.praiseSearchQuery) {
+        emptyMsg = `🔍 '${this.escapeHtml(this.praiseSearchQuery)}' 검색어와 일치하는 찬양곡이 없습니다.`;
+      }
       const htmlAll = allPraises.length === 0
-        ? `<div class="item-card"><p class="card-body-text">선택하신 일자의 성가대 찬양 영상이 없습니다.</p></div>`
+        ? `<div class="item-card"><p class="card-body-text">${emptyMsg}</p></div>`
         : allPraises.map(p => this.createPraiseCardHtml(p, isOfficer)).join('');
       if (listAllEl.innerHTML !== htmlAll) {
         listAllEl.innerHTML = htmlAll;
@@ -2003,6 +2117,8 @@ class ChoirApp {
     const badgeClass = item.type === 'part' ? (partBadges[item.partTarget] || 'badge-praise') : 'badge-notice';
     const badgeText = item.type === 'part' ? `🎼 ${partNames[item.partTarget] || '파트'} 연습` : '🎬 성가대 찬양 영상';
 
+    const iframeId = `yt_player_${item.id}`;
+
     return `
       <div class="item-card" id="praise_card_${item.id}">
         <div class="card-top">
@@ -2021,7 +2137,136 @@ class ChoirApp {
         <h3 class="card-title">${item.title}</h3>
         
         <div class="video-responsive">
-          ${this.getYoutubeIframe(item.youtubeUrl)}
+          ${this.getYoutubeIframe(item.youtubeUrl, iframeId)}
+        </div>
+
+        <!-- 🎧 파트 연습 도우미 (어르신 맞춤형 초간편 구간 반복 & 배속) -->
+        <div class="practice-helper-box">
+          <button type="button" class="btn-toggle-practice" onclick="app.togglePracticePanel('${item.id}')" id="btn_practice_toggle_${item.id}">
+            <div class="practice-toggle-left">
+              <span class="practice-pulse-dot"></span>
+              <span class="practice-toggle-title">🎧 파트 연습 도우미</span>
+              <span class="practice-toggle-badge">쉬운 구간 반복 · 느리게 듣기</span>
+            </div>
+            <span class="practice-toggle-chevron" id="chevron_practice_${item.id}">도구 열기 ▼</span>
+          </button>
+
+          <div id="practice_panel_${item.id}" class="practice-panel hidden">
+            <div class="practice-panel-inner modern-pro">
+              <!-- 1. 시간 표시 & 4단 정밀 점프 컨트롤러 (10초 / 5초) -->
+              <div class="practice-time-row">
+                <div class="practice-time-display">
+                  <div class="time-label-group">
+                    <span class="time-clock-icon">⏱️</span>
+                    <span class="time-label">현재 위치</span>
+                  </div>
+                  <div class="time-readout">
+                    <span class="time-current" id="practice_curr_time_${item.id}">00:00</span>
+                    <span class="time-slash">/</span>
+                    <span class="time-duration" id="practice_total_time_${item.id}">--:--</span>
+                  </div>
+                </div>
+                <div class="practice-jump-actions">
+                  <button type="button" class="btn-jump-pill" onclick="app.jumpPlayerTime('${item.id}', -10)" title="10초 뒤로 되감기">
+                    <span class="jump-arrow">↺</span> 10초
+                  </button>
+                  <button type="button" class="btn-jump-pill" onclick="app.jumpPlayerTime('${item.id}', -5)" title="5초 뒤로 되감기">
+                    <span class="jump-arrow">↺</span> 5초
+                  </button>
+                  <button type="button" class="btn-jump-pill" onclick="app.jumpPlayerTime('${item.id}', 5)" title="5초 앞으로 이동">
+                    5초 <span class="jump-arrow">↻</span>
+                  </button>
+                  <button type="button" class="btn-jump-pill" onclick="app.jumpPlayerTime('${item.id}', 10)" title="10초 앞으로 이동">
+                    10초 <span class="jump-arrow">↻</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 2. 구간 반복 & 배속 통합 컨트롤러 카드 (초슬림 컴팩트) -->
+              <div class="practice-loop-card">
+                <!-- 반복 재생 중 활성화되는 프리미엄 네이비 글래스 배너 -->
+                <div id="senior_looping_banner_${item.id}" class="practice-active-banner hidden">
+                  <div class="active-banner-header">
+                    <div class="active-badge-group">
+                      <!-- 실시간 이퀄라이저 파동 애니메이션 -->
+                      <div class="live-equalizer-bars" aria-hidden="true">
+                        <span class="eq-bar bar-1"></span>
+                        <span class="eq-bar bar-2"></span>
+                        <span class="eq-bar bar-3"></span>
+                        <span class="eq-bar bar-4"></span>
+                      </div>
+                      <span class="active-live-tag">마디 무한 반복 중</span>
+                    </div>
+                    <div class="active-range-chip">
+                      <span class="range-digits" id="senior_loop_range_txt_${item.id}">00:00 ~ 00:30</span>
+                    </div>
+                  </div>
+
+                  <button type="button" class="btn-stop-loop-pro" onclick="app.stopLoop('${item.id}')">
+                    <span class="stop-icon">■</span> 반복 종료하고 계속 듣기
+                  </button>
+                </div>
+
+                <!-- 구간 설정 영역 (평상시) -->
+                <div id="senior_loop_controls_${item.id}" class="practice-loop-controls">
+                  <div class="practice-card-header">
+                    <span class="practice-card-title">🔁 마디 구간 반복</span>
+                    <span class="practice-card-desc">1단계 시작 ➔ 2단계 끝점</span>
+                  </div>
+
+                  <div class="loop-steps-grid">
+                    <button type="button" class="btn-loop-step btn-step-start" id="btn_step1_${item.id}" onclick="app.setSeniorStart('${item.id}')">
+                      <div class="step-badge">1</div>
+                      <div class="step-text-wrap">
+                        <span class="step-main-label">여기서부터</span>
+                        <span class="step-sub-status" id="step1_time_${item.id}">시작점 찍기</span>
+                      </div>
+                    </button>
+
+                    <div class="steps-flow-arrow">➔</div>
+
+                    <button type="button" class="btn-loop-step btn-step-end" id="btn_step2_${item.id}" onclick="app.setSeniorEndAndLoop('${item.id}')">
+                      <div class="step-badge">2</div>
+                      <div class="step-text-wrap">
+                        <span class="step-main-label">여기까지 반복!</span>
+                        <span class="step-sub-status" id="step2_time_${item.id}">누르면 바로 반복</span>
+                      </div>
+                    </button>
+                  </div>
+
+                  <!-- 원터치 15초 바로 반복 (슬림 앰버 골드 버튼) -->
+                  <button type="button" class="btn-recent-loop-pill" onclick="app.loopRecentSeconds('${item.id}', 15)" title="방금 지나간 15초를 바로 무한 반복합니다">
+                    <span class="pill-spark">⚡</span>
+                    <span class="pill-text">방금 들은 15초 바로 반복</span>
+                  </button>
+                </div>
+
+                <!-- 3. 컴팩트 인라인 재생 배속 세그먼트 바 -->
+                <div class="practice-speed-inline-row">
+                  <span class="speed-inline-label">⚡ 속도</span>
+                  <div class="speed-segmented-control" id="speed_bar_${item.id}">
+                    <button type="button" class="btn-senior-speed" data-speed="0.8" onclick="app.setPlayerSpeed('${item.id}', 0.8)">
+                      0.8x 느리게
+                    </button>
+                    <button type="button" class="btn-senior-speed active" data-speed="1.0" onclick="app.setPlayerSpeed('${item.id}', 1.0)">
+                      1.0x 기본
+                    </button>
+                    <button type="button" class="btn-senior-speed" data-speed="1.2" onclick="app.setPlayerSpeed('${item.id}', 1.2)">
+                      1.2x 빠르게
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 4. 하단 세련된 초기화 버튼 & 힌트 -->
+              <div class="practice-panel-footer">
+                <button type="button" class="btn-reset-action" onclick="app.resetPracticeConfig('${item.id}')" title="연습 설정 초기화">
+                  <span class="reset-icon">↺</span> 설정 초기화
+                </button>
+                <span class="panel-hint-text">💡 1단계 ➔ 2단계 순서로 눌러주세요</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -3920,7 +4165,7 @@ class ChoirApp {
   // ----------------------------------------------------
   // 🛠️ 헬퍼 메서드 (유튜브 변환 & 모달 제어)
   // ----------------------------------------------------
-  getYoutubeIframe(url) {
+  getYoutubeIframe(url, iframeId = '') {
     if (!url) return '';
     let videoId = '';
     const cleanUrl = url.trim();
@@ -3966,7 +4211,8 @@ class ChoirApp {
     }
 
     const startParam = startSeconds > 0 ? `&start=${startSeconds}` : '';
-    return `<iframe src="https://www.youtube.com/embed/${videoId}?rel=0${startParam}" loading="lazy" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`;
+    const idAttr = iframeId ? ` id="${iframeId}"` : '';
+    return `<iframe${idAttr} src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&rel=0${startParam}" loading="lazy" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>`;
   }
 
   convertGoogleDriveUrl(url) {
@@ -4237,6 +4483,808 @@ class ChoirApp {
     localStorage.removeItem(STORAGE_KEYS.DATA_VERSION);
     alert('🔄 스마트폰 찌꺼기 캐시를 삭제하고 클라우드 최신 데이터를 즉시 불러옵니다!');
     window.location.reload(true);
+  }
+
+  // ====================================================
+  // 🎧 파트 연습실 도우미 (A-B 구간 무한 반복 & 배속 제어)
+  // ====================================================
+  formatTime(sec) {
+    if (isNaN(sec) || sec < 0) sec = 0;
+    const s = Math.floor(sec);
+    const m = Math.floor(s / 60);
+    const remainingSec = s % 60;
+    if (m >= 60) {
+      const h = Math.floor(m / 60);
+      const remM = m % 60;
+      return `${String(h).padStart(2, '0')}:${String(remM).padStart(2, '0')}:${String(remainingSec).padStart(2, '0')}`;
+    }
+    return `${String(m).padStart(2, '0')}:${String(remainingSec).padStart(2, '0')}`;
+  }
+
+  togglePracticePanel(itemId) {
+    const panel = document.getElementById(`practice_panel_${itemId}`);
+    const chevron = document.getElementById(`chevron_practice_${itemId}`);
+    const btn = document.getElementById(`btn_practice_toggle_${itemId}`);
+    if (!panel) return;
+
+    const isOpening = panel.classList.contains('hidden');
+    panel.classList.toggle('hidden', !isOpening);
+    if (btn) btn.classList.toggle('is-open', isOpening);
+    if (chevron) chevron.textContent = isOpening ? '도구 닫기 ▲' : '도구 열기 ▼';
+
+    if (isOpening) {
+      this.initPracticeForCard(itemId);
+    } else {
+      const cfg = this.practiceConfigs[itemId];
+      if (cfg && !cfg.isLooping && this.loopIntervals[itemId]) {
+        clearInterval(this.loopIntervals[itemId]);
+        this.loopIntervals[itemId] = null;
+      }
+    }
+  }
+
+  initPracticeForCard(itemId) {
+    if (!this.practiceConfigs[itemId]) {
+      const praises = this.storage ? this.storage.get(STORAGE_KEYS.PRAISES) : [];
+      const item = (praises || []).find(p => p.id === itemId);
+      let initialStart = 0;
+      if (item && item.youtubeUrl) {
+        const timeMatch = item.youtubeUrl.match(/[?&#](?:t|start)=([0-9hmsHMS]+)/i);
+        if (timeMatch && timeMatch[1]) {
+          const timeVal = timeMatch[1];
+          if (/^\d+$/.test(timeVal)) {
+            initialStart = parseInt(timeVal, 10);
+          } else {
+            const hours = (timeVal.match(/(\d+)h/i) || [])[1] || 0;
+            const minutes = (timeVal.match(/(\d+)m/i) || [])[1] || 0;
+            const seconds = (timeVal.match(/(\d+)s/i) || [])[1] || 0;
+            initialStart = (parseInt(hours, 10) * 3600) + (parseInt(minutes, 10) * 60) + parseInt(seconds, 10);
+          }
+        }
+      }
+      this.practiceConfigs[itemId] = {
+        startSec: initialStart,
+        endSec: initialStart + 20,
+        isLooping: false,
+        step1Set: false,
+        speed: 1.0,
+        duration: 0
+      };
+    }
+
+    const cfg = this.practiceConfigs[itemId];
+    this.updateSeniorMarkerUi(itemId);
+
+    this.ensureYtPlayer(itemId, (player) => {
+      try {
+        const dur = Math.floor(player.getDuration() || 0);
+        if (dur > 0) {
+          cfg.duration = dur;
+          const totalEl = document.getElementById(`practice_total_time_${itemId}`);
+          if (totalEl) totalEl.textContent = this.formatTime(dur);
+          if (cfg.endSec > dur) cfg.endSec = dur;
+          this.updateSeniorMarkerUi(itemId);
+        }
+      } catch (e) {}
+    });
+
+    this.startPracticeMonitor(itemId);
+  }
+
+  ensureYtPlayer(itemId, onReady) {
+    if (this.ytPlayers[itemId] && typeof this.ytPlayers[itemId].getCurrentTime === 'function') {
+      if (onReady) onReady(this.ytPlayers[itemId]);
+      return this.ytPlayers[itemId];
+    }
+
+    const iframeId = `yt_player_${itemId}`;
+    const iframeEl = document.getElementById(iframeId);
+    if (!iframeEl) return null;
+
+    const setupPlayer = () => {
+      try {
+        const player = new YT.Player(iframeId, {
+          events: {
+            'onReady': () => {
+              this.ytPlayers[itemId] = player;
+              if (onReady) onReady(player);
+            },
+            'onStateChange': (e) => {
+              if (window.YT && e.data === YT.PlayerState.PLAYING) {
+                this.startPracticeMonitor(itemId);
+              }
+            }
+          }
+        });
+        this.ytPlayers[itemId] = player;
+        return player;
+      } catch (err) {
+        console.warn('YT.Player init failed, using fallback:', err);
+      }
+    };
+
+    if (window.YT && window.YT.Player) {
+      return setupPlayer();
+    } else {
+      const prevCallback = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (typeof prevCallback === 'function') prevCallback();
+        setupPlayer();
+      };
+    }
+    return null;
+  }
+
+  startPracticeMonitor(itemId) {
+    if (this.loopIntervals[itemId]) {
+      clearInterval(this.loopIntervals[itemId]);
+    }
+
+    this.loopIntervals[itemId] = setInterval(() => {
+      const player = this.ytPlayers[itemId];
+      if (!player || typeof player.getCurrentTime !== 'function') return;
+
+      try {
+        const curr = player.getCurrentTime() || 0;
+        const dur = player.getDuration() || 0;
+
+        const currEl = document.getElementById(`practice_curr_time_${itemId}`);
+        if (currEl) currEl.textContent = this.formatTime(curr);
+
+        if (dur > 0) {
+          const totalEl = document.getElementById(`practice_total_time_${itemId}`);
+          if (totalEl && (totalEl.textContent === '--:--' || totalEl.textContent === '00:00')) {
+            totalEl.textContent = this.formatTime(dur);
+          }
+        }
+
+        const cfg = this.practiceConfigs[itemId];
+        if (cfg && cfg.isLooping) {
+          if (curr >= cfg.endSec || curr < cfg.startSec - 1.5) {
+            player.seekTo(cfg.startSec, true);
+            player.playVideo();
+          }
+        }
+      } catch (e) {}
+    }, 250);
+  }
+
+  // 1단계: 여기서부터 찍기
+  setSeniorStart(itemId) {
+    const player = this.ytPlayers[itemId];
+    if (!player || typeof player.getCurrentTime !== 'function') {
+      this.showToast('먼저 위의 찬양 재생 버튼을 눌러주세요.');
+      return;
+    }
+    const curr = Math.floor(player.getCurrentTime() || 0);
+    const cfg = this.practiceConfigs[itemId];
+    if (!cfg) return;
+
+    cfg.startSec = curr;
+    cfg.step1Set = true;
+    cfg.isLooping = false;
+
+    this.updateSeniorMarkerUi(itemId);
+    this.showToast(`🟢 시작점(${this.formatTime(curr)}) 설정 완료! 마디가 끝날 때 [2단계]를 눌러주세요.`);
+  }
+
+  // 2단계: 여기까지 반복 시작!
+  setSeniorEndAndLoop(itemId) {
+    const player = this.ytPlayers[itemId];
+    if (!player || typeof player.getCurrentTime !== 'function') {
+      this.showToast('먼저 위의 찬양 재생 버튼을 눌러주세요.');
+      return;
+    }
+    const curr = Math.floor(player.getCurrentTime() || 0);
+    const cfg = this.practiceConfigs[itemId];
+    if (!cfg) return;
+
+    // 1단계 시작점을 먼저 누르지 않은 경우 명확한 가이드 제공
+    if (!cfg.step1Set) {
+      const step1Btn = document.getElementById(`btn_step1_${itemId}`);
+      if (step1Btn) {
+        step1Btn.classList.add('shake-highlight');
+        setTimeout(() => step1Btn.classList.remove('shake-highlight'), 800);
+      }
+      this.showToast('먼저 [1단계: 여기서부터] 시작점을 선택해 주세요!');
+      return;
+    }
+
+    // 끝점이 시작점보다 앞서거나 같으면 안내
+    if (curr <= cfg.startSec) {
+      this.showToast(`끝점은 시작점(${this.formatTime(cfg.startSec)})보다 뒤여야 합니다. 조금 더 듣고 눌러주세요!`);
+      return;
+    }
+
+    cfg.endSec = curr;
+    cfg.isLooping = true;
+    cfg.step1Set = false;
+
+    if (typeof player.seekTo === 'function') {
+      player.seekTo(cfg.startSec, true);
+      player.playVideo();
+    }
+
+    this.updateSeniorMarkerUi(itemId);
+    this.showToast(`🔁 ${this.formatTime(cfg.startSec)} ~ ${this.formatTime(cfg.endSec)} 구간 무한 반복 시작!`);
+  }
+
+  // 원터치: 방금 들은 15초 바로 반복하기
+  loopRecentSeconds(itemId, seconds = 15) {
+    const player = this.ytPlayers[itemId];
+    if (!player || typeof player.getCurrentTime !== 'function') {
+      this.showToast('먼저 위의 찬양 재생 버튼을 눌러주세요.');
+      return;
+    }
+    const curr = Math.floor(player.getCurrentTime() || 0);
+    const cfg = this.practiceConfigs[itemId];
+    if (!cfg) return;
+
+    cfg.endSec = curr;
+    cfg.startSec = Math.max(0, curr - seconds);
+    cfg.isLooping = true;
+    cfg.step1Set = false;
+
+    if (typeof player.seekTo === 'function') {
+      player.seekTo(cfg.startSec, true);
+      player.playVideo();
+    }
+
+    this.updateSeniorMarkerUi(itemId);
+    this.showToast(`⚡ 방금 15초(${this.formatTime(cfg.startSec)} ~ ${this.formatTime(cfg.endSec)}) 무한 반복 시작!`);
+  }
+
+  // 반복 끄기 (전체 계속 듣기)
+  stopLoop(itemId) {
+    const cfg = this.practiceConfigs[itemId];
+    if (cfg) {
+      cfg.isLooping = false;
+      cfg.step1Set = false;
+    }
+    this.updateSeniorMarkerUi(itemId);
+    this.showToast('구간 반복을 끄고 전체 찬양을 계속 듣습니다.');
+  }
+
+  // UI 상태 갱신
+  updateSeniorMarkerUi(itemId) {
+    const cfg = this.practiceConfigs[itemId];
+    if (!cfg) return;
+
+    const bannerEl = document.getElementById(`senior_looping_banner_${itemId}`);
+    const controlsEl = document.getElementById(`senior_loop_controls_${itemId}`);
+    const rangeTxtEl = document.getElementById(`senior_loop_range_txt_${itemId}`);
+    const step1Btn = document.getElementById(`btn_step1_${itemId}`);
+    const step2Btn = document.getElementById(`btn_step2_${itemId}`);
+    const step1Time = document.getElementById(`step1_time_${itemId}`);
+    const step2Time = document.getElementById(`step2_time_${itemId}`);
+
+    if (cfg.isLooping) {
+      if (bannerEl) bannerEl.classList.remove('hidden');
+      if (controlsEl) controlsEl.classList.add('hidden');
+      if (rangeTxtEl) rangeTxtEl.textContent = `${this.formatTime(cfg.startSec)} ~ ${this.formatTime(cfg.endSec)}`;
+    } else {
+      if (bannerEl) bannerEl.classList.add('hidden');
+      if (controlsEl) controlsEl.classList.remove('hidden');
+
+      if (cfg.step1Set) {
+        if (step1Btn) step1Btn.classList.add('is-set');
+        if (step2Btn) step2Btn.classList.add('is-ready');
+        if (step1Time) step1Time.textContent = `시작점: ${this.formatTime(cfg.startSec)}`;
+        if (step2Time) step2Time.textContent = '지금 누르면 반복!';
+      } else {
+        if (step1Btn) step1Btn.classList.remove('is-set');
+        if (step2Btn) step2Btn.classList.remove('is-ready');
+        if (step1Time) step1Time.textContent = '시작점 찍기';
+        if (step2Time) step2Time.textContent = '누르면 바로 반복';
+      }
+    }
+  }
+
+  // 호환성 유지용 래퍼
+  updateMarkerUi(itemId) {
+    this.updateSeniorMarkerUi(itemId);
+  }
+
+  toggleLoop(itemId) {
+    const cfg = this.practiceConfigs[itemId];
+    if (cfg && cfg.isLooping) {
+      this.stopLoop(itemId);
+    } else {
+      this.setSeniorEndAndLoop(itemId);
+    }
+  }
+
+  // 10초 / 5초 점프 이동
+  jumpPlayerTime(itemId, seconds) {
+    const player = this.ytPlayers[itemId];
+    if (!player || typeof player.getCurrentTime !== 'function') {
+      this.showToast('먼저 위의 찬양 재생 버튼을 눌러주세요.');
+      return;
+    }
+    const curr = player.getCurrentTime() || 0;
+    const next = Math.max(0, curr + seconds);
+    player.seekTo(next, true);
+    const absSec = Math.abs(seconds);
+    if (seconds < 0) {
+      this.showToast(`${absSec}초 뒤로 이동했습니다.`);
+    } else {
+      this.showToast(`${absSec}초 앞으로 이동했습니다.`);
+    }
+  }
+
+  // 3단계 배속 제어
+  setPlayerSpeed(itemId, speed) {
+    const cfg = this.practiceConfigs[itemId];
+    if (cfg) cfg.speed = speed;
+
+    const player = this.ytPlayers[itemId];
+    if (player && typeof player.setPlaybackRate === 'function') {
+      player.setPlaybackRate(speed);
+    }
+
+    const speedBar = document.getElementById(`speed_bar_${itemId}`);
+    if (speedBar) {
+      speedBar.querySelectorAll('.btn-senior-speed').forEach(btn => {
+        const btnSpeed = parseFloat(btn.dataset.speed);
+        btn.classList.toggle('active', Math.abs(btnSpeed - speed) < 0.05);
+      });
+    }
+
+    if (speed <= 0.85) {
+      this.showToast('재생 속도: 0.8x (느리게)');
+    } else if (speed >= 1.15) {
+      this.showToast('재생 속도: 1.2x (빠르게)');
+    } else {
+      this.showToast('재생 속도: 1.0x (기본)');
+    }
+  }
+
+  resetPracticeConfig(itemId) {
+    const cfg = this.practiceConfigs[itemId];
+    if (cfg) {
+      cfg.isLooping = false;
+      cfg.step1Set = false;
+      cfg.speed = 1.0;
+      cfg.startSec = 0;
+      cfg.endSec = 20;
+    }
+
+    const player = this.ytPlayers[itemId];
+    if (player) {
+      if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(1.0);
+      if (typeof player.seekTo === 'function') player.seekTo(0, true);
+    }
+
+    const speedBar = document.getElementById(`speed_bar_${itemId}`);
+    if (speedBar) {
+      speedBar.querySelectorAll('.btn-senior-speed').forEach(btn => {
+        const btnSpeed = parseFloat(btn.dataset.speed);
+        btn.classList.toggle('active', btnSpeed === 1.0);
+      });
+    }
+
+    this.updateSeniorMarkerUi(itemId);
+    this.showToast('연습 설정이 처음으로 되돌아갔습니다.');
+  }
+
+  // ====================================================
+  // 🎹 5. 첫 음 잡기용 피치 파이프 (조율 건반 / Pitch Pipe)
+  // ====================================================
+  pitchState = {
+    audioCtx: null,
+    octave: 4, // 2 ~ 5 (가온 4 기본)
+    timbre: 'piano', // 'piano' | 'organ'
+    activeVoice: null,
+    activeKeyIndex: null,
+    pressStartTime: 0,
+    releaseTimer: null,
+    safetyTimer: null,
+    volume: 0.85
+  };
+
+  pitchNotes = [
+    { index: 0, ko: '가온 도', shortKo: '도', eng: 'C', isBlack: false, semitone: 0 },
+    { index: 1, ko: '도# / 레♭', shortKo: '도#', eng: 'C#', isBlack: true, semitone: 1 },
+    { index: 2, ko: '레', shortKo: '레', eng: 'D', isBlack: false, semitone: 2 },
+    { index: 3, ko: '레# / 미♭', shortKo: '레#', eng: 'D#', isBlack: true, semitone: 3 },
+    { index: 4, ko: '미', shortKo: '미', eng: 'E', isBlack: false, semitone: 4 },
+    { index: 5, ko: '파', shortKo: '파', eng: 'F', isBlack: false, semitone: 5 },
+    { index: 6, ko: '파# / 솔♭', shortKo: '파#', eng: 'F#', isBlack: true, semitone: 6 },
+    { index: 7, ko: '솔', shortKo: '솔', eng: 'G', isBlack: false, semitone: 7 },
+    { index: 8, ko: '솔# / 라♭', shortKo: '솔#', eng: 'G#', isBlack: true, semitone: 8 },
+    { index: 9, ko: '라 (표준 조율음 ★)', shortKo: '라', eng: 'A', isBlack: false, semitone: 9 },
+    { index: 10, ko: '라# / 시♭', shortKo: '라#', eng: 'A#', isBlack: true, semitone: 10 },
+    { index: 11, ko: '시', shortKo: '시', eng: 'B', isBlack: false, semitone: 11 },
+    { index: 12, ko: '높은 도', shortKo: '높은도', eng: 'C', isBlack: false, semitone: 12 }
+  ];
+
+  initPitchAudioContext() {
+    if (!this.pitchAudioCtx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        this.pitchAudioCtx = new AudioCtx();
+      }
+    }
+    if (this.pitchAudioCtx && this.pitchAudioCtx.state === 'suspended') {
+      this.pitchAudioCtx.resume().catch(() => {});
+    }
+    return this.pitchAudioCtx;
+  }
+
+  openPitchPipeModal() {
+    this.initPitchAudioContext();
+    this.openModal('modalPitchPipe');
+    this.updatePitchOctaveLabels();
+    this.updatePitchDisplay(0, 4);
+  }
+
+  closePitchPipeModal() {
+    this.stopCurrentPitchVoice(0.1);
+    this.closeModal('modalPitchPipe');
+  }
+
+  setPitchTimbre(timbre) {
+    if (timbre !== 'piano' && timbre !== 'organ') return;
+    this.pitchState.timbre = timbre;
+    const btnPiano = document.getElementById('btnTimbrePiano');
+    const btnOrgan = document.getElementById('btnTimbreOrgan');
+    if (btnPiano) btnPiano.classList.toggle('active', timbre === 'piano');
+    if (btnOrgan) btnOrgan.classList.toggle('active', timbre === 'organ');
+
+    const timbreIndicator = document.getElementById('pitchTimbreIndicator');
+    if (timbreIndicator) {
+      timbreIndicator.textContent = timbre === 'piano' ? '🎹 맑은 피아노' : '⛪ 파이프 오르간';
+    }
+  }
+
+  shiftPitchOctave(delta) {
+    const nextOctave = Math.max(2, Math.min(5, (this.pitchState.octave || 4) + delta));
+    if (nextOctave === this.pitchState.octave) return;
+    this.pitchState.octave = nextOctave;
+    this.updatePitchOctaveLabels();
+
+    const activeIdx = this.pitchState.activeKeyIndex !== null ? this.pitchState.activeKeyIndex : 0;
+    this.updatePitchDisplay(activeIdx, nextOctave);
+  }
+
+  updatePitchOctaveLabels() {
+    const oct = this.pitchState.octave || 4;
+    for (let i = 0; i <= 12; i++) {
+      const el = document.getElementById(`lbl_eng_${i}`);
+      if (!el) continue;
+      const note = this.pitchNotes[i];
+      const keyOct = (i === 12) ? oct + 1 : oct;
+      el.textContent = `${note.eng}${keyOct}`;
+    }
+
+    const octBadge = document.getElementById('pitchCurrentOctaveLabel');
+    if (octBadge) {
+      let desc = `${oct} 옥타브`;
+      if (oct === 4) desc = '4 옥타브 (가온 보통)';
+      else if (oct === 3) desc = '3 옥타브 (남성/테너)';
+      else if (oct === 2) desc = '2 옥타브 (베이스 저음)';
+      else if (oct === 5) desc = '5 옥타브 (여성 고음)';
+      octBadge.textContent = desc;
+    }
+
+    const btnDown = document.getElementById('btnOctaveDown');
+    const btnUp = document.getElementById('btnOctaveUp');
+    if (btnDown) btnDown.disabled = (oct <= 2);
+    if (btnUp) btnUp.disabled = (oct >= 5);
+  }
+
+  calculateNoteFrequency(semitoneIndex, octave) {
+    const midiNumber = (octave + 1) * 12 + semitoneIndex;
+    const freq = 440 * Math.pow(2, (midiNumber - 69) / 12);
+    return Math.round(freq * 100) / 100;
+  }
+
+  updatePitchDisplay(noteIndex, octave, customKo = null) {
+    const note = this.pitchNotes[noteIndex] || this.pitchNotes[0];
+    const keyOct = (noteIndex === 12) ? octave + 1 : octave;
+    const freq = this.calculateNoteFrequency(noteIndex, octave);
+
+    const elKo = document.getElementById('pitchNoteKorean');
+    const elEng = document.getElementById('pitchNoteEnglish');
+    const elFreq = document.getElementById('pitchFreqValue');
+
+    let koText = customKo || note.ko;
+    if (!customKo) {
+      if (noteIndex === 0 && octave === 4) koText = '가온 도';
+      else if (noteIndex === 0 && octave === 3) koText = '낮은 도';
+      else if (noteIndex === 0 && octave === 2) koText = '아주 낮은 도';
+      else if (noteIndex === 0 && octave === 5) koText = '높은 도';
+      else if (noteIndex === 9 && octave === 4) koText = '라 (표준음)';
+      else if (noteIndex === 12) koText = '높은 도';
+    }
+
+    if (elKo) elKo.textContent = koText;
+    if (elEng) elEng.innerHTML = `${note.eng}${keyOct} <span class="pitch-octave-tag" id="pitchOctaveTag">${keyOct} 옥타브</span>`;
+    if (elFreq) elFreq.innerHTML = `${freq.toFixed(2)} <span class="freq-unit">Hz</span>`;
+  }
+
+  setSoundWaveActive(isActive) {
+    const wave = document.getElementById('pitchSoundWave');
+    const screen = document.getElementById('pitchDisplayScreen');
+    if (wave) wave.classList.toggle('is-sounding', isActive);
+    if (screen) screen.classList.toggle('is-active', isActive);
+  }
+
+  playPartPreset(partKey) {
+    this.initPitchAudioContext();
+
+    document.querySelectorAll('.pitch-chip').forEach(c => c.classList.remove('is-active-preset'));
+    const chip = document.getElementById(`chip_${partKey}`);
+    if (chip) chip.classList.add('is-active-preset');
+
+    let targetOctave = 4;
+    let targetIndex = 0;
+    let customLabel = '';
+
+    switch (partKey) {
+      case 'soprano':
+        targetOctave = 4;
+        targetIndex = 12; // C5 (523.25 Hz)
+        customLabel = '소프라노 (높은 도)';
+        break;
+      case 'alto':
+        targetOctave = 4;
+        targetIndex = 9; // A4 (440.00 Hz)
+        customLabel = '알토 (라)';
+        break;
+      case 'tenor':
+        targetOctave = 4;
+        targetIndex = 0; // C4 (261.63 Hz)
+        customLabel = '테너 (가온 도)';
+        break;
+      case 'bass':
+        targetOctave = 3;
+        targetIndex = 0; // C3 (130.81 Hz)
+        customLabel = '베이스 (낮은 도)';
+        break;
+      case 'ref440':
+      default:
+        targetOctave = 4;
+        targetIndex = 9; // A4 (440.00 Hz)
+        customLabel = '표준 기준음 (라)';
+        break;
+    }
+
+    this.pitchState.octave = targetOctave;
+    this.updatePitchOctaveLabels();
+    this.updatePitchDisplay(targetIndex, targetOctave, customLabel);
+
+    this.playPitchNoteTone(targetIndex, targetOctave, 2.5);
+
+    setTimeout(() => {
+      if (chip) chip.classList.remove('is-active-preset');
+    }, 2500);
+  }
+
+  handlePianoKeyStart(index, event) {
+    if (event && event.type === 'touchstart') {
+      event.preventDefault();
+    }
+    this.initPitchAudioContext();
+    const oct = this.pitchState.octave || 4;
+    this.updatePitchDisplay(index, oct);
+    this.pitchState.pressStartTime = Date.now();
+    this.startPitchVoice(index, oct);
+
+    const onEndHandler = () => {
+      window.removeEventListener('mouseup', onEndHandler);
+      window.removeEventListener('touchend', onEndHandler);
+      window.removeEventListener('touchcancel', onEndHandler);
+      this.handlePianoKeyEnd(index);
+    };
+    window.addEventListener('mouseup', onEndHandler);
+    window.addEventListener('touchend', onEndHandler);
+    window.addEventListener('touchcancel', onEndHandler);
+  }
+
+  handlePianoKeyEnd(index) {
+    const elapsed = Date.now() - (this.pitchState.pressStartTime || 0);
+    const minHoldMs = 1800;
+    if (elapsed < minHoldMs) {
+      const remaining = minHoldMs - elapsed;
+      if (this.pitchState.releaseTimer) clearTimeout(this.pitchState.releaseTimer);
+      this.pitchState.releaseTimer = setTimeout(() => {
+        this.stopCurrentPitchVoice(0.35);
+      }, remaining);
+    } else {
+      this.stopCurrentPitchVoice(0.35);
+    }
+  }
+
+  playPitchNoteTone(index, octave, duration = 2.4) {
+    this.stopCurrentPitchVoice(0.08);
+    const freq = this.calculateNoteFrequency(index, octave);
+    const voice = this.synthesizeTone(freq, this.pitchState.timbre, duration);
+    if (!voice) return;
+
+    this.pitchState.activeVoice = voice;
+    this.pitchState.activeKeyIndex = index;
+    this.highlightPianoKey(index, true);
+    this.setSoundWaveActive(true);
+
+    if (this.pitchState.safetyTimer) clearTimeout(this.pitchState.safetyTimer);
+    this.pitchState.safetyTimer = setTimeout(() => {
+      this.highlightPianoKey(index, false);
+      this.setSoundWaveActive(false);
+      this.pitchState.activeVoice = null;
+      this.pitchState.activeKeyIndex = null;
+    }, duration * 1000);
+  }
+
+  startPitchVoice(index, octave) {
+    this.stopCurrentPitchVoice(0.08);
+    const freq = this.calculateNoteFrequency(index, octave);
+    const voice = this.synthesizeTone(freq, this.pitchState.timbre, null);
+    if (!voice) return;
+
+    this.pitchState.activeVoice = voice;
+    this.pitchState.activeKeyIndex = index;
+    this.highlightPianoKey(index, true);
+    this.setSoundWaveActive(true);
+
+    if (this.pitchState.safetyTimer) clearTimeout(this.pitchState.safetyTimer);
+    this.pitchState.safetyTimer = setTimeout(() => {
+      this.stopCurrentPitchVoice(0.4);
+    }, 8000);
+  }
+
+  stopCurrentPitchVoice(releaseTime = 0.3) {
+    if (this.pitchState.safetyTimer) {
+      clearTimeout(this.pitchState.safetyTimer);
+      this.pitchState.safetyTimer = null;
+    }
+    if (this.pitchState.releaseTimer) {
+      clearTimeout(this.pitchState.releaseTimer);
+      this.pitchState.releaseTimer = null;
+    }
+    if (this.pitchState.activeVoice) {
+      if (typeof this.pitchState.activeVoice.stop === 'function') {
+        this.pitchState.activeVoice.stop(releaseTime);
+      }
+      this.pitchState.activeVoice = null;
+    }
+    if (this.pitchState.activeKeyIndex !== null) {
+      this.highlightPianoKey(this.pitchState.activeKeyIndex, false);
+      this.pitchState.activeKeyIndex = null;
+    }
+    this.setSoundWaveActive(false);
+  }
+
+  highlightPianoKey(index, isHighlight) {
+    const key = document.getElementById(`pkey_${index}`);
+    if (key) {
+      key.classList.toggle('is-pressed', isHighlight);
+    }
+  }
+
+  synthesizeTone(freq, timbre = 'piano', duration = null) {
+    const ctx = this.initPitchAudioContext();
+    if (!ctx) return null;
+
+    const now = ctx.currentTime;
+    const masterGain = ctx.createGain();
+    masterGain.connect(ctx.destination);
+    masterGain.gain.setValueAtTime(this.pitchState.volume || 0.85, now);
+
+    if (timbre === 'piano') {
+      const harmonics = [
+        { mult: 1, gain: 0.82 },
+        { mult: 2, gain: 0.44 },
+        { mult: 3, gain: 0.22 },
+        { mult: 4, gain: 0.11 },
+        { mult: 5, gain: 0.05 },
+        { mult: 6, gain: 0.02 }
+      ];
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(3200, now);
+      filter.frequency.exponentialRampToValueAtTime(750, now + 2.2);
+      filter.connect(masterGain);
+
+      const noteGain = ctx.createGain();
+      noteGain.connect(filter);
+
+      noteGain.gain.setValueAtTime(0.0001, now);
+      noteGain.gain.linearRampToValueAtTime(1.0, now + 0.005);
+
+      const decaySec = duration || 2.4;
+      noteGain.gain.exponentialRampToValueAtTime(0.0001, now + decaySec);
+
+      const oscs = harmonics.map(h => {
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq * h.mult, now);
+
+        const hGain = ctx.createGain();
+        hGain.gain.setValueAtTime(h.gain, now);
+        osc.connect(hGain);
+        hGain.connect(noteGain);
+
+        osc.start(now);
+        osc.stop(now + decaySec + 0.1);
+        return osc;
+      });
+
+      return {
+        stop: (rel = 0.25) => {
+          const stopTime = ctx.currentTime;
+          noteGain.gain.cancelScheduledValues(stopTime);
+          noteGain.gain.setValueAtTime(noteGain.gain.value, stopTime);
+          noteGain.gain.exponentialRampToValueAtTime(0.0001, stopTime + rel);
+          setTimeout(() => {
+            oscs.forEach(o => { try { o.stop(); } catch(e){} });
+          }, rel * 1000 + 40);
+        }
+      };
+    } else {
+      const organRanks = [
+        { type: 'sine', mult: 1, gain: 0.65 },
+        { type: 'sine', mult: 2, gain: 0.38 },
+        { type: 'sine', mult: 3, gain: 0.22 },
+        { type: 'sine', mult: 4, gain: 0.12 },
+        { type: 'triangle', mult: 1, gain: 0.3 }
+      ];
+
+      const noteGain = ctx.createGain();
+      noteGain.connect(masterGain);
+
+      noteGain.gain.setValueAtTime(0.0001, now);
+      noteGain.gain.linearRampToValueAtTime(0.85, now + 0.06);
+
+      const sustainSec = duration || 2.8;
+      if (duration) {
+        noteGain.gain.setValueAtTime(0.85, now + sustainSec - 0.4);
+        noteGain.gain.exponentialRampToValueAtTime(0.0001, now + sustainSec);
+      }
+
+      const lfo = ctx.createOscillator();
+      lfo.frequency.setValueAtTime(4.6, now);
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.setValueAtTime(freq * 0.007, now);
+      lfo.connect(lfoGain);
+
+      const oscs = organRanks.map(rank => {
+        const osc = ctx.createOscillator();
+        osc.type = rank.type;
+        osc.frequency.setValueAtTime(freq * rank.mult, now);
+        lfoGain.connect(osc.frequency);
+
+        const rGain = ctx.createGain();
+        rGain.gain.setValueAtTime(rank.gain, now);
+        osc.connect(rGain);
+        rGain.connect(noteGain);
+
+        osc.start(now);
+        if (duration) {
+          osc.stop(now + sustainSec + 0.1);
+        }
+        return osc;
+      });
+
+      lfo.start(now);
+      if (duration) {
+        lfo.stop(now + sustainSec + 0.1);
+      }
+
+      return {
+        stop: (rel = 0.35) => {
+          const stopTime = ctx.currentTime;
+          noteGain.gain.cancelScheduledValues(stopTime);
+          noteGain.gain.setValueAtTime(noteGain.gain.value, stopTime);
+          noteGain.gain.exponentialRampToValueAtTime(0.0001, stopTime + rel);
+          setTimeout(() => {
+            oscs.forEach(o => { try { o.stop(); } catch(e){} });
+            try { lfo.stop(); } catch(e){}
+          }, rel * 1000 + 40);
+        }
+      };
+    }
   }
 }
 

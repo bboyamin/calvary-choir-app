@@ -2300,3 +2300,1252 @@ body {
   60% { transform: scale(1); }
   100% { transform: scale(1); }
 }
+/* ==========================================================================
+   🎧 파트 연습실 도우미 (A-B 반복 & 배속 제어) UI 스타일
+   ========================================================================== */
+.practice-helper-box {
+  margin-top: 10px;
+}
+
+.btn-toggle-practice {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #F8FAFC 0%, #EEF2F6 100%);
+  border: 1.5px solid #CBD5E1;
+  border-radius: 10px;
+  color: var(--primary-navy);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.btn-toggle-practice:hover {
+  background: #F1F5F9;
+  border-color: #94A3B8;
+}
+
+.btn-toggle-practice.is-open {
+  background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+  color: #FFFFFF;
+  border-color: #0F172A;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.2);
+}
+
+.practice-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.practice-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
+.btn-toggle-practice.is-open .practice-pulse-dot {
+  background: #38BDF8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+}
+
+.practice-toggle-title {
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+}
+
+.practice-toggle-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #E2E8F0;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.btn-toggle-practice.is-open .practice-toggle-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: #F8FAFC;
+}
+
+.practice-toggle-chevron {
+  font-size: 11.5px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+/* 연습 패널 본체 (Modern Pro - Compact Mobile Viewport Optimized) */
+.practice-panel {
+  margin-top: 6px;
+  animation: practiceFadeSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes practiceFadeSlide {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.practice-panel-inner.modern-pro {
+  background: #F8FAFC;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 10px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.04);
+}
+
+/* 1. 시간 표시 & 점프 컨트롤러 바 (10초 / 5초) */
+.practice-time-row {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 8px 10px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
+}
+
+.practice-time-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.time-label-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.time-clock-icon {
+  font-size: 14px;
+}
+
+.time-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748B;
+  letter-spacing: -0.2px;
+}
+
+.time-readout {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  background: #F1F5F9;
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.time-current {
+  font-size: 15px;
+  font-weight: 900;
+  color: #0F172A;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.3px;
+}
+
+.time-slash {
+  color: #94A3B8;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.time-duration {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748B;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 4개 점프 버튼: 콤팩트 그리드 */
+.practice-jump-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+  width: 100%;
+}
+
+.btn-jump-pill {
+  min-height: 33px;
+  padding: 0 3px;
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 18px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1E293B;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  white-space: nowrap;
+}
+
+.btn-jump-pill .jump-arrow {
+  font-weight: 900;
+  font-size: 11px;
+  color: #2563EB;
+}
+
+.btn-jump-pill:hover, .btn-jump-pill:active {
+  background: #F8FAFC;
+  border-color: #94A3B8;
+  transform: translateY(-1px);
+}
+
+/* 2. 구간 반복 & 배속 통합 컨트롤러 카드 */
+.practice-loop-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 11px;
+  padding: 10px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+}
+
+.practice-loop-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.practice-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.practice-card-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: -0.2px;
+}
+
+.practice-card-desc {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748B;
+}
+
+/* 1단계 / 2단계 버튼 그리드 (컴팩트) */
+.loop-steps-grid {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-loop-step {
+  flex: 1;
+  min-height: 46px;
+  padding: 6px 10px;
+  border-radius: 9px;
+  border: 1.5px solid #E2E8F0;
+  background: #F8FAFC;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-loop-step .step-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: #E2E8F0;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 11px;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
+}
+
+.btn-loop-step .step-text-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.btn-loop-step .step-main-label {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.2;
+}
+
+.btn-loop-step .step-sub-status {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #64748B;
+  margin-top: 1px;
+  white-space: nowrap;
+}
+
+/* 1단계 완료 시 상태 */
+.btn-loop-step.is-set {
+  border-color: #3B82F6;
+  background: #EFF6FF;
+}
+
+.btn-loop-step.is-set .step-badge {
+  background: #2563EB;
+  color: #FFFFFF;
+}
+
+.btn-loop-step.is-set .step-main-label {
+  color: #1E40AF;
+}
+
+.btn-loop-step.is-set .step-sub-status {
+  color: #2563EB;
+  font-weight: 800;
+}
+
+/* 2단계 준비 강조 상태 */
+.btn-step-end.is-ready {
+  border-color: #2563EB;
+  background: #EFF6FF;
+  animation: modernStepPulse 1.8s infinite ease-in-out;
+}
+
+.btn-step-end.is-ready .step-badge {
+  background: #2563EB;
+  color: #FFFFFF;
+}
+
+.btn-step-end.is-ready .step-main-label {
+  color: #1E40AF;
+}
+
+.btn-step-end.is-ready .step-sub-status {
+  color: #2563EB;
+  font-weight: 800;
+}
+
+@keyframes modernStepPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.3);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    transform: translateY(-1px);
+  }
+}
+
+/* 1단계 미선택 경고 쉐이크 애니메이션 */
+@keyframes shakeHighlight {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+.shake-highlight {
+  animation: shakeHighlight 0.5s ease-in-out !important;
+  border-color: #EF4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3) !important;
+}
+
+.steps-flow-arrow {
+  font-size: 13px;
+  color: #94A3B8;
+  font-weight: 800;
+  user-select: none;
+}
+
+/* 원터치 15초 바로 반복 (컴팩트 골드 버튼) */
+.btn-recent-loop-pill {
+  width: 100%;
+  min-height: 35px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  border: 1px solid #FCD34D;
+  color: #92400E;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(217, 119, 6, 0.08);
+}
+
+.btn-recent-loop-pill:hover, .btn-recent-loop-pill:active {
+  background: #FDE68A;
+  transform: translateY(-1px);
+}
+
+.btn-recent-loop-pill .pill-spark {
+  font-size: 12px;
+}
+
+/* 인라인 재생 배속 세그먼트 바 (초슬림 통합) */
+.practice-speed-inline-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #F1F5F9;
+}
+
+.speed-inline-label {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #475569;
+  flex-shrink: 0;
+}
+
+.speed-segmented-control {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  background: #F1F5F9;
+  padding: 3px;
+  border-radius: 8px;
+}
+
+.btn-senior-speed {
+  min-height: 29px;
+  padding: 3px 0;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #475569;
+  text-align: center;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+}
+
+.btn-senior-speed:hover {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.btn-senior-speed.active {
+  background: #0F172A;
+  border-color: #0F172A;
+  color: #FFFFFF;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.18);
+}
+
+/* 반복 활성화 시 프리미엄 딥 네이비 글래스 배너 */
+.practice-active-banner {
+  background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 11px 13px;
+  color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.3);
+  animation: bannerScaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes bannerScaleIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.active-banner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.active-badge-group {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* 실시간 오디오 이퀄라이저 파동 애니메이션 */
+.live-equalizer-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2.5px;
+  height: 16px;
+}
+
+.eq-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: linear-gradient(to top, #38BDF8, #818CF8);
+  animation: eqBounce 0.9s ease-in-out infinite alternate;
+}
+
+.eq-bar.bar-1 { height: 6px; animation-delay: 0.1s; }
+.eq-bar.bar-2 { height: 14px; animation-delay: 0.35s; }
+.eq-bar.bar-3 { height: 9px; animation-delay: 0.2s; }
+.eq-bar.bar-4 { height: 16px; animation-delay: 0.45s; }
+
+@keyframes eqBounce {
+  0% { height: 4px; opacity: 0.6; }
+  100% { height: 16px; opacity: 1; }
+}
+
+.active-live-tag {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #F8FAFC;
+  letter-spacing: -0.2px;
+}
+
+.active-range-chip {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 2px 8px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #38BDF8;
+  font-variant-numeric: tabular-nums;
+}
+
+.btn-stop-loop-pro {
+  width: 100%;
+  min-height: 37px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #FFFFFF;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+
+.btn-stop-loop-pro .stop-icon {
+  font-size: 10px;
+  color: #FCA5A5;
+}
+
+.btn-stop-loop-pro:hover, .btn-stop-loop-pro:active {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #FEE2E2;
+}
+
+/* 4. 하단 미니멀 푸터 (세련된 리셋 버튼) */
+.practice-panel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 3px;
+  border-top: 1px dashed #E2E8F0;
+}
+
+.btn-reset-action {
+  background: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.btn-reset-action .reset-icon {
+  font-size: 11.5px;
+  font-weight: 900;
+  color: #64748B;
+}
+
+.btn-reset-action:hover, .btn-reset-action:active {
+  background: #FEF2F2;
+  border-color: #FCA5A5;
+  color: #DC2626;
+}
+
+.btn-reset-action:hover .reset-icon {
+  color: #DC2626;
+}
+
+.panel-hint-text {
+  font-size: 10.5px;
+  color: #94A3B8;
+  font-weight: 500;
+  text-align: right;
+}
+
+/* ====================================================
+   🎹 5. 첫 음 잡기용 피치 파이프 (간이 조율 건반 / Pitch Pipe)
+   ==================================================== */
+
+/* 찬양 헤더 내 첫 음 건반 버튼 */
+.btn-pitch-pipe-open {
+  height: 40px;
+  padding: 0 12px;
+  background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+  color: #F8FAFC;
+  border: 1.5px solid #334155;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.btn-pitch-pipe-open:hover, .btn-pitch-pipe-open:active {
+  background: #0F172A;
+  border-color: var(--gold-accent);
+  color: #FEF08A;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);
+}
+
+.btn-pitch-pipe-icon {
+  font-size: 15px;
+}
+
+/* 피치 파이프 모달 컨테이너 (모바일 바텀 시트 지원) */
+.modal-pitch-pipe {
+  max-width: 480px;
+  width: 100%;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.35);
+}
+
+@media (max-width: 600px) {
+  #modalPitchPipe {
+    align-items: flex-end;
+    padding: 0;
+  }
+  #modalPitchPipe .modal-pitch-pipe {
+    max-width: 100%;
+    border-radius: 22px 22px 0 0;
+    margin: 0;
+    max-height: 94vh;
+    animation: pitchSheetUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+@keyframes pitchSheetUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* 모달 헤더 */
+.pitch-modal-header {
+  background: #0F172A;
+  border-bottom: 2px solid var(--gold-accent);
+  padding: 13px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pitch-title-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.pitch-title-icon {
+  font-size: 18px;
+}
+
+.pitch-title-main {
+  font-size: 17px;
+  font-weight: 900;
+  color: #FFFFFF;
+  letter-spacing: -0.3px;
+}
+
+.pitch-modal-sub {
+  font-size: 11px;
+  color: #94A3B8;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+/* 모달 바디 */
+.pitch-modal-body {
+  padding: 12px 14px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #F8FAFC;
+  overflow-y: auto;
+  max-height: calc(90vh - 120px);
+}
+
+/* 1. 파트별 추천 첫 음 프리셋 칩 */
+.pitch-preset-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pitch-preset-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pitch-preset-title {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #334155;
+  letter-spacing: -0.2px;
+}
+
+.pitch-preset-chips {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
+}
+
+.pitch-chip {
+  padding: 6px 3px;
+  border-radius: 8px;
+  border: 1.5px solid #CBD5E1;
+  background: #FFFFFF;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.pitch-chip .chip-part-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-bottom: 1px;
+}
+
+.pitch-chip .chip-part-name {
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.pitch-chip .chip-note-name {
+  font-size: 9.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+/* 파트별 개별 테마 색상 */
+.chip-soprano {
+  border-color: #FBCFE8;
+  background: #FDF2F8;
+  color: #9D174D;
+}
+.chip-soprano .chip-part-dot { background: #EC4899; }
+
+.chip-alto {
+  border-color: #DDD6FE;
+  background: #F5F3FF;
+  color: #5B21B6;
+}
+.chip-alto .chip-part-dot { background: #8B5CF6; }
+
+.chip-tenor {
+  border-color: #BFDBFE;
+  background: #EFF6FF;
+  color: #1E40AF;
+}
+.chip-tenor .chip-part-dot { background: #3B82F6; }
+
+.chip-bass {
+  border-color: #A7F3D0;
+  background: #ECFDF5;
+  color: #065F46;
+}
+.chip-bass .chip-part-dot { background: #10B981; }
+
+.chip-ref {
+  border-color: #FDE68A;
+  background: #FFFBEB;
+  color: #92400E;
+}
+.chip-ref .chip-part-dot { background: #F59E0B; }
+
+.pitch-chip:active, .pitch-chip.is-active-preset {
+  transform: scale(0.96);
+  border-width: 2px;
+  box-shadow: 0 0 10px rgba(217, 119, 6, 0.4);
+}
+.chip-soprano.is-active-preset { border-color: #EC4899; box-shadow: 0 0 10px rgba(236, 72, 153, 0.5); }
+.chip-alto.is-active-preset { border-color: #8B5CF6; box-shadow: 0 0 10px rgba(139, 92, 246, 0.5); }
+.chip-tenor.is-active-preset { border-color: #3B82F6; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+.chip-bass.is-active-preset { border-color: #10B981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
+.chip-ref.is-active-preset { border-color: #F59E0B; box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
+
+/* 2. 실시간 디지털 음계 & 주파수 모니터 전광판 */
+.pitch-display-screen {
+  background: linear-gradient(135deg, #090E1A 0%, #0F172A 100%);
+  border: 1.5px solid rgba(217, 119, 6, 0.4);
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(15, 23, 42, 0.1);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  min-height: 56px;
+  box-sizing: border-box;
+}
+
+.pitch-display-screen.is-active {
+  border-color: #F59E0B;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5), 0 0 12px rgba(245, 158, 11, 0.35);
+}
+
+.pitch-screen-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.pitch-note-korean {
+  font-size: 17px;
+  font-weight: 900;
+  color: #FFFFFF;
+  letter-spacing: -0.4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.pitch-note-english {
+  font-size: 13px;
+  font-weight: 800;
+  color: #F59E0B;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.pitch-octave-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.15);
+  color: #E2E8F0;
+  padding: 1px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.pitch-screen-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 0 4px;
+}
+
+.pitch-sound-wave {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 18px;
+}
+
+.p-wave-bar {
+  width: 3.5px;
+  height: 4px;
+  background: #475569;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.pitch-sound-wave.is-sounding .p-wave-bar {
+  background: linear-gradient(to top, #F59E0B, #38BDF8);
+  animation: pitchWaveAnim 0.7s infinite alternate ease-in-out;
+}
+
+.pitch-sound-wave.is-sounding .p-wave-bar:nth-child(1) { height: 10px; animation-delay: 0.1s; }
+.pitch-sound-wave.is-sounding .p-wave-bar:nth-child(2) { height: 16px; animation-delay: 0.25s; }
+.pitch-sound-wave.is-sounding .p-wave-bar:nth-child(3) { height: 18px; animation-delay: 0s; }
+.pitch-sound-wave.is-sounding .p-wave-bar:nth-child(4) { height: 14px; animation-delay: 0.3s; }
+.pitch-sound-wave.is-sounding .p-wave-bar:nth-child(5) { height: 9px; animation-delay: 0.15s; }
+
+@keyframes pitchWaveAnim {
+  0% { transform: scaleY(0.4); opacity: 0.6; }
+  100% { transform: scaleY(1.0); opacity: 1; }
+}
+
+.pitch-timbre-indicator {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94A3B8;
+  white-space: nowrap;
+}
+
+.pitch-screen-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.pitch-freq-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748B;
+  white-space: nowrap;
+}
+
+.pitch-freq-value {
+  font-size: 16px;
+  font-weight: 900;
+  color: #38BDF8;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.pitch-freq-value .freq-unit {
+  font-size: 10.5px;
+  color: #94A3B8;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* 3. 음색 선택 & 옥타브 제어 툴바 */
+.pitch-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 11px;
+  padding: 8px 11px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+}
+
+.pitch-toolbar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toolbar-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #64748B;
+}
+
+.pitch-timbre-pills {
+  display: flex;
+  background: #F1F5F9;
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.btn-timbre-pill {
+  border: none;
+  background: none;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-timbre-pill.active {
+  background: #0F172A;
+  color: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2);
+}
+
+.pitch-octave-stepper {
+  display: flex;
+  align-items: center;
+  background: #F1F5F9;
+  border-radius: 8px;
+  padding: 2px;
+  gap: 3px;
+}
+
+.btn-octave-step {
+  border: none;
+  background: #FFFFFF;
+  color: #1E293B;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-octave-step:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-octave-step:not(:disabled):active {
+  transform: scale(0.96);
+  background: #E2E8F0;
+}
+
+.pitch-octave-readout {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #0F172A;
+  padding: 0 5px;
+  white-space: nowrap;
+}
+
+/* 4. 1옥타브 실물감 3D 피아노 건반 */
+.piano-keyboard-wrapper {
+  background: linear-gradient(to bottom, #1E293B 0%, #0F172A 100%);
+  border: 2px solid #334155;
+  border-radius: 14px;
+  padding: 10px 8px 12px 8px;
+  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.4), 0 4px 14px rgba(15, 23, 42, 0.15);
+  position: relative;
+}
+
+/* 어쿠스틱 피아노 펠트 띠 효과 */
+.piano-keyboard-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 7px;
+  left: 8px;
+  right: 8px;
+  height: 3px;
+  background: #991B1B;
+  border-radius: 2px;
+  z-index: 5;
+}
+
+.piano-keyboard {
+  position: relative;
+  height: 146px;
+  width: 100%;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  margin-top: 3px;
+}
+
+/* 흰건반 컨테이너 */
+.white-keys-container {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  gap: 3px;
+}
+
+.piano-key.white-key {
+  flex: 1;
+  height: 100%;
+  background: linear-gradient(to bottom, #FFFFFF 0%, #FAFAFA 80%, #E2E8F0 100%);
+  border: 1px solid #CBD5E1;
+  border-bottom: 3.5px solid #94A3B8;
+  border-radius: 0 0 7px 7px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.12), inset 0 -3px 4px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  padding-bottom: 8px;
+  position: relative;
+  transition: transform 0.05s ease, background 0.08s ease, border-color 0.08s ease;
+}
+
+.white-key .key-eng-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748B;
+  margin-bottom: 2px;
+  letter-spacing: -0.2px;
+}
+
+.white-key .key-solfege-label {
+  font-size: 13.5px;
+  font-weight: 900;
+  color: #0F172A;
+  letter-spacing: -0.3px;
+}
+
+
+
+/* 흰건반 눌림 상태 */
+.piano-key.white-key:active, .piano-key.white-key.is-pressed {
+  transform: translateY(3.5px);
+  background: #E2E8F0;
+  border-bottom-width: 1px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.15);
+  border-color: #3B82F6;
+}
+
+.piano-key.white-key.is-pressed .key-solfege-label {
+  color: #1D4ED8;
+}
+
+/* 검은건반 컨테이너 & 개별 키 */
+.black-keys-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 60%;
+  pointer-events: none;
+}
+
+.piano-key.black-key {
+  position: absolute;
+  width: 8.4%;
+  height: 100%;
+  background: linear-gradient(to bottom, #1E293B 0%, #0F172A 75%, #020617 100%);
+  border: 1px solid #000000;
+  border-bottom: 3.5px solid #000000;
+  border-radius: 0 0 5px 5px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  padding-bottom: 5px;
+  transition: transform 0.05s ease, background 0.08s ease;
+}
+
+.black-key .black-key-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #F8FAFC;
+  opacity: 0.9;
+  letter-spacing: -0.3px;
+}
+
+/* 검은건반 5개 수학적 위치 지정 (8개 흰건반 사이) */
+.black-key-1 { left: calc(12.5% - 4.2%); }
+.black-key-2 { left: calc(25% - 4.2%); }
+.black-key-3 { left: calc(50% - 4.2%); }
+.black-key-4 { left: calc(62.5% - 4.2%); }
+.black-key-5 { left: calc(75% - 4.2%); }
+
+/* 검은건반 눌림 상태 */
+.piano-key.black-key:active, .piano-key.black-key.is-pressed {
+  transform: translateY(2.5px) scale(0.98);
+  background: #020617;
+  border-bottom-width: 1px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  border-color: #38BDF8;
+}
+
+.piano-key.black-key.is-pressed .black-key-label {
+  color: #38BDF8;
+}
+
+/* 5. 팁 & 하단 버튼 */
+.pitch-footer-tip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.pitch-tip-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.pitch-tip-text {
+  font-size: 11px;
+  color: #1E40AF;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.pitch-modal-actions {
+  margin: 0;
+  padding: 10px 14px 14px 14px;
+  border-top: 1px solid #E2E8F0;
+  background: #FFFFFF;
+}
+
+.pitch-btn-done {
+  width: 100%;
+  height: 44px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+
+

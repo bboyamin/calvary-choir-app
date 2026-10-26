@@ -16,7 +16,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=1013">
+  <link rel="stylesheet" href="css/styles.css?v=1101">
+  <script src="https://www.youtube.com/iframe_api" async></script>
 </head>
 <body>
   <!-- 메인 앱 콘테이너 -->
@@ -102,9 +103,30 @@
       <section id="tab-praise" class="tab-pane">
         <div class="pane-header">
           <h2>🎵 찬양 음원 & 영상</h2>
-          <button class="btn-add-content officer-only hidden" onclick="app.openPraiseModal()">
-            ➕ 찬양 등록
-          </button>
+          <div class="pane-header-actions">
+            <button type="button" class="btn-icon-action" id="btnTogglePraiseSearch" onclick="app.togglePraiseSearch()" title="찬양곡 검색">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="7"></circle>
+                <line x1="21" y1="21" x2="16.35" y2="16.35"></line>
+              </svg>
+            </button>
+            <button type="button" class="btn-pitch-pipe-open" onclick="app.openPitchPipeModal()" title="조율용 첫 음 피치 건반 열기">
+              <span class="btn-pitch-pipe-icon">🎹</span>
+              <span class="btn-pitch-pipe-label">첫 음 건반</span>
+            </button>
+            <button class="btn-add-content officer-only hidden" onclick="app.openPraiseModal()">
+              ➕ 찬양 등록
+            </button>
+          </div>
+        </div>
+
+        <!-- 🔍 펼쳐지는 찬양곡 실시간 검색창 (성가대 찬양 영상 전용) -->
+        <div id="praiseSearchBox" class="notice-search-box hidden">
+          <div class="search-input-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="praiseSearchInput" placeholder="찬양곡 제목 검색..." oninput="app.onPraiseSearchInput(this.value)">
+            <button type="button" class="btn-clear-search" id="btnClearPraiseSearch" onclick="app.clearPraiseSearch()" title="지우기" style="display: none;">✕</button>
+          </div>
         </div>
 
         <!-- 서브 탭: 성가대 찬양 영상 vs 파트별 연습실 -->
@@ -906,16 +928,192 @@
     </div>
   </div>
 
+  <!-- 🎹 첫 음 조율 피치 건반 모달 (Pitch Pipe) -->
+  <div id="modalPitchPipe" class="modal-overlay hidden" onclick="if(event.target===this) app.closePitchPipeModal()">
+    <div class="modal-card modal-pitch-pipe">
+      <!-- 1. 모달 헤더 -->
+      <div class="modal-header pitch-modal-header">
+        <div class="pitch-modal-title-group">
+          <div class="pitch-title-badge">
+            <span class="pitch-title-icon">🎹</span>
+            <span class="pitch-title-main">첫 음 조율 피치 건반</span>
+          </div>
+          <p class="pitch-modal-sub">찬양 전 내 파트 첫 음을 찾아 정확한 음정을 맞춰보세요</p>
+        </div>
+        <button type="button" class="btn-close-modal" onclick="app.closePitchPipeModal()" title="닫기">✕</button>
+      </div>
+
+      <div class="modal-body pitch-modal-body">
+        <!-- 2. 파트별 첫 음 원터치 프리셋 칩 -->
+        <div class="pitch-preset-section">
+          <div class="pitch-preset-header">
+            <span class="pitch-preset-title">🎯 파트별 추천 첫 음 & 기준음 (원터치 청음)</span>
+          </div>
+          <div class="pitch-preset-chips">
+            <button type="button" class="pitch-chip chip-soprano" id="chip_soprano" onclick="app.playPartPreset('soprano')" title="소프라노 고음역 기준 (C5)">
+              <span class="chip-part-dot"></span>
+              <span class="chip-part-name">소프라노</span>
+              <span class="chip-note-name">높은 도 · C5</span>
+            </button>
+            <button type="button" class="pitch-chip chip-alto" id="chip_alto" onclick="app.playPartPreset('alto')" title="알토 중음역 기준 (A4 / 440Hz)">
+              <span class="chip-part-dot"></span>
+              <span class="chip-part-name">알토</span>
+              <span class="chip-note-name">라 · A4</span>
+            </button>
+            <button type="button" class="pitch-chip chip-tenor" id="chip_tenor" onclick="app.playPartPreset('tenor')" title="테너 남성고음역 기준 (C4)">
+              <span class="chip-part-dot"></span>
+              <span class="chip-part-name">테너</span>
+              <span class="chip-note-name">가온 도 · C4</span>
+            </button>
+            <button type="button" class="pitch-chip chip-bass" id="chip_bass" onclick="app.playPartPreset('bass')" title="베이스 저음역 기준 (C3)">
+              <span class="chip-part-dot"></span>
+              <span class="chip-part-name">베이스</span>
+              <span class="chip-note-name">낮은 도 · C3</span>
+            </button>
+            <button type="button" class="pitch-chip chip-ref" id="chip_ref440" onclick="app.playPartPreset('ref440')" title="국제 표준 조율 기준음 (A4 440Hz)">
+              <span class="chip-part-dot"></span>
+              <span class="chip-part-name">표준 조율음</span>
+              <span class="chip-note-name">440Hz · A4</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. 실시간 디지털 음계 & 주파수 모니터 전광판 -->
+        <div class="pitch-display-screen" id="pitchDisplayScreen">
+          <div class="pitch-screen-left">
+            <div class="pitch-note-korean" id="pitchNoteKorean">가온 도</div>
+            <div class="pitch-note-english" id="pitchNoteEnglish">C4 <span class="pitch-octave-tag" id="pitchOctaveTag">4 옥타브</span></div>
+          </div>
+          <div class="pitch-screen-center">
+            <div class="pitch-sound-wave" id="pitchSoundWave">
+              <span class="p-wave-bar"></span>
+              <span class="p-wave-bar"></span>
+              <span class="p-wave-bar"></span>
+              <span class="p-wave-bar"></span>
+              <span class="p-wave-bar"></span>
+            </div>
+            <div class="pitch-timbre-indicator" id="pitchTimbreIndicator">🎹 맑은 피아노</div>
+          </div>
+          <div class="pitch-screen-right">
+            <div class="pitch-freq-label">소리 주파수</div>
+            <div class="pitch-freq-value" id="pitchFreqValue">261.63 <span class="freq-unit">Hz</span></div>
+          </div>
+        </div>
+
+        <!-- 4. 음색 선택 & 옥타브 제어 툴바 -->
+        <div class="pitch-toolbar">
+          <div class="pitch-toolbar-group">
+            <span class="toolbar-label">악기 음색</span>
+            <div class="pitch-timbre-pills">
+              <button type="button" class="btn-timbre-pill active" id="btnTimbrePiano" onclick="app.setPitchTimbre('piano')">
+                🎹 피아노
+              </button>
+              <button type="button" class="btn-timbre-pill" id="btnTimbreOrgan" onclick="app.setPitchTimbre('organ')">
+                ⛪ 오르간
+              </button>
+            </div>
+          </div>
+
+          <div class="pitch-toolbar-group">
+            <span class="toolbar-label">음역대 (옥타브)</span>
+            <div class="pitch-octave-stepper">
+              <button type="button" class="btn-octave-step" onclick="app.shiftPitchOctave(-1)" id="btnOctaveDown" title="한 옥타브 낮게">
+                ◀ 낮게
+              </button>
+              <span class="pitch-octave-readout" id="pitchCurrentOctaveLabel">4 옥타브 (가온 보통)</span>
+              <button type="button" class="btn-octave-step" onclick="app.shiftPitchOctave(1)" id="btnOctaveUp" title="한 옥타브 높게">
+                높게 ▶
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. 1옥타브 실물감 3D 피아노 건반 -->
+        <div class="piano-keyboard-wrapper">
+          <div class="piano-keyboard" id="pianoKeyboard">
+            <!-- 흰건반 8개 -->
+            <div class="white-keys-container">
+              <button type="button" class="piano-key white-key" id="pkey_0" data-note-index="0" onmousedown="app.handlePianoKeyStart(0, event)" ontouchstart="app.handlePianoKeyStart(0, event)">
+                <span class="key-eng-label" id="lbl_eng_0">C4</span>
+                <span class="key-solfege-label">도</span>
+              </button>
+              <button type="button" class="piano-key white-key" id="pkey_2" data-note-index="2" onmousedown="app.handlePianoKeyStart(2, event)" ontouchstart="app.handlePianoKeyStart(2, event)">
+                <span class="key-eng-label" id="lbl_eng_2">D4</span>
+                <span class="key-solfege-label">레</span>
+              </button>
+              <button type="button" class="piano-key white-key" id="pkey_4" data-note-index="4" onmousedown="app.handlePianoKeyStart(4, event)" ontouchstart="app.handlePianoKeyStart(4, event)">
+                <span class="key-eng-label" id="lbl_eng_4">E4</span>
+                <span class="key-solfege-label">미</span>
+              </button>
+              <button type="button" class="piano-key white-key" id="pkey_5" data-note-index="5" onmousedown="app.handlePianoKeyStart(5, event)" ontouchstart="app.handlePianoKeyStart(5, event)">
+                <span class="key-eng-label" id="lbl_eng_5">F4</span>
+                <span class="key-solfege-label">파</span>
+              </button>
+              <button type="button" class="piano-key white-key" id="pkey_7" data-note-index="7" onmousedown="app.handlePianoKeyStart(7, event)" ontouchstart="app.handlePianoKeyStart(7, event)">
+                <span class="key-eng-label" id="lbl_eng_7">G4</span>
+                <span class="key-solfege-label">솔</span>
+              </button>
+              <button type="button" class="piano-key white-key" id="pkey_9" data-note-index="9" onmousedown="app.handlePianoKeyStart(9, event)" ontouchstart="app.handlePianoKeyStart(9, event)">
+                <span class="key-eng-label" id="lbl_eng_9">A4</span>
+                <span class="key-solfege-label">라</span>
+              </button>
+              <button type="button" class="piano-key white-key" id="pkey_11" data-note-index="11" onmousedown="app.handlePianoKeyStart(11, event)" ontouchstart="app.handlePianoKeyStart(11, event)">
+                <span class="key-eng-label" id="lbl_eng_11">B4</span>
+                <span class="key-solfege-label">시</span>
+              </button>
+              <button type="button" class="piano-key white-key" id="pkey_12" data-note-index="12" onmousedown="app.handlePianoKeyStart(12, event)" ontouchstart="app.handlePianoKeyStart(12, event)">
+                <span class="key-eng-label" id="lbl_eng_12">C5</span>
+                <span class="key-solfege-label">높은도</span>
+              </button>
+            </div>
+
+            <!-- 검은건반 5개 -->
+            <div class="black-keys-container">
+              <button type="button" class="piano-key black-key black-key-1" id="pkey_1" data-note-index="1" onmousedown="app.handlePianoKeyStart(1, event)" ontouchstart="app.handlePianoKeyStart(1, event)">
+                <span class="black-key-label" id="lbl_eng_1">C#4</span>
+              </button>
+              <button type="button" class="piano-key black-key black-key-2" id="pkey_3" data-note-index="3" onmousedown="app.handlePianoKeyStart(3, event)" ontouchstart="app.handlePianoKeyStart(3, event)">
+                <span class="black-key-label" id="lbl_eng_3">D#4</span>
+              </button>
+              <button type="button" class="piano-key black-key black-key-3" id="pkey_6" data-note-index="6" onmousedown="app.handlePianoKeyStart(6, event)" ontouchstart="app.handlePianoKeyStart(6, event)">
+                <span class="black-key-label" id="lbl_eng_6">F#4</span>
+              </button>
+              <button type="button" class="piano-key black-key black-key-4" id="pkey_8" data-note-index="8" onmousedown="app.handlePianoKeyStart(8, event)" ontouchstart="app.handlePianoKeyStart(8, event)">
+                <span class="black-key-label" id="lbl_eng_8">G#4</span>
+              </button>
+              <button type="button" class="piano-key black-key black-key-5" id="pkey_10" data-note-index="10" onmousedown="app.handlePianoKeyStart(10, event)" ontouchstart="app.handlePianoKeyStart(10, event)">
+                <span class="black-key-label" id="lbl_eng_10">A#4</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 6. 친절한 사용 팁 바 -->
+        <div class="pitch-footer-tip">
+          <span class="pitch-tip-icon">💡</span>
+          <span class="pitch-tip-text">건반을 누르면 소리가 울립니다. 파트 버튼을 누르면 추천 첫 음을 바로 들려줍니다.</span>
+        </div>
+      </div>
+
+      <!-- 7. 하단 닫기 바 -->
+      <div class="form-actions pitch-modal-actions">
+        <button type="button" class="btn-primary-large pitch-btn-done" onclick="app.closePitchPipeModal()">
+          확인 완료 (건반 닫기)
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- 실시간 공유 알림 토스트 메시지 -->
   <div id="appToast" class="app-toast-container"></div>
 
-  <script src="js/storage.js?v=1092"></script>
-  <script src="js/app.js?v=1092"></script>
+  <script src="js/storage.js?v=1101"></script>
+  <script src="js/app.js?v=1101"></script>
   <script>
     // 서비스 워커 등록 및 실시간 캐시 갱신 (PWA)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=1092')
+        navigator.serviceWorker.register('sw.js?v=1101')
           .then(reg => {
             console.log('PWA ServiceWorker registered', reg);
             reg.update(); // 강제 SW 최신버전 업데이트 검사
