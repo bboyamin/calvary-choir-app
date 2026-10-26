@@ -4665,7 +4665,7 @@ class ChoirApp {
     cfg.isLooping = false;
 
     this.updateSeniorMarkerUi(itemId);
-    this.showToast(`🟢 시작점(${this.formatTime(curr)}) 설정 완료! 마디가 끝날 때 [2단계]를 눌러주세요.`);
+    this.showToast(`🔵 시작점(${this.formatTime(curr)}) 설정 완료! 마디가 끝날 때 초록색 [2단계]를 눌러주세요.`);
   }
 
   // 2단계: 여기까지 반복 시작!
