@@ -2513,21 +2513,35 @@ body {
 
 .btn-jump-pill {
   min-height: 33px;
-  padding: 0 3px;
+  padding: 0 4px;
   background: #FFFFFF;
   border: 1px solid #CBD5E1;
   border-radius: 18px;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 800;
   color: #1E293B;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   transition: all 0.15s ease;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   white-space: nowrap;
+}
+
+.btn-jump-pill .jump-sign {
+  font-weight: 900;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.btn-jump-pill .jump-sign.minus {
+  color: #2563EB;
+}
+
+.btn-jump-pill .jump-sign.plus {
+  color: #059669;
 }
 
 .btn-jump-pill .jump-arrow {

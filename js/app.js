@@ -2119,28 +2119,9 @@ class ChoirApp {
 
     const iframeId = `yt_player_${item.id}`;
 
-    return `
-      <div class="item-card" id="praise_card_${item.id}">
-        <div class="card-top">
-          <span class="card-badge ${badgeClass}">${badgeText}</span>
-          <div class="card-top-right">
-            <span class="card-date">🗓️ ${item.date}</span>
-            ${this.getShareButtonHtml('praise', item.id)}
-            ${isOfficer ? `
-              <div class="card-admin-actions">
-                <button type="button" class="btn-card-edit" onclick="app.openEditPraiseModal('${item.id}')" title="수정">✏️</button>
-                <button type="button" class="btn-card-delete" onclick="app.deletePraise('${item.id}', this)" title="삭제">✕</button>
-              </div>
-            ` : ''}
-          </div>
-        </div>
-        <h3 class="card-title">${item.title}</h3>
-        
-        <div class="video-responsive">
-          ${this.getYoutubeIframe(item.youtubeUrl, iframeId)}
-        </div>
-
-        <!-- 🎧 파트 연습 도우미 (어르신 맞춤형 초간편 구간 반복 & 배속) -->
+    // 파트 연습 도우미는 파트별 연습실 음원(item.type === 'part')에만 제공
+    const practiceBoxHtml = item.type === 'part' ? `
+        <!-- 🎧 파트 연습 도우미 (파트별 연습실 음원 전용: 구간 반복 & 배속) -->
         <div class="practice-helper-box">
           <button type="button" class="btn-toggle-practice" onclick="app.togglePracticePanel('${item.id}')" id="btn_practice_toggle_${item.id}">
             <div class="practice-toggle-left">
@@ -2168,16 +2149,16 @@ class ChoirApp {
                 </div>
                 <div class="practice-jump-actions">
                   <button type="button" class="btn-jump-pill" onclick="app.jumpPlayerTime('${item.id}', -10)" title="10초 뒤로 되감기">
-                    <span class="jump-arrow">↺</span> 10초
+                    <span class="jump-sign minus">-</span>10초
                   </button>
                   <button type="button" class="btn-jump-pill" onclick="app.jumpPlayerTime('${item.id}', -5)" title="5초 뒤로 되감기">
-                    <span class="jump-arrow">↺</span> 5초
+                    <span class="jump-sign minus">-</span>5초
                   </button>
                   <button type="button" class="btn-jump-pill" onclick="app.jumpPlayerTime('${item.id}', 5)" title="5초 앞으로 이동">
-                    5초 <span class="jump-arrow">↻</span>
+                    <span class="jump-sign plus">+</span>5초
                   </button>
                   <button type="button" class="btn-jump-pill" onclick="app.jumpPlayerTime('${item.id}', 10)" title="10초 앞으로 이동">
-                    10초 <span class="jump-arrow">↻</span>
+                    <span class="jump-sign plus">+</span>10초
                   </button>
                 </div>
               </div>
@@ -2268,6 +2249,30 @@ class ChoirApp {
             </div>
           </div>
         </div>
+    ` : '';
+
+    return `
+      <div class="item-card" id="praise_card_${item.id}">
+        <div class="card-top">
+          <span class="card-badge ${badgeClass}">${badgeText}</span>
+          <div class="card-top-right">
+            <span class="card-date">🗓️ ${item.date}</span>
+            ${this.getShareButtonHtml('praise', item.id)}
+            ${isOfficer ? `
+              <div class="card-admin-actions">
+                <button type="button" class="btn-card-edit" onclick="app.openEditPraiseModal('${item.id}')" title="수정">✏️</button>
+                <button type="button" class="btn-card-delete" onclick="app.deletePraise('${item.id}', this)" title="삭제">✕</button>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+        <h3 class="card-title">${item.title}</h3>
+        
+        <div class="video-responsive">
+          ${this.getYoutubeIframe(item.youtubeUrl, iframeId)}
+        </div>
+
+        ${practiceBoxHtml}
       </div>
     `;
   }
@@ -4640,6 +4645,12 @@ class ChoirApp {
 
         const cfg = this.practiceConfigs[itemId];
         if (cfg && cfg.isLooping) {
+          // 방어 코드: 끝점이 시작점보다 작거나 같으면 0초 무한 반복 방지를 위해 반복 즉시 해제
+          if (cfg.endSec <= cfg.startSec) {
+            cfg.isLooping = false;
+            this.updateSeniorMarkerUi(itemId);
+            return;
+          }
           if (curr >= cfg.endSec || curr < cfg.startSec - 1.5) {
             player.seekTo(cfg.startSec, true);
             player.playVideo();
@@ -4713,15 +4724,37 @@ class ChoirApp {
   loopRecentSeconds(itemId, seconds = 15) {
     const player = this.ytPlayers[itemId];
     if (!player || typeof player.getCurrentTime !== 'function') {
-      this.showToast('먼저 위의 찬양 재생 버튼을 눌러주세요.');
+      this.showToast('먼저 위의 찬양 재생 버튼(▶)을 눌러 음원을 재생해 주세요.');
       return;
     }
+
+    let playerState = -1;
+    if (typeof player.getPlayerState === 'function') {
+      try {
+        playerState = player.getPlayerState();
+      } catch (e) {}
+    }
+
     const curr = Math.floor(player.getCurrentTime() || 0);
+
+    // 음원을 아직 재생하지 않았거나(미시작/대기 상태) 재생 위치가 0초(또는 2초 미만)인 경우 예외 안내
+    if (curr < 2 || playerState === -1 || playerState === 5) {
+      this.showToast('먼저 찬양 음원을 재생해 주세요. 음원을 들으시면서 누르면 방금 들은 15초 구간이 반복됩니다.');
+      return;
+    }
+
     const cfg = this.practiceConfigs[itemId];
     if (!cfg) return;
 
     cfg.endSec = curr;
     cfg.startSec = Math.max(0, curr - seconds);
+
+    // 구간 길이 방어 (끝점이 시작점 이하인 경우)
+    if (cfg.endSec <= cfg.startSec) {
+      this.showToast('반복할 구간이 너무 짧습니다. 조금 더 재생한 후 눌러주세요.');
+      return;
+    }
+
     cfg.isLooping = true;
     cfg.step1Set = false;
 
@@ -4806,9 +4839,9 @@ class ChoirApp {
     player.seekTo(next, true);
     const absSec = Math.abs(seconds);
     if (seconds < 0) {
-      this.showToast(`${absSec}초 뒤로 이동했습니다.`);
+      this.showToast(`⏪ ${absSec}초 뒤로 (-${absSec}초) 이동했습니다.`);
     } else {
-      this.showToast(`${absSec}초 앞으로 이동했습니다.`);
+      this.showToast(`⏩ ${absSec}초 앞으로 (+${absSec}초) 이동했습니다.`);
     }
   }
 
