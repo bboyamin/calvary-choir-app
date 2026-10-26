@@ -5139,20 +5139,20 @@ class ChoirApp {
 
   handlePianoKeyEnd(index) {
     const elapsed = Date.now() - (this.pitchState.pressStartTime || 0);
-    const minHoldMs = 1200; // 살짝 건반을 탭했을 때도 자연스러운 최소 지속 시간
+    const minHoldMs = 700; // 어쿠스틱 피아노의 자연스러운 최소 울림 시간 (0.7초)
     if (elapsed < minHoldMs) {
       const remaining = minHoldMs - elapsed;
       if (this.pitchState.releaseTimer) clearTimeout(this.pitchState.releaseTimer);
       this.pitchState.releaseTimer = setTimeout(() => {
-        this.stopCurrentPitchVoice(0.25);
+        this.stopCurrentPitchVoice();
       }, remaining);
     } else {
-      this.stopCurrentPitchVoice(0.25);
+      this.stopCurrentPitchVoice();
     }
   }
 
   playPitchNoteTone(index, octave, duration = 2.4) {
-    this.stopCurrentPitchVoice(0.05);
+    this.stopCurrentPitchVoice();
     const ctx = this.unlockMobileAudio();
     if (!ctx) return;
     if (ctx.state === 'suspended') {
@@ -5174,11 +5174,11 @@ class ChoirApp {
       this.setSoundWaveActive(false);
       this.pitchState.activeVoice = null;
       this.pitchState.activeKeyIndex = null;
-    }, duration * 1000);
+    }, duration * 1000 + 100);
   }
 
   startPitchVoice(index, octave) {
-    this.stopCurrentPitchVoice(0.05);
+    this.stopCurrentPitchVoice();
     const ctx = this.unlockMobileAudio();
     if (!ctx) return;
     if (ctx.state === 'suspended') {
@@ -5196,11 +5196,11 @@ class ChoirApp {
 
     if (this.pitchState.safetyTimer) clearTimeout(this.pitchState.safetyTimer);
     this.pitchState.safetyTimer = setTimeout(() => {
-      this.stopCurrentPitchVoice(0.25);
+      this.stopCurrentPitchVoice();
     }, 8000);
   }
 
-  stopCurrentPitchVoice(releaseTime = 0.25) {
+  stopCurrentPitchVoice() {
     if (this.pitchState.safetyTimer) {
       clearTimeout(this.pitchState.safetyTimer);
       this.pitchState.safetyTimer = null;
@@ -5212,7 +5212,7 @@ class ChoirApp {
     if (this.pitchState.activeVoice) {
       try {
         if (typeof this.pitchState.activeVoice.stop === 'function') {
-          this.pitchState.activeVoice.stop(releaseTime);
+          this.pitchState.activeVoice.stop();
         }
       } catch (e) {}
       this.pitchState.activeVoice = null;
@@ -5243,33 +5243,34 @@ class ChoirApp {
     masterGain.gain.setValueAtTime(0.85, now);
 
     if (timbre === 'piano') {
-      // 🎹 맑고 청아한 어쿠스틱 피아노/피치파이프 (Pure Sine Harmonics - 배음 총합 0.83으로 0dBFS 디지털 클리핑 왜곡 100% 차단)
+      // 🎹 맑고 청아한 어쿠스틱 피아노/피치파이프 (Pure Sine Harmonics)
       const harmonics = [
-        { mult: 1, gain: 0.58 }, // 기음 (깨끗하고 정확한 기준음)
-        { mult: 2, gain: 0.18 }, // 2배음 (부드러운 옥타브 울림)
-        { mult: 3, gain: 0.05 }, // 3배음 (자연스러운 배음)
-        { mult: 4, gain: 0.02 }  // 4배음 (고음역의 맑은 광택)
+        { mult: 1, gain: 0.58 }, // 기음
+        { mult: 2, gain: 0.18 }, // 2배음
+        { mult: 3, gain: 0.05 }, // 3배음
+        { mult: 4, gain: 0.02 }  // 4배음
       ];
 
       const filter = ctx.createBiquadFilter();
       filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(2600, now);
-      filter.frequency.exponentialRampToValueAtTime(750, now + 1.8);
+      filter.frequency.setValueAtTime(2800, now);
+      filter.frequency.setTargetAtTime(700, now + 0.02, 0.8);
       filter.connect(masterGain);
 
       const noteGain = ctx.createGain();
       noteGain.connect(filter);
 
-      const decaySec = duration || 2.4;
-      const attackTime = 0.02; // 20ms 부드러운 어택 (클릭 팝 노이즈 방지)
+      // Attack: 15ms 부드럽게 1.0으로 상승 (클릭 노이즈 제로)
+      noteGain.gain.setValueAtTime(0, now);
+      noteGain.gain.linearRampToValueAtTime(1.0, now + 0.015);
 
-      noteGain.gain.setValueAtTime(0.001, now);
-      noteGain.gain.linearRampToValueAtTime(1.0, now + attackTime);
-      noteGain.gain.exponentialRampToValueAtTime(0.001, now + decaySec);
+      // Natural Decay: 그랜드 피아노 현의 자연스러운 지수 감쇠 (setTargetAtTime으로 0을 향해 끝없이 부드럽게 감쇠)
+      noteGain.gain.setTargetAtTime(0, now + 0.015, 0.75);
 
+      const maxSec = (duration || 2.5) + 0.5;
       const oscs = harmonics.map(h => {
         const osc = ctx.createOscillator();
-        osc.type = 'sine'; // 순수 정현파(Sine Wave)로 삼각파 간섭 및 지직거림 완전 제거
+        osc.type = 'sine';
         osc.frequency.setValueAtTime(freq * h.mult, now);
 
         const hGain = ctx.createGain();
@@ -5278,19 +5279,23 @@ class ChoirApp {
         hGain.connect(noteGain);
 
         osc.start(now);
-        osc.stop(now + decaySec + 0.1);
+        // 완전히 소리가 0에 도달한 후 안전 정지 (끝에서 잘려 생기는 '띡' 소리 원천 차단)
+        osc.stop(now + maxSec + 0.5);
         return osc;
       });
 
       return {
-        stop: (rel = 0.25) => {
-          const stopTime = ctx.currentTime + 0.005;
-          noteGain.gain.cancelScheduledValues(stopTime);
-          noteGain.gain.setValueAtTime(Math.max(noteGain.gain.value, 0.001), stopTime);
-          noteGain.gain.exponentialRampToValueAtTime(0.001, stopTime + rel);
-          setTimeout(() => {
-            oscs.forEach(o => { try { o.stop(); } catch(e){} });
-          }, rel * 1000 + 40);
+        stop: () => {
+          try {
+            const stopTime = ctx.currentTime;
+            // 🛑 중요: gain.value를 읽어 재설정하면 불연속 점프로 인한 '띡' 소리가 발생하므로 절대 하지 않음!
+            // setTargetAtTime은 현재 실시간 볼륨 위치에서부터 0으로 40ms 동안 완벽하게 부드럽게 페이드아웃시킴
+            noteGain.gain.cancelScheduledValues(stopTime);
+            noteGain.gain.setTargetAtTime(0, stopTime, 0.04);
+            setTimeout(() => {
+              oscs.forEach(o => { try { o.stop(); } catch(e){} });
+            }, 250);
+          } catch (e) {}
         }
       };
     } else {
@@ -5305,15 +5310,12 @@ class ChoirApp {
       const noteGain = ctx.createGain();
       noteGain.connect(masterGain);
 
-      const attackTime = 0.04;
-      const sustainSec = duration || 2.8;
-
-      noteGain.gain.setValueAtTime(0.001, now);
-      noteGain.gain.linearRampToValueAtTime(0.85, now + attackTime);
+      noteGain.gain.setValueAtTime(0, now);
+      noteGain.gain.linearRampToValueAtTime(0.85, now + 0.035);
 
       if (duration) {
-        noteGain.gain.setValueAtTime(0.85, now + sustainSec - 0.35);
-        noteGain.gain.exponentialRampToValueAtTime(0.001, now + sustainSec);
+        const fadeStart = Math.max(0.1, duration - 0.25);
+        noteGain.gain.setTargetAtTime(0, now + fadeStart, 0.06);
       }
 
       const lfo = ctx.createOscillator();
@@ -5322,6 +5324,7 @@ class ChoirApp {
       lfoGain.gain.setValueAtTime(freq * 0.005, now);
       lfo.connect(lfoGain);
 
+      const maxSec = (duration || 2.8) + 0.5;
       const oscs = organRanks.map(rank => {
         const osc = ctx.createOscillator();
         osc.type = rank.type;
@@ -5334,27 +5337,24 @@ class ChoirApp {
         rGain.connect(noteGain);
 
         osc.start(now);
-        if (duration) {
-          osc.stop(now + sustainSec + 0.1);
-        }
+        osc.stop(now + maxSec + 0.5);
         return osc;
       });
 
       lfo.start(now);
-      if (duration) {
-        lfo.stop(now + sustainSec + 0.1);
-      }
+      lfo.stop(now + maxSec + 0.5);
 
       return {
-        stop: (rel = 0.3) => {
-          const stopTime = ctx.currentTime + 0.005;
-          noteGain.gain.cancelScheduledValues(stopTime);
-          noteGain.gain.setValueAtTime(Math.max(noteGain.gain.value, 0.001), stopTime);
-          noteGain.gain.exponentialRampToValueAtTime(0.001, stopTime + rel);
-          setTimeout(() => {
-            oscs.forEach(o => { try { o.stop(); } catch(e){} });
-            try { lfo.stop(); } catch(e){}
-          }, rel * 1000 + 40);
+        stop: () => {
+          try {
+            const stopTime = ctx.currentTime;
+            noteGain.gain.cancelScheduledValues(stopTime);
+            noteGain.gain.setTargetAtTime(0, stopTime, 0.04);
+            setTimeout(() => {
+              oscs.forEach(o => { try { o.stop(); } catch(e){} });
+              try { lfo.stop(); } catch(e){}
+            }, 250);
+          } catch (e) {}
         }
       };
     }
