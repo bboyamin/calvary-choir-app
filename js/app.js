@@ -2146,7 +2146,7 @@ class ChoirApp {
             <div class="practice-toggle-left">
               <span class="practice-pulse-dot"></span>
               <span class="practice-toggle-title">🎧 파트 연습 도우미</span>
-              <span class="practice-toggle-badge">쉬운 구간 반복 · 느리게 듣기</span>
+              <span class="practice-toggle-badge">구간 반복 · 배속</span>
             </div>
             <span class="practice-toggle-chevron" id="chevron_practice_${item.id}">도구 열기 ▼</span>
           </button>
@@ -4898,21 +4898,66 @@ class ChoirApp {
     { index: 12, ko: '높은 도', shortKo: '높은도', eng: 'C', isBlack: false, semitone: 12 }
   ];
 
-  initPitchAudioContext() {
-    if (!this.pitchAudioCtx) {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (AudioCtx) {
-        this.pitchAudioCtx = new AudioCtx();
+  async unlockMobileAudio() {
+    // 1. iOS 15+ AudioSession API를 미디어 재생(playback) 모드로 설정하여 무음 스위치 우회
+    if (typeof navigator !== 'undefined' && navigator.audioSession) {
+      try {
+        navigator.audioSession.type = 'playback';
+      } catch (e) {}
+    }
+
+    // 2. iOS 사파리 무음 모드 우회용 초소형 무음 오디오 재생 (하드웨어 오디오 엔진 강제 웨이크업)
+    if (!this.mobileAudioUnlocked) {
+      try {
+        if (!this.silentAudioEl) {
+          this.silentAudioEl = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+          this.silentAudioEl.setAttribute('playsinline', '');
+          this.silentAudioEl.setAttribute('webkit-playsinline', '');
+          this.silentAudioEl.volume = 0.01;
+        }
+        const p = this.silentAudioEl.play();
+        if (p && typeof p.then === 'function') {
+          p.then(() => {
+            this.silentAudioEl.pause();
+            this.mobileAudioUnlocked = true;
+          }).catch(() => {});
+        }
+      } catch (e) {}
+    }
+
+    // 3. Web Audio Context 인스턴스 초기화 및 resume
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!this.pitchAudioCtx && AudioCtx) {
+      this.pitchAudioCtx = new AudioCtx();
+    }
+
+    if (this.pitchAudioCtx) {
+      if (this.pitchAudioCtx.state === 'suspended') {
+        try {
+          await this.pitchAudioCtx.resume();
+        } catch (e) {}
       }
+
+      // 4. iOS WebKit 전용 1샘플 무음 버퍼 즉시 재생 트리거 (하드웨어 오디오 연결 활성화)
+      try {
+        const buf = this.pitchAudioCtx.createBuffer(1, 1, 22050);
+        const src = this.pitchAudioCtx.createBufferSource();
+        src.buffer = buf;
+        src.connect(this.pitchAudioCtx.destination);
+        src.start(0);
+      } catch (e) {}
     }
-    if (this.pitchAudioCtx && this.pitchAudioCtx.state === 'suspended') {
-      this.pitchAudioCtx.resume().catch(() => {});
-    }
+
     return this.pitchAudioCtx;
   }
 
-  openPitchPipeModal() {
-    this.initPitchAudioContext();
+  initPitchAudioContext() {
+    this.unlockMobileAudio();
+    return this.pitchAudioCtx;
+  }
+
+  async openPitchPipeModal() {
+    await this.unlockMobileAudio();
     this.openModal('modalPitchPipe');
     this.updatePitchOctaveLabels();
     this.updatePitchDisplay(0, 4);
@@ -5010,8 +5055,8 @@ class ChoirApp {
     if (screen) screen.classList.toggle('is-active', isActive);
   }
 
-  playPartPreset(partKey) {
-    this.initPitchAudioContext();
+  async playPartPreset(partKey) {
+    await this.unlockMobileAudio();
 
     document.querySelectorAll('.pitch-chip').forEach(c => c.classList.remove('is-active-preset'));
     const chip = document.getElementById(`chip_${partKey}`);
@@ -5054,7 +5099,7 @@ class ChoirApp {
     this.updatePitchOctaveLabels();
     this.updatePitchDisplay(targetIndex, targetOctave, customLabel);
 
-    this.playPitchNoteTone(targetIndex, targetOctave, 2.5);
+    await this.playPitchNoteTone(targetIndex, targetOctave, 2.5);
 
     setTimeout(() => {
       if (chip) chip.classList.remove('is-active-preset');
@@ -5062,10 +5107,17 @@ class ChoirApp {
   }
 
   handlePianoKeyStart(index, event) {
-    if (event && event.type === 'touchstart') {
-      event.preventDefault();
+    // 모바일 터치와 데스크톱 마우스 중복 호출 방지 (touch-action: none 적용으로 preventDefault 불필요)
+    if (event) {
+      if (event.type === 'touchstart') {
+        this.lastPianoTouchTime = Date.now();
+      } else if (event.type === 'mousedown') {
+        if (this.lastPianoTouchTime && (Date.now() - this.lastPianoTouchTime < 500)) {
+          return;
+        }
+      }
     }
-    this.initPitchAudioContext();
+    this.unlockMobileAudio();
     const oct = this.pitchState.octave || 4;
     this.updatePitchDisplay(index, oct);
     this.pitchState.pressStartTime = Date.now();
@@ -5096,10 +5148,16 @@ class ChoirApp {
     }
   }
 
-  playPitchNoteTone(index, octave, duration = 2.4) {
+  async playPitchNoteTone(index, octave, duration = 2.4) {
     this.stopCurrentPitchVoice(0.08);
+    const ctx = await this.unlockMobileAudio();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      try { await ctx.resume(); } catch(e){}
+    }
+
     const freq = this.calculateNoteFrequency(index, octave);
-    const voice = this.synthesizeTone(freq, this.pitchState.timbre, duration);
+    const voice = this.synthesizeTone(freq, this.pitchState.timbre, duration, ctx);
     if (!voice) return;
 
     this.pitchState.activeVoice = voice;
@@ -5116,10 +5174,16 @@ class ChoirApp {
     }, duration * 1000);
   }
 
-  startPitchVoice(index, octave) {
+  async startPitchVoice(index, octave) {
     this.stopCurrentPitchVoice(0.08);
+    const ctx = await this.unlockMobileAudio();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      try { await ctx.resume(); } catch(e){}
+    }
+
     const freq = this.calculateNoteFrequency(index, octave);
-    const voice = this.synthesizeTone(freq, this.pitchState.timbre, null);
+    const voice = this.synthesizeTone(freq, this.pitchState.timbre, null, ctx);
     if (!voice) return;
 
     this.pitchState.activeVoice = voice;
@@ -5162,39 +5226,43 @@ class ChoirApp {
     }
   }
 
-  synthesizeTone(freq, timbre = 'piano', duration = null) {
-    const ctx = this.initPitchAudioContext();
+  synthesizeTone(freq, timbre = 'piano', duration = null, ctxParam = null) {
+    const ctx = ctxParam || this.pitchAudioCtx;
     if (!ctx) return null;
 
-    const now = ctx.currentTime;
+    // 모바일 오디오 스레드 지연을 고려하여 현재 시간보다 20ms 앞선 시점으로 미래 스케줄링
+    const baseTime = Math.max(ctx.currentTime, 0.001);
+    const now = baseTime + 0.02;
+
     const masterGain = ctx.createGain();
     masterGain.connect(ctx.destination);
-    masterGain.gain.setValueAtTime(this.pitchState.volume || 0.85, now);
+    masterGain.gain.setValueAtTime(0.95, now);
 
     if (timbre === 'piano') {
       const harmonics = [
-        { mult: 1, gain: 0.82 },
-        { mult: 2, gain: 0.44 },
-        { mult: 3, gain: 0.22 },
-        { mult: 4, gain: 0.11 },
-        { mult: 5, gain: 0.05 },
-        { mult: 6, gain: 0.02 }
+        { mult: 1, gain: 0.85 },
+        { mult: 2, gain: 0.50 },
+        { mult: 3, gain: 0.28 },
+        { mult: 4, gain: 0.15 },
+        { mult: 5, gain: 0.08 },
+        { mult: 6, gain: 0.04 }
       ];
 
       const filter = ctx.createBiquadFilter();
       filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(3200, now);
-      filter.frequency.exponentialRampToValueAtTime(750, now + 2.2);
+      filter.frequency.setValueAtTime(4200, now);
+      filter.frequency.exponentialRampToValueAtTime(950, now + 2.2);
       filter.connect(masterGain);
 
       const noteGain = ctx.createGain();
       noteGain.connect(filter);
 
-      noteGain.gain.setValueAtTime(0.0001, now);
-      noteGain.gain.linearRampToValueAtTime(1.0, now + 0.005);
-
       const decaySec = duration || 2.4;
-      noteGain.gain.exponentialRampToValueAtTime(0.0001, now + decaySec);
+      const attackTime = 0.025; // 25ms 공격 시간으로 스마트폰 클릭음 방지 및 즉각 발음
+
+      noteGain.gain.setValueAtTime(0.001, now);
+      noteGain.gain.linearRampToValueAtTime(1.0, now + attackTime);
+      noteGain.gain.exponentialRampToValueAtTime(0.001, now + decaySec);
 
       const oscs = harmonics.map(h => {
         const osc = ctx.createOscillator();
@@ -5207,16 +5275,16 @@ class ChoirApp {
         hGain.connect(noteGain);
 
         osc.start(now);
-        osc.stop(now + decaySec + 0.1);
+        osc.stop(now + decaySec + 0.15);
         return osc;
       });
 
       return {
         stop: (rel = 0.25) => {
-          const stopTime = ctx.currentTime;
+          const stopTime = ctx.currentTime + 0.01;
           noteGain.gain.cancelScheduledValues(stopTime);
-          noteGain.gain.setValueAtTime(noteGain.gain.value, stopTime);
-          noteGain.gain.exponentialRampToValueAtTime(0.0001, stopTime + rel);
+          noteGain.gain.setValueAtTime(Math.max(noteGain.gain.value, 0.001), stopTime);
+          noteGain.gain.exponentialRampToValueAtTime(0.001, stopTime + rel);
           setTimeout(() => {
             oscs.forEach(o => { try { o.stop(); } catch(e){} });
           }, rel * 1000 + 40);
@@ -5234,13 +5302,15 @@ class ChoirApp {
       const noteGain = ctx.createGain();
       noteGain.connect(masterGain);
 
-      noteGain.gain.setValueAtTime(0.0001, now);
-      noteGain.gain.linearRampToValueAtTime(0.85, now + 0.06);
-
+      const attackTime = 0.045;
       const sustainSec = duration || 2.8;
+
+      noteGain.gain.setValueAtTime(0.001, now);
+      noteGain.gain.linearRampToValueAtTime(0.85, now + attackTime);
+
       if (duration) {
         noteGain.gain.setValueAtTime(0.85, now + sustainSec - 0.4);
-        noteGain.gain.exponentialRampToValueAtTime(0.0001, now + sustainSec);
+        noteGain.gain.exponentialRampToValueAtTime(0.001, now + sustainSec);
       }
 
       const lfo = ctx.createOscillator();
@@ -5262,22 +5332,22 @@ class ChoirApp {
 
         osc.start(now);
         if (duration) {
-          osc.stop(now + sustainSec + 0.1);
+          osc.stop(now + sustainSec + 0.15);
         }
         return osc;
       });
 
       lfo.start(now);
       if (duration) {
-        lfo.stop(now + sustainSec + 0.1);
+        lfo.stop(now + sustainSec + 0.15);
       }
 
       return {
         stop: (rel = 0.35) => {
-          const stopTime = ctx.currentTime;
+          const stopTime = ctx.currentTime + 0.01;
           noteGain.gain.cancelScheduledValues(stopTime);
-          noteGain.gain.setValueAtTime(noteGain.gain.value, stopTime);
-          noteGain.gain.exponentialRampToValueAtTime(0.0001, stopTime + rel);
+          noteGain.gain.setValueAtTime(Math.max(noteGain.gain.value, 0.001), stopTime);
+          noteGain.gain.exponentialRampToValueAtTime(0.001, stopTime + rel);
           setTimeout(() => {
             oscs.forEach(o => { try { o.stop(); } catch(e){} });
             try { lfo.stop(); } catch(e){}
