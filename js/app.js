@@ -1489,7 +1489,9 @@ class ChoirApp {
       `;
     }
 
-    listEl.innerHTML = html;
+    if (listEl.innerHTML !== html) {
+      listEl.innerHTML = html;
+    }
 
     if (this.pendingDeepLink && this.pendingDeepLink.tab === 'notice') {
       const targetId = this.pendingDeepLink.id;

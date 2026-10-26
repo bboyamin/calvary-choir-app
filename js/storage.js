@@ -149,7 +149,9 @@ class ChoirStorage {
         this.isSyncing = false;
         this.activeSyncPromise = null;
 
-        if (window.app && isFirstSync && !hasChanges && typeof window.app.renderAll === 'function') {
+        // 로컬에 기존 데이터가 아예 없어 '로딩 안내 화면'이 떠 있던 경우에만 첫 동기화 완료 후 화면 갱신
+        // (기존 데이터가 이미 있는 사용자는 동일 데이터 재렌더링을 생략하여 유튜브 등 iframe 깜빡임 방지)
+        if (window.app && isFirstSync && !hasChanges && !this.hasAnyLocalData() && typeof window.app.renderAll === 'function') {
           window.app.renderAll();
         }
       }
