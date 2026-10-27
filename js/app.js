@@ -374,6 +374,12 @@ class ChoirApp {
       this.openMemberPinModal();
       return;
     }
+
+    // 다른 메뉴(탭)로 나갈 때나 찬양 탭으로 다시 돌아올 때 연습 도우미 및 재생 음원 완전 초기화
+    if (this.currentTab !== tabId || tabId === 'praise') {
+      this.resetAllPracticeHelpers();
+    }
+
     this.currentTab = tabId;
     document.querySelectorAll('.tab-item').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.tab === tabId);
@@ -409,6 +415,10 @@ class ChoirApp {
 
   switchPraiseSubtab(subtab) {
     this.targetPraiseId = null;
+
+    // 찬양 탭 내 서브탭 전환 시(성가대 찬양 영상 ↔ 파트별 연습실) 연습도우미 및 음원 초기화
+    this.resetAllPracticeHelpers();
+
     this.praiseSubtab = subtab;
     document.querySelectorAll('.sub-tab-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.subtab === subtab);
@@ -441,6 +451,10 @@ class ChoirApp {
 
   filterPartPraise(part) {
     this.targetPraiseId = null;
+
+    // 다른 파트로 나갈 때(전체/4부/소프라노/알토/테너/베이스 파트 칩 변경 시) 연습도우미 및 음원 초기화
+    this.resetAllPracticeHelpers();
+
     this.partPraiseFilter = part;
     document.querySelectorAll('.part-chip').forEach(chip => {
       chip.classList.toggle('active', chip.dataset.part === part);
@@ -458,6 +472,7 @@ class ChoirApp {
 
   filterPraiseByMonth(val) {
     this.targetPraiseId = null;
+    this.resetAllPracticeHelpers();
     this.praiseMonthFilter = val;
     this.renderPraises();
   }
@@ -503,11 +518,13 @@ class ChoirApp {
     }
 
     if (this.praiseSearchQuery === cleaned) return;
+    this.resetAllPracticeHelpers();
     this.praiseSearchQuery = cleaned;
     this.renderPraises();
   }
 
   clearPraiseSearch() {
+    this.resetAllPracticeHelpers();
     const searchInput = document.getElementById('praiseSearchInput');
     const clearBtn = document.getElementById('btnClearPraiseSearch');
     const currentVal = searchInput ? searchInput.value : '';
@@ -2191,8 +2208,8 @@ class ChoirApp {
                 <!-- 구간 설정 영역 (평상시) -->
                 <div id="senior_loop_controls_${item.id}" class="practice-loop-controls">
                   <div class="practice-card-header">
-                    <span class="practice-card-title">🔁 마디 구간 반복</span>
-                    <span class="practice-card-desc">1단계 시작 ➔ 2단계 끝점</span>
+                    <span class="practice-card-title">🔁 원하는 부분 반복</span>
+                    <span class="practice-card-desc">1번 시작 ➔ 2번 끝</span>
                   </div>
 
                   <div class="loop-steps-grid">
@@ -2200,7 +2217,7 @@ class ChoirApp {
                       <div class="step-badge">1</div>
                       <div class="step-text-wrap">
                         <span class="step-main-label">여기서부터</span>
-                        <span class="step-sub-status" id="step1_time_${item.id}">시작점 찍기</span>
+                        <span class="step-sub-status" id="step1_time_${item.id}">시작할 때 누르기</span>
                       </div>
                     </button>
 
@@ -2209,16 +2226,15 @@ class ChoirApp {
                     <button type="button" class="btn-loop-step btn-step-end" id="btn_step2_${item.id}" onclick="app.setSeniorEndAndLoop('${item.id}')">
                       <div class="step-badge">2</div>
                       <div class="step-text-wrap">
-                        <span class="step-main-label">여기까지 반복!</span>
-                        <span class="step-sub-status" id="step2_time_${item.id}">누르면 바로 반복</span>
+                        <span class="step-main-label">여기까지</span>
+                        <span class="step-sub-status" id="step2_time_${item.id}">누르면 무한 반복</span>
                       </div>
                     </button>
                   </div>
 
                   <!-- 원터치 15초 바로 반복 (슬림 앰버 골드 버튼) -->
-                  <button type="button" class="btn-recent-loop-pill" onclick="app.loopRecentSeconds('${item.id}', 15)" title="방금 지나간 15초를 바로 무한 반복합니다">
-                    <span class="pill-spark">⚡</span>
-                    <span class="pill-text">방금 들은 15초 바로 반복</span>
+                  <button type="button" class="btn-recent-loop-pill" onclick="app.loopRecentSeconds('${item.id}', 15)" title="방금 지나간 15초를 바로 반복합니다">
+                    <span class="pill-text">방금 15초 다시 듣기</span>
                   </button>
                 </div>
 
@@ -2244,7 +2260,7 @@ class ChoirApp {
                 <button type="button" class="btn-reset-action" onclick="app.resetPracticeConfig('${item.id}')" title="연습 설정 초기화">
                   <span class="reset-icon">↺</span> 설정 초기화
                 </button>
-                <span class="panel-hint-text">💡 1단계 ➔ 2단계 순서로 눌러주세요</span>
+                <span class="panel-hint-text">💡 1번 시작 ➔ 2번 끝 순서로 눌러주세요</span>
               </div>
             </div>
           </div>
@@ -4518,12 +4534,27 @@ class ChoirApp {
     if (chevron) chevron.textContent = isOpening ? '도구 닫기 ▲' : '도구 열기 ▼';
 
     if (isOpening) {
+      // 다른 카드의 열려 있는 연습 도우미가 있다면 정리하여 현재 카드에만 집중하도록 처리
+      document.querySelectorAll('.practice-panel').forEach(p => {
+        if (p.id !== `practice_panel_${itemId}` && !p.classList.contains('hidden')) {
+          const otherId = p.id.replace('practice_panel_', '');
+          this.resetSinglePracticeHelper(otherId);
+        }
+      });
       this.initPracticeForCard(itemId);
     } else {
+      // 사용자가 직접 '도구 닫기'를 누른 경우:
+      // 음원 재생 상태는 절대 건드리지 않고(재생 중이면 계속 재생, 멈춰있으면 멈춤 유지), 반복 타이머와 플래그만 안전하게 정리
+      if (this.loopIntervals && this.loopIntervals[itemId]) {
+        try { clearInterval(this.loopIntervals[itemId]); } catch (e) {}
+        delete this.loopIntervals[itemId];
+      }
+
       const cfg = this.practiceConfigs[itemId];
-      if (cfg && !cfg.isLooping && this.loopIntervals[itemId]) {
-        clearInterval(this.loopIntervals[itemId]);
-        this.loopIntervals[itemId] = null;
+      if (cfg) {
+        cfg.isLooping = false;
+        cfg.step1Set = false;
+        this.updateSeniorMarkerUi(itemId);
       }
     }
   }
@@ -4578,8 +4609,13 @@ class ChoirApp {
 
   ensureYtPlayer(itemId, onReady) {
     if (this.ytPlayers[itemId] && typeof this.ytPlayers[itemId].getCurrentTime === 'function') {
-      if (onReady) onReady(this.ytPlayers[itemId]);
-      return this.ytPlayers[itemId];
+      try {
+        const iframe = this.ytPlayers[itemId].getIframe();
+        if (iframe && document.body.contains(iframe)) {
+          if (onReady) onReady(this.ytPlayers[itemId]);
+          return this.ytPlayers[itemId];
+        }
+      } catch (e) {}
     }
 
     const iframeId = `yt_player_${itemId}`;
@@ -4643,8 +4679,14 @@ class ChoirApp {
           }
         }
 
+        let playerState = -1;
+        if (typeof player.getPlayerState === 'function') {
+          try { playerState = player.getPlayerState(); } catch (e) {}
+        }
+
         const cfg = this.practiceConfigs[itemId];
-        if (cfg && cfg.isLooping) {
+        // 오직 실제로 재생 중(PLAYING = 1)일 때만 구간 반복 루프 검사 및 이동 수행
+        if (cfg && cfg.isLooping && playerState === 1) {
           // 방어 코드: 끝점이 시작점보다 작거나 같으면 0초 무한 반복 방지를 위해 반복 즉시 해제
           if (cfg.endSec <= cfg.startSec) {
             cfg.isLooping = false;
@@ -4663,11 +4705,36 @@ class ChoirApp {
   // 1단계: 여기서부터 찍기
   setSeniorStart(itemId) {
     const player = this.ytPlayers[itemId];
+    const step1Btn = document.getElementById(`btn_step1_${itemId}`);
+
+    const shakeAndWarn = (msg) => {
+      if (step1Btn) {
+        step1Btn.classList.add('shake-highlight');
+        setTimeout(() => step1Btn.classList.remove('shake-highlight'), 800);
+      }
+      this.showToast(msg);
+    };
+
     if (!player || typeof player.getCurrentTime !== 'function') {
-      this.showToast('먼저 위의 찬양 재생 버튼을 눌러주세요.');
+      shakeAndWarn('먼저 위의 영상 재생(▶) 버튼을 눌러 찬양을 들으시면서 눌러주세요!');
       return;
     }
+
+    let playerState = -1;
+    if (typeof player.getPlayerState === 'function') {
+      try {
+        playerState = player.getPlayerState();
+      } catch (e) {}
+    }
+
     const curr = Math.floor(player.getCurrentTime() || 0);
+
+    // 음원을 아직 재생하지 않았거나 (미시작: -1, 대기: 5) 0초 시점에서 멈춰 있는 경우 안내 및 쉐이크
+    if (curr < 1 && (playerState === -1 || playerState === 5 || playerState === 2)) {
+      shakeAndWarn('먼저 위의 영상 재생(▶) 버튼을 눌러 찬양을 들으시면서 눌러주세요!');
+      return;
+    }
+
     const cfg = this.practiceConfigs[itemId];
     if (!cfg) return;
 
@@ -4676,7 +4743,7 @@ class ChoirApp {
     cfg.isLooping = false;
 
     this.updateSeniorMarkerUi(itemId);
-    this.showToast(`🔵 시작점(${this.formatTime(curr)}) 설정 완료! 마디가 끝날 때 초록색 [2단계]를 눌러주세요.`);
+    this.showToast(`🔵 시작 위치(${this.formatTime(curr)}) 설정 완료! 끝나는 부분에서 초록색 [2번 여기까지]를 눌러주세요.`);
   }
 
   // 2단계: 여기까지 반복 시작!
@@ -4697,7 +4764,7 @@ class ChoirApp {
         step1Btn.classList.add('shake-highlight');
         setTimeout(() => step1Btn.classList.remove('shake-highlight'), 800);
       }
-      this.showToast('먼저 [1단계: 여기서부터] 시작점을 선택해 주세요!');
+      this.showToast('먼저 [1번: 여기서부터] 시작할 때를 선택해 주세요!');
       return;
     }
 
@@ -4802,13 +4869,13 @@ class ChoirApp {
       if (cfg.step1Set) {
         if (step1Btn) step1Btn.classList.add('is-set');
         if (step2Btn) step2Btn.classList.add('is-ready');
-        if (step1Time) step1Time.textContent = `시작점: ${this.formatTime(cfg.startSec)}`;
+        if (step1Time) step1Time.textContent = `시작: ${this.formatTime(cfg.startSec)}`;
         if (step2Time) step2Time.textContent = '지금 누르면 반복!';
       } else {
         if (step1Btn) step1Btn.classList.remove('is-set');
         if (step2Btn) step2Btn.classList.remove('is-ready');
-        if (step1Time) step1Time.textContent = '시작점 찍기';
-        if (step2Time) step2Time.textContent = '누르면 바로 반복';
+        if (step1Time) step1Time.textContent = '시작할 때 누르기';
+        if (step2Time) step2Time.textContent = '누르면 무한 반복';
       }
     }
   }
@@ -4873,31 +4940,181 @@ class ChoirApp {
   }
 
   resetPracticeConfig(itemId) {
+    const praises = this.storage ? this.storage.get(STORAGE_KEYS.PRAISES) : [];
+    const item = (praises || []).find(p => p.id === itemId);
+    let initialStart = 0;
+    if (item && item.youtubeUrl) {
+      const timeMatch = item.youtubeUrl.match(/[?&#](?:t|start)=([0-9hmsHMS]+)/i);
+      if (timeMatch && timeMatch[1]) {
+        const timeVal = timeMatch[1];
+        if (/^\d+$/.test(timeVal)) {
+          initialStart = parseInt(timeVal, 10);
+        } else {
+          const hours = (timeVal.match(/(\d+)h/i) || [])[1] || 0;
+          const minutes = (timeVal.match(/(\d+)m/i) || [])[1] || 0;
+          const seconds = (timeVal.match(/(\d+)s/i) || [])[1] || 0;
+          initialStart = (parseInt(hours, 10) * 3600) + (parseInt(minutes, 10) * 60) + parseInt(seconds, 10);
+        }
+      }
+    }
+
     const cfg = this.practiceConfigs[itemId];
     if (cfg) {
       cfg.isLooping = false;
       cfg.step1Set = false;
       cfg.speed = 1.0;
-      cfg.startSec = 0;
-      cfg.endSec = 20;
+      cfg.startSec = initialStart;
+      cfg.endSec = initialStart + 20;
     }
 
     const player = this.ytPlayers[itemId];
     if (player) {
-      if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(1.0);
-      if (typeof player.seekTo === 'function') player.seekTo(0, true);
+      try {
+        if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(1.0);
+        if (typeof player.seekTo === 'function') player.seekTo(initialStart, true);
+        if (typeof player.pauseVideo === 'function') player.pauseVideo();
+      } catch (e) {}
     }
+
+    const currEl = document.getElementById(`practice_curr_time_${itemId}`);
+    if (currEl) currEl.textContent = this.formatTime(initialStart);
 
     const speedBar = document.getElementById(`speed_bar_${itemId}`);
     if (speedBar) {
       speedBar.querySelectorAll('.btn-senior-speed').forEach(btn => {
         const btnSpeed = parseFloat(btn.dataset.speed);
-        btn.classList.toggle('active', btnSpeed === 1.0);
+        btn.classList.toggle('active', Math.abs(btnSpeed - 1.0) < 0.05);
       });
     }
 
     this.updateSeniorMarkerUi(itemId);
     this.showToast('연습 설정이 처음으로 되돌아갔습니다.');
+  }
+
+  // ----------------------------------------------------
+  // 🔄 연습 도우미 및 재생 음원 상태 완전 초기화
+  // ----------------------------------------------------
+  resetSinglePracticeHelper(itemId) {
+    if (!itemId) return;
+
+    // 1. 해당 곡의 구간 반복 인터벌 타이머 제거
+    if (this.loopIntervals && this.loopIntervals[itemId]) {
+      try { clearInterval(this.loopIntervals[itemId]); } catch (e) {}
+      delete this.loopIntervals[itemId];
+    }
+
+    // 2. 해당 곡의 설정 메모리 완전 초기화 (재오픈 시 0초부터 새로 설정되도록)
+    if (this.practiceConfigs && this.practiceConfigs[itemId]) {
+      delete this.practiceConfigs[itemId];
+    }
+
+    // 3. 해당 곡의 유튜브 플레이어 일시정지 (절대 seekTo를 호출하지 않음! 정지 상태에서 자동 재생 유발 방지)
+    if (this.ytPlayers && this.ytPlayers[itemId]) {
+      const player = this.ytPlayers[itemId];
+      try {
+        if (typeof player.pauseVideo === 'function') player.pauseVideo();
+        if (typeof player.setPlaybackRate === 'function') player.setPlaybackRate(1.0);
+      } catch (e) {}
+    }
+
+    // 4. 해당 곡의 DOM UI 완전 초기화
+    const panel = document.getElementById(`practice_panel_${itemId}`);
+    if (panel) panel.classList.add('hidden');
+
+    const btn = document.getElementById(`btn_practice_toggle_${itemId}`);
+    if (btn) btn.classList.remove('is-open');
+
+    const chevron = document.getElementById(`chevron_practice_${itemId}`);
+    if (chevron) chevron.textContent = '도구 열기 ▼';
+
+    const currEl = document.getElementById(`practice_curr_time_${itemId}`);
+    if (currEl) currEl.textContent = '00:00';
+
+    const totalEl = document.getElementById(`practice_total_time_${itemId}`);
+    if (totalEl) totalEl.textContent = '--:--';
+
+    const bannerEl = document.getElementById(`senior_looping_banner_${itemId}`);
+    if (bannerEl) bannerEl.classList.add('hidden');
+
+    const controlsEl = document.getElementById(`senior_loop_controls_${itemId}`);
+    if (controlsEl) controlsEl.classList.remove('hidden');
+
+    const rangeTxtEl = document.getElementById(`senior_loop_range_txt_${itemId}`);
+    if (rangeTxtEl) rangeTxtEl.textContent = '00:00 ~ 00:30';
+
+    const step1Btn = document.getElementById(`btn_step1_${itemId}`);
+    if (step1Btn) step1Btn.classList.remove('is-set', 'shake-highlight');
+
+    const step1Time = document.getElementById(`step1_time_${itemId}`);
+    if (step1Time) step1Time.textContent = '시작할 때 누르기';
+
+    const step2Btn = document.getElementById(`btn_step2_${itemId}`);
+    if (step2Btn) step2Btn.classList.remove('is-ready');
+
+    const step2Time = document.getElementById(`step2_time_${itemId}`);
+    if (step2Time) step2Time.textContent = '누르면 무한 반복';
+
+    const speedBar = document.getElementById(`speed_bar_${itemId}`);
+    if (speedBar) {
+      speedBar.querySelectorAll('.btn-senior-speed').forEach(sBtn => {
+        const btnSpeed = parseFloat(sBtn.dataset.speed);
+        sBtn.classList.toggle('active', Math.abs(btnSpeed - 1.0) < 0.05);
+      });
+    }
+  }
+
+  resetAllPracticeHelpers() {
+    // 1. 모든 실행 중인 인터벌 타이머 즉시 정지 및 제거
+    if (this.loopIntervals) {
+      Object.keys(this.loopIntervals).forEach(id => {
+        try { clearInterval(this.loopIntervals[id]); } catch (e) {}
+      });
+      this.loopIntervals = {};
+    }
+
+    // 2. 모든 설정 메모리 초기화
+    this.practiceConfigs = {};
+
+    // 3. 모든 유튜브 플레이어 정지 및 1배속으로 초기화 (절대 seekTo를 호출하지 않음!)
+    if (this.ytPlayers) {
+      Object.keys(this.ytPlayers).forEach(id => {
+        const p = this.ytPlayers[id];
+        if (p) {
+          try {
+            if (typeof p.pauseVideo === 'function') p.pauseVideo();
+            if (typeof p.setPlaybackRate === 'function') p.setPlaybackRate(1.0);
+          } catch (e) {}
+        }
+      });
+      this.ytPlayers = {};
+    }
+
+    // 4. 모든 유튜브 iframe에 표준 pauseVideo 메시지 일괄 전송 (인스턴스 미바인딩 상태까지 100% 커버)
+    try {
+      document.querySelectorAll('iframe[src*="youtube.com"]').forEach(iframe => {
+        try {
+          if (iframe.contentWindow) {
+            iframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+          }
+        } catch (e) {}
+      });
+    } catch (e) {}
+
+    // 5. DOM 상의 모든 연습 도우미 패널 및 UI 100% 일괄 초기화
+    document.querySelectorAll('.practice-panel').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.btn-toggle-practice').forEach(el => el.classList.remove('is-open'));
+    document.querySelectorAll('.practice-toggle-chevron').forEach(el => el.textContent = '도구 열기 ▼');
+    document.querySelectorAll('[id^="practice_curr_time_"]').forEach(el => el.textContent = '00:00');
+    document.querySelectorAll('[id^="practice_total_time_"]').forEach(el => el.textContent = '--:--');
+    document.querySelectorAll('.practice-active-banner').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.practice-loop-controls').forEach(el => el.classList.remove('hidden'));
+    document.querySelectorAll('.btn-loop-step').forEach(el => el.classList.remove('is-set', 'is-ready', 'shake-highlight'));
+    document.querySelectorAll('[id^="step1_time_"]').forEach(el => el.textContent = '시작할 때 누르기');
+    document.querySelectorAll('[id^="step2_time_"]').forEach(el => el.textContent = '누르면 무한 반복');
+    document.querySelectorAll('.btn-senior-speed').forEach(el => {
+      const speed = parseFloat(el.dataset.speed);
+      el.classList.toggle('active', Math.abs(speed - 1.0) < 0.05);
+    });
   }
 
   // ====================================================
@@ -4993,6 +5210,7 @@ class ChoirApp {
   }
 
   openPitchPipeModal() {
+    this.resetAllPracticeHelpers();
     this.unlockMobileAudio();
     this.openModal('modalPitchPipe');
     this.updatePitchOctaveLabels();
