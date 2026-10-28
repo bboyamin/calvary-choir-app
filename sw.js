@@ -1,4 +1,4 @@
-const CACHE_NAME = 'calvary-choir-v1108';
+const CACHE_NAME = 'calvary-choir-v1109';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -7,6 +7,7 @@ const ASSETS_TO_CACHE = [
   './js/storage.js',
   './js/app.js',
   './manifest.json',
+  './assets/church-logo-white.svg',
   './assets/church-logo.svg',
   './assets/church-symbol.svg',
   './assets/icon-192.png',

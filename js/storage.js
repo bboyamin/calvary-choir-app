@@ -98,7 +98,8 @@ class ChoirStorage {
       let syncSucceeded = false;
 
       try {
-        const apiBaseUrl = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'https://calvary-ch.vercel.app/api/storage' : './api/storage';
+        const isDev = (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.startsWith('192.168.') || location.hostname.startsWith('10.') || location.hostname.startsWith('172.'));
+        const apiBaseUrl = isDev ? 'https://calvary-ch.vercel.app/api/storage' : './api/storage';
         const resp = await fetch(`${apiBaseUrl}?key=all`);
         if (!resp.ok) {
           this.lastSyncFailed = true;
@@ -204,7 +205,8 @@ class ChoirStorage {
     this.lastMutationTime[category] = Date.now();
 
     try {
-      const apiBaseUrl = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'https://calvary-ch.vercel.app/api/storage' : './api/storage';
+      const isDev = (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.startsWith('192.168.') || location.hostname.startsWith('10.') || location.hostname.startsWith('172.'));
+      const apiBaseUrl = isDev ? 'https://calvary-ch.vercel.app/api/storage' : './api/storage';
       const resp = await fetch(apiBaseUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

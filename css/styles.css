@@ -7,7 +7,7 @@
    ========================================================================== */
 
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
   --primary-navy: #0F172A;
   --primary-navy-light: #1E293B;
   --gold-accent: #D97706;
@@ -67,6 +67,7 @@ body {
 .app-header {
   background: linear-gradient(135deg, var(--primary-navy) 0%, var(--primary-navy-light) 100%);
   color: #FFFFFF;
+  color-scheme: dark;
   padding-top: max(14px, env(safe-area-inset-top, 0px));
   padding-bottom: 12px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
@@ -89,13 +90,14 @@ body {
   height: 40px;
   display: flex;
   align-items: center;
+  isolation: isolate;
 }
 
 .official-header-logo {
   height: 34px;
   max-width: 180px;
   object-fit: contain;
-  filter: brightness(0) invert(1);
+  forced-color-adjust: none;
 }
 
 .header-actions {

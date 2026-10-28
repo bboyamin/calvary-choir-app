@@ -756,6 +756,13 @@ class ChoirApp {
     this.resetAllPracticeHelpers();
     this.praiseMonthFilter = val;
     this.renderPraises();
+
+    // 모바일 브라우저(특히 삼성 브라우저)에서 라디오버튼 선택 즉시
+    // 네이티브 팝업 대화상자가 부드럽게 닫히도록 포커스 해제
+    const selectEl = document.getElementById('praiseMonthFilter');
+    if (selectEl && typeof selectEl.blur === 'function') {
+      selectEl.blur();
+    }
   }
 
   // ----------------------------------------------------
@@ -856,8 +863,14 @@ class ChoirApp {
       html += `<option value="${m}">${year}년 ${parseInt(month, 10)}월 찬양 모음</option>`;
     });
 
-    selectEl.innerHTML = html;
-    selectEl.value = this.praiseMonthFilter;
+    // 🛑 중요: 내용이 동일하면 innerHTML을 재할당하지 않음!
+    // 재할당 시 모바일(특히 삼성 브라우저)에서 라디오버튼 터치 도중 DOM 노드가 파괴되어 팝업이 닫히지 않고 고립됨
+    if (selectEl.innerHTML.replace(/\s+/g, '') !== html.replace(/\s+/g, '')) {
+      selectEl.innerHTML = html;
+    }
+    if (selectEl.value !== this.praiseMonthFilter) {
+      selectEl.value = this.praiseMonthFilter;
+    }
   }
 
   escapeHtml(str) {
