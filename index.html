@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=1107">
+  <link rel="stylesheet" href="css/styles.css?v=1108">
   <script src="https://www.youtube.com/iframe_api" async></script>
 </head>
 <body>
@@ -48,6 +48,42 @@
         <button type="button" class="btn-banner-action" onclick="app.openChangeOfficerPinModal()">🔑 관리자 암호 변경</button>
         <button type="button" class="btn-banner-action" onclick="app.openChangeMemberPinModal()">🔒 대원명단 암호 변경</button>
         <button type="button" id="btnExitOfficer" class="btn-exit-officer">🚪 관리자 모드 나가기</button>
+      </div>
+    </div>
+
+    <!-- ☁️ 실시간 클라우드 동기화 캡슐 배너 (오랜만에 접속/업데이트 시 세련된 진행 피드백) -->
+    <div id="cloudSyncBanner" class="cloud-sync-banner hidden" role="status" aria-live="polite">
+      <div class="cloud-sync-inner">
+        <div class="cloud-sync-left">
+          <div class="cloud-sync-orb" id="cloudSyncOrb">
+            <span class="cloud-sync-pulse-ring"></span>
+            <svg class="cloud-sync-spinner" id="cloudSyncSpinnerSvg" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="9" stroke="rgba(147, 197, 253, 0.25)" stroke-width="2.5"></circle>
+              <path d="M21 12a9 9 0 0 0-9-9" stroke="#60A5FA" stroke-width="2.6" stroke-linecap="round"></path>
+              <path d="M3 12a9 9 0 0 0 5.5 8.3" stroke="#FBBF24" stroke-width="2.4" stroke-linecap="round"></path>
+            </svg>
+            <svg class="cloud-sync-check hidden" id="cloudSyncCheckSvg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span class="cloud-sync-warn hidden" id="cloudSyncWarnIcon">!</span>
+          </div>
+          <div class="cloud-sync-copy">
+            <div class="cloud-sync-title-row">
+              <span class="cloud-sync-title" id="cloudSyncTitle">새로 등록된 글과 찬양 음원을 불러오는 중</span>
+              <span class="cloud-sync-dots" id="cloudSyncDots"><span>.</span><span>.</span><span>.</span></span>
+            </div>
+            <span class="cloud-sync-sub" id="cloudSyncSub">잠시만 기다려 주시면 최신 목록으로 자동 갱신됩니다</span>
+          </div>
+        </div>
+        <div class="cloud-sync-actions" id="cloudSyncActions">
+          <button type="button" id="btnCloudSyncRetry" class="btn-cloud-sync-retry hidden" onclick="app.retryInitialSync()">
+            🔄 다시 불러오기
+          </button>
+          <button type="button" id="btnCloudSyncDismiss" class="btn-cloud-sync-dismiss hidden" onclick="app.hideCloudSyncBanner()" aria-label="안내 닫기" title="닫기">✕</button>
+        </div>
+      </div>
+      <div class="cloud-sync-ribbon-track" id="cloudSyncRibbonTrack">
+        <div class="cloud-sync-ribbon-bar"></div>
       </div>
     </div>
 
@@ -1107,13 +1143,13 @@
   <!-- 실시간 공유 알림 토스트 메시지 -->
   <div id="appToast" class="app-toast-container"></div>
 
-  <script src="js/storage.js?v=1107"></script>
-  <script src="js/app.js?v=1107"></script>
+  <script src="js/storage.js?v=1108"></script>
+  <script src="js/app.js?v=1108"></script>
   <script>
     // 서비스 워커 등록 및 실시간 캐시 갱신 (PWA)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=1107')
+        navigator.serviceWorker.register('sw.js?v=1108')
           .then(reg => {
             console.log('PWA ServiceWorker registered', reg);
             reg.update(); // 강제 SW 최신버전 업데이트 검사

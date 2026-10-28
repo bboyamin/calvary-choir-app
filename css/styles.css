@@ -151,17 +151,350 @@ body {
 
 @keyframes softPulse {
   0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.1); opacity: 0.85; }
+  50% { transform: scale(1.08); opacity: 0.9; }
 }
 
 @keyframes progressSlide {
+  0% { transform: translateX(-110%); }
+  50% { transform: translateX(45%); }
+  100% { transform: translateX(210%); }
+}
+
+@keyframes syncSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes syncRadarPulse {
+  0% { transform: scale(0.88); opacity: 0.75; }
+  70% { transform: scale(1.42); opacity: 0; }
+  100% { transform: scale(1.42); opacity: 0; }
+}
+
+@keyframes syncRibbonFlow {
   0% { transform: translateX(-100%); }
-  50% { transform: translateX(50%); }
-  100% { transform: translateX(200%); }
+  100% { transform: translateX(220%); }
+}
+
+@keyframes syncDotWave {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-2px); }
+}
+
+@keyframes syncCheckPop {
+  0% { transform: scale(0.4); opacity: 0; }
+  65% { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes welcomeHaloPulse {
+  0%, 100% { transform: scale(0.95); opacity: 0.45; }
+  50% { transform: scale(1.15); opacity: 0.85; }
 }
 
 .initial-welcome-loader {
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn 0.35s ease;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%) !important;
+}
+
+.welcome-orb-stage {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 16px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.welcome-orb-halo {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, rgba(30, 58, 138, 0.04) 70%);
+  border: 1.5px solid rgba(96, 165, 250, 0.35);
+  animation: welcomeHaloPulse 2.2s infinite ease-in-out;
+}
+
+.welcome-orb-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: #3B82F6;
+  border-right-color: #F59E0B;
+  animation: syncSpin 1.8s infinite linear;
+}
+
+.welcome-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  color: #1D4ED8;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+
+.welcome-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  animation: softPulse 1.2s infinite ease-in-out;
+}
+
+/* ==========================================
+   ☁️ 상단 플로팅 클라우드 동기화 캡슐 배너
+   ========================================== */
+.cloud-sync-banner {
+  position: fixed;
+  top: var(--sync-banner-top, calc(max(14px, env(safe-area-inset-top, 0px)) + 62px));
+  left: 50%;
+  transform: translateX(-50%) translateY(-16px) scale(0.96);
+  width: calc(100% - 24px);
+  max-width: 440px;
+  z-index: 990;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 58, 138, 0.96) 58%, rgba(29, 78, 216, 0.95) 100%);
+  border: 1px solid rgba(147, 197, 253, 0.38);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.28), 0 2px 8px rgba(37, 99, 235, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #FFFFFF;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+              background 0.35s ease,
+              border-color 0.35s ease;
+}
+
+.cloud-sync-banner.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.cloud-sync-banner.state-updated {
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.97) 0%, rgba(5, 150, 105, 0.96) 100%);
+  border-color: rgba(110, 231, 183, 0.55);
+  box-shadow: 0 14px 30px rgba(6, 78, 59, 0.28), 0 2px 8px rgba(16, 185, 129, 0.25);
+}
+
+.cloud-sync-banner.state-uptodate {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 118, 110, 0.95) 100%);
+  border-color: rgba(94, 234, 212, 0.45);
+}
+
+.cloud-sync-banner.state-delayed {
+  background: linear-gradient(135deg, rgba(120, 53, 15, 0.97) 0%, rgba(180, 83, 9, 0.96) 100%);
+  border-color: rgba(252, 211, 77, 0.55);
+  box-shadow: 0 14px 30px rgba(120, 53, 15, 0.3);
+}
+
+.cloud-sync-banner.state-updating {
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.97) 0%, rgba(67, 56, 202, 0.96) 100%);
+  border-color: rgba(199, 210, 254, 0.5);
+}
+
+.cloud-sync-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 14px 12px 13px;
+}
+
+.cloud-sync-left {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  flex: 1;
+}
+
+.cloud-sync-orb {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cloud-sync-pulse-ring {
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 1.8px solid rgba(147, 197, 253, 0.65);
+  animation: syncRadarPulse 1.7s infinite ease-out;
+}
+
+.cloud-sync-banner.state-updated .cloud-sync-pulse-ring,
+.cloud-sync-banner.state-uptodate .cloud-sync-pulse-ring,
+.cloud-sync-banner.state-delayed .cloud-sync-pulse-ring {
+  display: none;
+}
+
+.cloud-sync-spinner {
+  width: 21px;
+  height: 21px;
+  animation: syncSpin 0.95s infinite linear;
+}
+
+.cloud-sync-check {
+  width: 19px;
+  height: 19px;
+  color: #A7F3D0;
+  animation: syncCheckPop 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.cloud-sync-warn {
+  font-size: 16px;
+  font-weight: 900;
+  color: #FDE68A;
+  line-height: 1;
+}
+
+.cloud-sync-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.cloud-sync-title-row {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+}
+
+.cloud-sync-title {
+  font-size: 13.8px;
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: -0.3px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cloud-sync-dots {
+  display: inline-flex;
+  margin-left: 1px;
+  font-weight: 900;
+  color: #93C5FD;
+}
+
+.cloud-sync-dots span {
+  animation: syncDotWave 1.2s infinite ease-in-out;
+}
+.cloud-sync-dots span:nth-child(2) { animation-delay: 0.18s; }
+.cloud-sync-dots span:nth-child(3) { animation-delay: 0.36s; }
+
+.cloud-sync-sub {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: rgba(219, 234, 254, 0.92);
+  letter-spacing: -0.2px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cloud-sync-banner.state-updated .cloud-sync-sub {
+  color: #D1FAE5;
+}
+
+.cloud-sync-banner.state-delayed .cloud-sync-sub {
+  color: #FDE68A;
+}
+
+.cloud-sync-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-cloud-sync-retry {
+  background: #FFFFFF;
+  color: #9A3412;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.btn-cloud-sync-retry:active {
+  transform: scale(0.95);
+  background: #FFF7ED;
+}
+
+.btn-cloud-sync-dismiss {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.cloud-sync-ribbon-track {
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  position: relative;
+}
+
+.cloud-sync-ribbon-bar {
+  width: 48%;
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, transparent 0%, #60A5FA 30%, #FBBF24 65%, #38BDF8 90%, transparent 100%);
+  animation: syncRibbonFlow 1.25s infinite ease-in-out;
+}
+
+.cloud-sync-banner.state-updated .cloud-sync-ribbon-bar,
+.cloud-sync-banner.state-uptodate .cloud-sync-ribbon-bar {
+  width: 100%;
+  animation: none;
+  background: linear-gradient(90deg, #34D399 0%, #A7F3D0 50%, #FBBF24 100%);
+}
+
+.cloud-sync-banner.state-delayed .cloud-sync-ribbon-bar {
+  width: 100%;
+  animation: none;
+  background: #FBBF24;
 }
 
 /* 임원 활성화 배너 */

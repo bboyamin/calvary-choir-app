@@ -17,6 +17,9 @@ class ChoirStorage {
   constructor() {
     this.isSyncing = false;
     this.initialSyncDone = false; // 첫 클라우드 동기화 완료 여부
+    this.lastSyncedAt = Number(localStorage.getItem('calvary_last_cloud_sync_at') || 0);
+    this.lastSyncFailed = false;
+    this.lastSyncResult = null;
     this.pendingPushCount = { notices: 0, praises: 0, schedules: 0, members: 0, prayers: 0 };
     this.lastMutationTime = { notices: 0, praises: 0, schedules: 0, members: 0, prayers: 0 };
     this.init();
@@ -70,24 +73,40 @@ class ChoirStorage {
     });
   }
 
-  async syncFromCloud() {
-    if (this.isSyncing && this.activeSyncPromise) {
+  async syncFromCloud(options = {}) {
+    const isManualRetry = Boolean(options && options.isManualRetry);
+    if (this.isSyncing && this.activeSyncPromise && !isManualRetry) {
       return this.activeSyncPromise;
     }
     this.isSyncing = true;
 
+    const isFirstSync = !this.initialSyncDone;
+    const prevSyncedAt = this.lastSyncedAt || 0;
+    const hadLocalDataBeforeSync = this.hasAnyLocalData();
+
+    if (window.app && typeof window.app.onCloudSyncStart === 'function') {
+      window.app.onCloudSyncStart({
+        isFirstSync,
+        isManualRetry,
+        prevSyncedAt,
+        hadLocalData: hadLocalDataBeforeSync
+      });
+    }
+
     this.activeSyncPromise = (async () => {
       let hasChanges = false;
-      const isFirstSync = !this.initialSyncDone;
+      let syncSucceeded = false;
 
       try {
         const apiBaseUrl = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') ? 'https://calvary-ch.vercel.app/api/storage' : './api/storage';
         const resp = await fetch(`${apiBaseUrl}?key=all`);
         if (!resp.ok) {
+          this.lastSyncFailed = true;
           return false;
         }
 
         const cloudData = await resp.json();
+        syncSucceeded = true;
 
         const categoryMap = [
           { cat: 'notices', key: STORAGE_KEYS.NOTICES },
@@ -129,6 +148,13 @@ class ChoirStorage {
           }
         }
 
+        this.initialSyncDone = true;
+        this.lastSyncFailed = false;
+        this.lastSyncedAt = Date.now();
+        try {
+          localStorage.setItem('calvary_last_cloud_sync_at', String(this.lastSyncedAt));
+        } catch (e) { }
+
         // 변경사항이 감지되면 UI 및 안읽은 배포 건수 즉시 갱신
         if (hasChanges && window.app) {
           if (window.app.pendingDeepLink && window.app.pendingDeepLink.id) {
@@ -143,16 +169,29 @@ class ChoirStorage {
         return hasChanges;
       } catch (e) {
         console.warn('Cloud sync offline or error:', e);
+        this.lastSyncFailed = true;
         return false;
       } finally {
-        this.initialSyncDone = true;
         this.isSyncing = false;
         this.activeSyncPromise = null;
+        this.lastSyncResult = {
+          isFirstSync,
+          hasChanges,
+          success: syncSucceeded,
+          isManualRetry,
+          prevSyncedAt,
+          hadLocalData: hadLocalDataBeforeSync,
+          completedAt: Date.now()
+        };
 
         // 로컬에 기존 데이터가 아예 없어 '로딩 안내 화면'이 떠 있던 경우에만 첫 동기화 완료 후 화면 갱신
         // (기존 데이터가 이미 있는 사용자는 동일 데이터 재렌더링을 생략하여 유튜브 등 iframe 깜빡임 방지)
-        if (window.app && isFirstSync && !hasChanges && !this.hasAnyLocalData() && typeof window.app.renderAll === 'function') {
+        if (window.app && isFirstSync && syncSucceeded && !hasChanges && !this.hasAnyLocalData() && typeof window.app.renderAll === 'function') {
           window.app.renderAll();
+        }
+
+        if (window.app && typeof window.app.onCloudSyncComplete === 'function') {
+          window.app.onCloudSyncComplete(this.lastSyncResult);
         }
       }
     })();

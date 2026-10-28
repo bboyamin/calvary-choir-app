@@ -1,4 +1,4 @@
-const CACHE_NAME = 'calvary-choir-v1107';
+const CACHE_NAME = 'calvary-choir-v1108';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -54,10 +54,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-First 전략: 온라인일 때는 항상 서버의 최신 소스코드를 받고, 오프라인일 때만 캐시 사용
+  // Network-First + 1.8초 지연 안전 폴백: 온라인에선 최신 코드를 우선 받되, 통신이 지연되면 저장된 캐시 화면을 즉시 먼저 열어 멈춤 방지
   event.respondWith(
-    fetch(event.request)
-      .then((networkResponse) => {
+    caches.match(event.request).then((cachedResponse) => {
+      const fetchPromise = fetch(event.request).then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
           const responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -65,7 +65,37 @@ self.addEventListener('fetch', (event) => {
           });
         }
         return networkResponse;
-      })
-      .catch(() => caches.match(event.request))
+      });
+
+      if (!cachedResponse) {
+        return fetchPromise;
+      }
+
+      return new Promise((resolve) => {
+        let settled = false;
+        const timer = setTimeout(() => {
+          if (!settled) {
+            settled = true;
+            resolve(cachedResponse);
+          }
+        }, 1800);
+
+        fetchPromise
+          .then((netRes) => {
+            clearTimeout(timer);
+            if (!settled) {
+              settled = true;
+              resolve(netRes);
+            }
+          })
+          .catch(() => {
+            clearTimeout(timer);
+            if (!settled) {
+              settled = true;
+              resolve(cachedResponse);
+            }
+          });
+      });
+    })
   );
 });

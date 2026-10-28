@@ -83,17 +83,16 @@ class ChoirApp {
   }
 
   init() {
+    this._syncBannerShownAt = 0;
+    this._syncBannerHideTimer = null;
+    this._syncBannerDelayTimer = null;
+    this._syncBannerMorphTimer = null;
+    this._syncBannerVisible = false;
+    this._isApplyingAppUpdate = false;
+
     this.initReadTimestamps();
     this.setupPwaInstall();
-    this.checkOfficerStatus();
-
-    // 초기 클라우드 동기화 6초 이상 지연 시 도움말 노출 타이머 (네트워크 지연 대비)
-    setTimeout(() => {
-      if (this.storage && !this.storage.initialSyncDone && !this.storage.hasAnyLocalData()) {
-        const helpEl = document.getElementById('initialSyncTimeoutHelp');
-        if (helpEl) helpEl.classList.remove('hidden');
-      }
-    }, 6000);
+    this.checkOfficerStatus(true);
 
     const urlParams = new URLSearchParams(window.location.search);
     const targetTab = urlParams.get('tab');
@@ -104,6 +103,24 @@ class ChoirApp {
       this.renderCurrentTab();
     }
 
+    // 앱 진입 시 이미 진행 중인 클라우드 동기화 또는 직전 완료 결과와 UI 연동
+    if (this.storage) {
+      if (this.storage.isSyncing) {
+        this.onCloudSyncStart({
+          isFirstSync: !this.storage.initialSyncDone,
+          isManualRetry: false,
+          prevSyncedAt: this.storage.lastSyncedAt || 0,
+          hadLocalData: this.storage.hasAnyLocalData()
+        });
+      } else if (this.storage.lastSyncResult) {
+        this.onCloudSyncComplete(this.storage.lastSyncResult);
+      }
+    }
+
+    window.addEventListener('scroll', () => {
+      if (this._syncBannerVisible) this.updateCloudSyncBannerOffset();
+    }, { passive: true });
+
     this.updateUnreadBadges();
     this.requestNotificationPermission();
     this.markTabAsRead(this.currentTab);
@@ -111,20 +128,235 @@ class ChoirApp {
     this.checkFirstVisitManual();
   }
 
+  updateCloudSyncBannerOffset() {
+    const bannerEl = document.getElementById('cloudSyncBanner');
+    if (!bannerEl) return;
+    const headerEl = document.querySelector('.app-header');
+    const officerEl = document.getElementById('officerBanner');
+    let anchorBottom = 62;
+    if (headerEl) {
+      const hRect = headerEl.getBoundingClientRect();
+      if (hRect.bottom > 0) anchorBottom = hRect.bottom;
+    }
+    if (officerEl && !officerEl.classList.contains('hidden')) {
+      const oRect = officerEl.getBoundingClientRect();
+      if (oRect.bottom > anchorBottom) anchorBottom = oRect.bottom;
+    }
+    bannerEl.style.setProperty('--sync-banner-top', `${Math.round(anchorBottom + 10)}px`);
+  }
+
+  showCloudSyncBanner(state, titleText, subText, options = {}) {
+    const bannerEl = document.getElementById('cloudSyncBanner');
+    if (!bannerEl) return;
+
+    if (this._syncBannerHideTimer) {
+      clearTimeout(this._syncBannerHideTimer);
+      this._syncBannerHideTimer = null;
+    }
+
+    const titleEl = document.getElementById('cloudSyncTitle');
+    const subEl = document.getElementById('cloudSyncSub');
+    const dotsEl = document.getElementById('cloudSyncDots');
+    const spinnerEl = document.getElementById('cloudSyncSpinnerSvg');
+    const checkEl = document.getElementById('cloudSyncCheckSvg');
+    const warnEl = document.getElementById('cloudSyncWarnIcon');
+    const retryBtn = document.getElementById('btnCloudSyncRetry');
+    const dismissBtn = document.getElementById('btnCloudSyncDismiss');
+
+    bannerEl.classList.remove('state-syncing', 'state-updated', 'state-uptodate', 'state-delayed', 'state-updating');
+    bannerEl.classList.add(`state-${state}`);
+
+    if (titleEl && titleText) titleEl.textContent = titleText;
+    if (subEl && subText) subEl.textContent = subText;
+
+    const isSpinning = (state === 'syncing' || state === 'updating');
+    const isChecked = (state === 'updated' || state === 'uptodate');
+    const isDelayed = (state === 'delayed');
+
+    if (dotsEl) dotsEl.classList.toggle('hidden', !isSpinning);
+    if (spinnerEl) spinnerEl.classList.toggle('hidden', !isSpinning);
+    if (checkEl) checkEl.classList.toggle('hidden', !isChecked);
+    if (warnEl) warnEl.classList.toggle('hidden', !isDelayed);
+    if (retryBtn) retryBtn.classList.toggle('hidden', !options.showRetry);
+    if (dismissBtn) dismissBtn.classList.toggle('hidden', !options.showDismiss);
+
+    this.updateCloudSyncBannerOffset();
+
+    if (bannerEl.classList.contains('hidden')) {
+      bannerEl.classList.remove('hidden');
+      this._syncBannerShownAt = Date.now();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          bannerEl.classList.add('is-visible');
+        });
+      });
+    } else {
+      if (!this._syncBannerVisible) {
+        this._syncBannerShownAt = Date.now();
+      }
+      bannerEl.classList.add('is-visible');
+    }
+    this._syncBannerVisible = true;
+  }
+
+  hideCloudSyncBanner() {
+    const bannerEl = document.getElementById('cloudSyncBanner');
+    if (!bannerEl) return;
+    this._syncBannerVisible = false;
+    bannerEl.classList.remove('is-visible');
+
+    if (this._syncBannerHideTimer) clearTimeout(this._syncBannerHideTimer);
+    this._syncBannerHideTimer = setTimeout(() => {
+      if (!this._syncBannerVisible) {
+        bannerEl.classList.add('hidden');
+      }
+    }, 320);
+  }
+
+  onCloudSyncStart({ isFirstSync = false, isManualRetry = false, prevSyncedAt = 0, hadLocalData = false } = {}) {
+    if (this._isApplyingAppUpdate) return;
+
+    if (this._syncBannerDelayTimer) {
+      clearTimeout(this._syncBannerDelayTimer);
+      this._syncBannerDelayTimer = null;
+    }
+    if (this._syncBannerMorphTimer) {
+      clearTimeout(this._syncBannerMorphTimer);
+      this._syncBannerMorphTimer = null;
+    }
+
+    // 6초 이상 클라우드 응답 지연 시 첫 접속자/기존 대원 모두에게 재시도 안내 표시
+    this._syncBannerDelayTimer = setTimeout(() => {
+      if (this.storage && this.storage.isSyncing && !this._isApplyingAppUpdate) {
+        const helpEl = document.getElementById('initialSyncTimeoutHelp');
+        if (helpEl) helpEl.classList.remove('hidden');
+
+        if (this.storage.hasAnyLocalData()) {
+          this.showCloudSyncBanner(
+            'delayed',
+            '데이터 연결이 조금 지연되고 있습니다',
+            '통신 환경을 확인하시거나 다시 불러오기를 눌러주세요',
+            { showRetry: true, showDismiss: true }
+          );
+        }
+      }
+    }, 6000);
+
+    // 로컬 데이터가 아예 없는 첫 방문 대원은 본문 중앙의 환영 로딩 카드가 안내를 담당
+    if (!hadLocalData && !isManualRetry) {
+      return;
+    }
+
+    const now = Date.now();
+    const elapsedSinceLastSync = prevSyncedAt > 0 ? (now - prevSyncedAt) : Infinity;
+    const shouldShowBanner = isFirstSync || isManualRetry || elapsedSinceLastSync >= 300000;
+
+    if (!shouldShowBanner) return;
+
+    const isLongAbsence = prevSyncedAt > 0 && elapsedSinceLastSync >= 86400000;
+    const title = isManualRetry
+      ? '최신 공지와 찬양 음원을 다시 불러오는 중'
+      : (isLongAbsence ? '그동안 등록된 새 글과 음원을 불러오는 중' : '최신 공지와 찬양 음원을 불러오는 중');
+    const sub = '잠시만 기다려 주시면 최신 목록으로 자동 갱신됩니다';
+
+    this.showCloudSyncBanner('syncing', title, sub);
+  }
+
+  onCloudSyncComplete({ isFirstSync = false, hasChanges = false, success = false, isManualRetry = false, hadLocalData = false } = {}) {
+    if (this._syncBannerDelayTimer) {
+      clearTimeout(this._syncBannerDelayTimer);
+      this._syncBannerDelayTimer = null;
+    }
+    if (this._isApplyingAppUpdate) return;
+
+    if (!success) {
+      if (!this.storage || !this.storage.hasAnyLocalData()) {
+        const helpEl = document.getElementById('initialSyncTimeoutHelp');
+        if (helpEl) helpEl.classList.remove('hidden');
+      } else if (this._syncBannerVisible || isFirstSync || isManualRetry) {
+        this.showCloudSyncBanner(
+          'delayed',
+          '오프라인 상태이거나 연결이 불안정합니다',
+          '현재 기기에 저장된 이전 목록을 표시하고 있습니다',
+          { showRetry: true, showDismiss: true }
+        );
+        this._syncBannerHideTimer = setTimeout(() => {
+          this.hideCloudSyncBanner();
+        }, 6500);
+      }
+      return;
+    }
+
+    const helpEl = document.getElementById('initialSyncTimeoutHelp');
+    if (helpEl) helpEl.classList.add('hidden');
+
+    // 첫 방문 대원이 데이터를 성공적으로 다 받았을 때 환영 완료 배너 살짝 표시
+    if (!hadLocalData) {
+      if (hasChanges) {
+        this.showCloudSyncBanner(
+          'updated',
+          '최신 공지와 찬양 음원을 모두 불러왔습니다!',
+          '임마누엘 성가대 앱에 오신 것을 환영합니다 ✨'
+        );
+        this._syncBannerHideTimer = setTimeout(() => {
+          this.hideCloudSyncBanner();
+        }, 1700);
+      }
+      return;
+    }
+
+    const elapsed = this._syncBannerVisible ? (Date.now() - this._syncBannerShownAt) : 9999;
+    const minWait = this._syncBannerVisible ? Math.max(0, 650 - elapsed) : 0;
+
+    if (this._syncBannerMorphTimer) clearTimeout(this._syncBannerMorphTimer);
+    this._syncBannerMorphTimer = setTimeout(() => {
+      if (this._isApplyingAppUpdate) return;
+
+      if (hasChanges) {
+        this.showCloudSyncBanner(
+          'updated',
+          '새로 등록된 최신 글과 음원이 반영되었습니다!',
+          '방금 업데이트된 최신 목록을 바로 확인해 보세요 ✨'
+        );
+        this._syncBannerHideTimer = setTimeout(() => {
+          this.hideCloudSyncBanner();
+        }, 1750);
+      } else if (this._syncBannerVisible) {
+        this.showCloudSyncBanner(
+          'uptodate',
+          '모든 공지와 찬양 음원이 최신 상태입니다',
+          '새로 추가된 항목까지 확인을 마쳤습니다 ✓'
+        );
+        this._syncBannerHideTimer = setTimeout(() => {
+          this.hideCloudSyncBanner();
+        }, 950);
+      }
+    }, minWait);
+  }
+
   getInitialLoadingHtml(categoryName = '자료') {
+    const showHelpNow = Boolean(this.storage && this.storage.lastSyncFailed);
     return `
-      <div class="item-card initial-welcome-loader" style="text-align: center; padding: 48px 20px 42px 20px; background: #FFFFFF; border-radius: 16px; border: 1.5px solid #E2E8F0; margin: 12px 0; box-shadow: 0 4px 16px rgba(0,0,0,0.05);">
-        <div class="welcome-symbol-spin" style="font-size: 42px; margin-bottom: 14px; display: inline-block; animation: softPulse 1.8s infinite ease-in-out;">🕊️</div>
+      <div class="item-card initial-welcome-loader" style="text-align: center; padding: 44px 20px 40px 20px; border-radius: 18px; border: 1.5px solid #DBEAFE; margin: 12px 0; box-shadow: 0 10px 28px rgba(30, 58, 138, 0.08);">
+        <div class="welcome-orb-stage">
+          <div class="welcome-orb-halo"></div>
+          <div class="welcome-orb-ring"></div>
+          <div class="welcome-symbol-spin" style="font-size: 38px; position: relative; z-index: 2; display: inline-block; animation: softPulse 1.8s infinite ease-in-out;">🕊️</div>
+        </div>
+        <div class="welcome-live-pill">
+          <span class="welcome-live-dot"></span>
+          <span>실시간 데이터 연결 중</span>
+        </div>
         <h3 style="font-size: 20px; font-weight: 800; color: #1E3A8A; margin: 0 0 8px 0; letter-spacing: -0.3px;">임마누엘 성가대</h3>
-        <p style="font-weight: 700; color: #0F172A; font-size: 16.5px; margin: 0 0 10px 0; line-height: 1.45;">
+        <p style="font-weight: 700; color: #0F172A; font-size: 16px; margin: 0 0 12px 0; line-height: 1.48;">
           최신 찬양 음원과 ${categoryName}을<br>안전하게 불러오는 중입니다...
         </p>
-        <div class="welcome-loader-bar" style="width: 140px; height: 5px; background: #E2E8F0; border-radius: 4px; margin: 16px auto 14px auto; overflow: hidden; position: relative;">
-          <div class="welcome-loader-progress" style="width: 60%; height: 100%; background: linear-gradient(90deg, #3B82F6, #1D4ED8); border-radius: 4px; animation: progressSlide 1.2s infinite ease-in-out;"></div>
+        <div class="welcome-loader-bar" style="width: 168px; height: 6px; background: #E2E8F0; border-radius: 999px; margin: 16px auto 14px auto; overflow: hidden; position: relative;">
+          <div class="welcome-loader-progress" style="width: 58%; height: 100%; background: linear-gradient(90deg, #1E3A8A, #3B82F6, #F59E0B, #2563EB); border-radius: 999px; animation: progressSlide 1.25s infinite ease-in-out;"></div>
         </div>
-        <p style="font-size: 13.5px; color: #64748B; margin: 0;">잠시만 기다려주시면 바로 열립니다 🎵</p>
-        <div id="initialSyncTimeoutHelp" class="hidden" style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed #CBD5E1;">
-          <p style="font-size: 13px; color: #DC2626; margin: 0 0 8px 0; font-weight: 600;">인터넷 연결이 지연되고 있습니다.</p>
+        <p style="font-size: 13.5px; color: #64748B; margin: 0; font-weight: 500;">잠시만 기다려 주시면 바로 열립니다 🎵</p>
+        <div id="initialSyncTimeoutHelp" class="${showHelpNow ? '' : 'hidden'}" style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed #CBD5E1;">
+          <p style="font-size: 13px; color: #DC2626; margin: 0 0 8px 0; font-weight: 700;">인터넷 연결이 지연되고 있습니다.</p>
           <button type="button" class="btn-primary-large" style="padding: 10px 18px; font-size: 14.5px; display: inline-block; width: auto; font-weight: 700;" onclick="app.retryInitialSync()">🔄 다시 불러오기</button>
         </div>
       </div>
@@ -136,30 +368,76 @@ class ChoirApp {
     if (helpEl) helpEl.classList.add('hidden');
     if (this.storage) {
       this.storage.isSyncing = false;
-      this.storage.syncFromCloud().then(() => {
+      this.storage.syncFromCloud({ isManualRetry: true }).then(() => {
         this.renderAll();
       });
     }
   }
 
   startAutoUpdateChecker() {
+    const getLoadedScriptVersion = () => {
+      try {
+        const scriptEl = document.querySelector('script[src*="js/app.js"]');
+        if (!scriptEl) return null;
+        const src = scriptEl.getAttribute('src') || '';
+        const match = src.match(/[?&]v=([^&]+)/);
+        if (!match || !match[1]) return null;
+        return match[1].startsWith('v') ? match[1] : `v${match[1]}`;
+      } catch (e) {
+        return null;
+      }
+    };
+
     const checkVersion = async () => {
       try {
-        const resp = await fetch('./version.json?t=' + Date.now());
+        const resp = await fetch('./version.json?t=' + Date.now(), { cache: 'no-store' });
         if (!resp.ok) return;
         const data = await resp.json();
         const serverVer = data.version;
+        if (!serverVer) return;
+
+        const loadedCodeVer = getLoadedScriptVersion();
         const localVer = localStorage.getItem('calvary_app_code_ver');
-        if (localVer && localVer !== serverVer) {
-          localStorage.setItem('calvary_app_code_ver', serverVer);
+
+        // 현재 실행 중인 스크립트가 이미 서버 최신 버전과 일치하면 불필요한 강제 새로고침 생략
+        if (loadedCodeVer && loadedCodeVer === serverVer) {
+          if (localVer !== serverVer) {
+            localStorage.setItem('calvary_app_code_ver', serverVer);
+          }
           if ('caches' in window) {
+            const expectedCache = `calvary-choir-${serverVer}`;
             caches.keys().then(names => {
-              for (let name of names) {
-                caches.delete(name);
-              }
+              names.forEach(name => {
+                if (name !== expectedCache) caches.delete(name);
+              });
             });
           }
-          window.location.reload(true);
+          return;
+        }
+
+        const alreadyReloadedForVer = sessionStorage.getItem('calvary_reloaded_for_ver');
+        const needsUpdateReload = (loadedCodeVer && loadedCodeVer !== serverVer) || (!loadedCodeVer && localVer && localVer !== serverVer);
+
+        if (needsUpdateReload && alreadyReloadedForVer !== serverVer) {
+          this._isApplyingAppUpdate = true;
+          sessionStorage.setItem('calvary_reloaded_for_ver', serverVer);
+          localStorage.setItem('calvary_app_code_ver', serverVer);
+
+          this.showCloudSyncBanner(
+            'updating',
+            '새로운 앱 기능을 적용하고 있습니다',
+            '잠시 후 최신 화면으로 자동 전환됩니다 ✨'
+          );
+
+          if ('caches' in window) {
+            try {
+              const names = await caches.keys();
+              await Promise.all(names.map(name => caches.delete(name)));
+            } catch (e) { }
+          }
+
+          await new Promise(resolve => setTimeout(resolve, 450));
+          window.location.reload();
         } else if (!localVer) {
           localStorage.setItem('calvary_app_code_ver', serverVer);
         }
@@ -337,7 +615,7 @@ class ChoirApp {
     }
   }
 
-  checkOfficerStatus() {
+  checkOfficerStatus(skipRender = false) {
     const isOfficer = this.storage.isOfficer();
     const banner = document.getElementById('officerBanner');
     const toggleBtn = document.getElementById('btnOfficerToggle');
@@ -357,7 +635,14 @@ class ChoirApp {
       }
       document.querySelectorAll('.officer-only').forEach(el => el.classList.add('hidden'));
     }
-    this.renderAll();
+
+    if (this._syncBannerVisible) {
+      this.updateCloudSyncBannerOffset();
+    }
+
+    if (!skipRender) {
+      this.renderAll();
+    }
   }
 
   exitOfficerMode() {
@@ -406,11 +691,7 @@ class ChoirApp {
   }
 
   renderAll() {
-    if (this.renderedTabs.size === 0) {
-      this.renderCurrentTab();
-    } else {
-      this.renderedTabs.forEach(tabId => this.renderTab(tabId));
-    }
+    this.renderCurrentTab();
   }
 
   switchPraiseSubtab(subtab) {
@@ -799,14 +1080,6 @@ class ChoirApp {
       if (match) return parseInt(match[0], 10);
     }
     return 0;
-  }
-
-  renderAll() {
-    this.renderNotices();
-    this.renderPraises();
-    this.renderSchedules();
-    this.renderMembers();
-    this.renderPrayers();
   }
 
   // ----------------------------------------------------
