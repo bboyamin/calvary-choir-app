@@ -2794,7 +2794,9 @@ class ChoirApp {
 
     const renderScheduleCard = (s, isPast = false) => {
       const dt = parseScheduleDate(s);
-      const dateStr = `${dt.getFullYear()}년 ${dt.getMonth() + 1}월 ${dt.getDate()}일 (${['일', '월', '화', '수', '목', '금', '토'][dt.getDay()]})`;
+      const monthStr = `${dt.getMonth() + 1}월`;
+      const dayStr = String(dt.getDate()).padStart(2, '0');
+      const dowStr = `${['일', '월', '화', '수', '목', '금', '토'][dt.getDay()]}요일`;
       const timeStr = `${dt.getHours().toString().padStart(2, '0')}:${dt.getMinutes().toString().padStart(2, '0')}`;
 
       const apps = s.applications || [];
@@ -2810,23 +2812,32 @@ class ChoirApp {
 
       return `
         <div class="item-card ${isPast ? 'opacity-80' : ''}" id="schedule_card_${s.id}">
-          <div class="card-top">
-            <span class="card-badge ${isPast ? 'badge-past' : 'badge-praise'}">${isPast ? '지난 일정' : '예정 일정'} · ${dateStr} ${timeStr}</span>
-            <div class="card-top-right">
-              ${this.getShareButtonHtml('schedule', s.id)}
-              ${isOfficer ? `
-                <div class="card-admin-actions">
-                  <button type="button" class="btn-card-edit" onclick="app.openEditScheduleModal('${s.id}')" title="수정">✏️</button>
-                  <button type="button" class="btn-card-delete" onclick="app.deleteSchedule('${s.id}', this)" title="삭제">✕</button>
+          <div class="schedule-card-inner">
+            <div class="sched-date-stamp">
+              <span class="sched-stamp-header">${monthStr}</span>
+              <span class="sched-stamp-day">${dayStr}</span>
+              <span class="sched-stamp-dow">${dowStr}</span>
+            </div>
+            <div class="sched-details">
+              <div class="card-top" style="margin-bottom: 2px;">
+                <span class="card-badge ${isPast ? 'badge-past' : 'badge-praise'}">${isPast ? '지난 일정' : '예정 일정'} · ${timeStr}</span>
+                <div class="card-top-right">
+                  ${this.getShareButtonHtml('schedule', s.id)}
+                  ${isOfficer ? `
+                    <div class="card-admin-actions">
+                      <button type="button" class="btn-card-edit" onclick="app.openEditScheduleModal('${s.id}')" title="수정">✏️</button>
+                      <button type="button" class="btn-card-delete" onclick="app.deleteSchedule('${s.id}', this)" title="삭제">✕</button>
+                    </div>
+                  ` : ''}
                 </div>
-              ` : ''}
+              </div>
+              <h3 class="card-title">${this.escapeHtml(s.title || '')}</h3>
+              <p class="card-body-text" style="font-size: 14.5px;"><strong>장소:</strong> ${this.escapeHtml(s.location || '')}</p>
+              ${s.note ? `<p class="card-body-text" style="font-size: 14px; color: var(--text-sub);">${this.escapeHtml(s.note || '')}</p>` : ''}
             </div>
           </div>
-          <h3 class="card-title">${this.escapeHtml(s.title || '')}</h3>
-          <p class="card-body-text"><strong>장소:</strong> ${this.escapeHtml(s.location || '')}</p>
-          ${s.note ? `<p class="card-body-text" style="color: var(--text-sub);">${this.escapeHtml(s.note || '')}</p>` : ''}
-          ${s.imageUrl ? `<div style="margin-top: 10px;">${this.getNoticeMediaHtml(s.imageUrl, s.title)}</div>` : ''}
-          ${s.youtubeUrl ? `<div class="video-responsive" style="margin-top: 10px;">${this.getYoutubeIframe(s.youtubeUrl)}</div>` : ''}
+          ${s.imageUrl ? `<div style="margin-top: 6px;">${this.getNoticeMediaHtml(s.imageUrl, s.title)}</div>` : ''}
+          ${s.youtubeUrl ? `<div class="video-responsive" style="margin-top: 6px;">${this.getYoutubeIframe(s.youtubeUrl)}</div>` : ''}
 
           <!-- 🎟️ 신청 기능 활성화 시 버튼 표시 -->
           ${s.enableApply ? `
@@ -4215,7 +4226,7 @@ class ChoirApp {
       const canEditPrayer = isMyPrayer || isOfficer;
 
       return `
-        <div class="item-card" id="prayer_card_${p.id}">
+        <div class="item-card prayer-card-themed" id="prayer_card_${p.id}">
           <div class="card-top">
             <span class="card-badge badge-notice">${this.escapeHtml(p.author || '익명')} 대원의 기도</span>
             <div class="card-top-right">

@@ -38,7 +38,8 @@
 
 body {
   font-family: var(--font-base);
-  background-color: #CBD5E1;
+  background: #0B1120;
+  background-image: radial-gradient(at 50% 0%, rgba(30, 41, 59, 0.6) 0%, rgba(11, 17, 32, 1) 100%);
   color: var(--text-main);
   line-height: 1.6;
   font-size: 16px;
@@ -56,7 +57,7 @@ body {
   background-color: var(--bg-app);
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
   position: relative;
   overflow-x: hidden;
 }
@@ -65,20 +66,23 @@ body {
    상단 브랜드 헤더 (공식 갈보리교회 로고)
    ========================================== */
 .app-header {
-  background: linear-gradient(135deg, var(--primary-navy) 0%, var(--primary-navy-light) 100%);
+  background: rgba(11, 19, 43, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   color: #FFFFFF;
   color-scheme: dark;
   padding-top: max(14px, env(safe-area-inset-top, 0px));
   padding-bottom: 12px;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-left: max(18px, env(safe-area-inset-left, 0px));
+  padding-right: max(18px, env(safe-area-inset-right, 0px));
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.22);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .header-brand {
@@ -585,15 +589,29 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
+  gap: 12px;
 }
 
 .pane-header h2 {
   font-size: 21px;
-  font-weight: 750;
+  font-weight: 800;
   color: var(--primary-navy);
   letter-spacing: -0.6px;
   line-height: 1.25;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pane-header h2::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 19px;
+  background: linear-gradient(180deg, var(--gold-accent) 0%, #B45309 100%);
+  border-radius: 2px;
+  flex-shrink: 0;
 }
 
 .btn-add-content {
@@ -617,7 +635,6 @@ body {
   transform: scale(0.97);
   box-shadow: 0 1px 3px rgba(217, 119, 6, 0.2);
 }
-}
 
 /* ==========================================
    공지사항 전용 헤더 액션, 검색창, 필터 칩 & 별표 즐겨찾기
@@ -626,23 +643,23 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .btn-icon-action {
-  height: 42px;
-  width: 42px;
+  height: 38px;
+  width: 38px;
   border-radius: 10px;
   background: #F1F5F9;
   color: var(--primary-navy);
-  border: 1.5px solid #CBD5E1;
-  font-size: 16px;
-  font-weight: 700;
+  border: 1px solid rgba(203, 213, 225, 0.8);
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
 }
 
 .btn-icon-action:hover, .btn-icon-action.active {
@@ -963,23 +980,32 @@ body {
 }
 
 .part-chip, .member-chip {
-  height: 38px;
-  padding: 0 14px;
-  border-radius: 19px;
-  border: 1px solid var(--border-light);
+  height: 35px;
+  padding: 0 13px;
+  border-radius: 18px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
   background: #FFFFFF;
-  font-size: 14.5px;
-  font-weight: 700;
-  color: var(--text-sub);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #64748B;
   white-space: nowrap;
   cursor: pointer;
   flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  transition: all 0.16s ease;
+}
+
+.part-chip:hover, .member-chip:hover {
+  border-color: #CBD5E1;
+  color: var(--primary-navy);
 }
 
 .part-chip.active, .member-chip.active {
   background: var(--primary-navy);
   color: #FFFFFF;
   border-color: var(--primary-navy);
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
 }
 
 /* ==========================================
@@ -1294,7 +1320,62 @@ body {
   border-color: var(--primary-color);
 }
 
-/* 일정 참하/신청 버튼 스타일 */
+/* 주요 일정 전용 캘린더 스탬프 레이아웃 */
+.schedule-card-inner {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.sched-date-stamp {
+  width: 54px;
+  background: #FFFFFF;
+  border: 1px solid rgba(203, 213, 225, 0.85);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+}
+
+.sched-stamp-header {
+  width: 100%;
+  background: var(--primary-navy);
+  color: #F8FAFC;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 0;
+  letter-spacing: -0.2px;
+}
+
+.sched-stamp-day {
+  font-size: 22px;
+  font-weight: 850;
+  color: var(--primary-navy);
+  line-height: 1.1;
+  padding: 4px 0 1px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.sched-stamp-dow {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold-accent);
+  padding-bottom: 4px;
+}
+
+.sched-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 일정 참가/신청 버튼 스타일 */
 .sched-apply-box {
   display: flex;
   flex-direction: column;
@@ -1434,21 +1515,27 @@ body {
 
 .member-card {
   background: #FFFFFF;
-  border-radius: 12px;
-  padding: 12px 14px;
-  border: 1px solid var(--border-light);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  border-radius: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 4px 10px rgba(15, 23, 42, 0.02);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
   overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.member-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
 }
 
 .member-info-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex: 1;
   min-width: 0;
 }
@@ -1457,15 +1544,16 @@ body {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background-color: var(--primary-navy-light);
+  background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
   color: #FFFFFF;
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
   object-fit: cover;
-  border: 2px solid var(--gold-accent);
+  border: 2px solid rgba(197, 155, 39, 0.4);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
   flex-shrink: 0;
 }
 
@@ -1524,25 +1612,38 @@ body {
 }
 
 .btn-contact-call, .btn-contact-sms {
-  height: 38px;
-  padding: 0 10px;
-  border-radius: 8px;
-  font-size: 13.5px;
-  font-weight: 700;
+  height: 35px;
+  padding: 0 11px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 650;
   text-decoration: none;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
   white-space: nowrap;
   flex-shrink: 0;
+  transition: all 0.16s ease;
 }
 
 .btn-contact-call {
+  background: #ECFDF5;
+  color: #065F46;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.btn-contact-call:hover, .btn-contact-call:active {
   background: #10B981;
   color: #FFFFFF;
 }
 
 .btn-contact-sms {
+  background: #EFF6FF;
+  color: #1E40AF;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.btn-contact-sms:hover, .btn-contact-sms:active {
   background: #3B82F6;
   color: #FFFFFF;
 }
@@ -1629,6 +1730,12 @@ body {
   letter-spacing: 0.3px;
   position: relative;
   z-index: 1;
+}
+
+/* 중보기도 전용 웜 골드 카드 악센트 */
+.prayer-card-themed {
+  background: #FCFDFE;
+  border-left: 3.5px solid var(--gold-accent);
 }
 
 .amen-button {
@@ -3338,21 +3445,22 @@ body {
 
 /* 찬양 헤더 내 첫 음 건반 버튼 */
 .btn-pitch-pipe-open {
-  height: 40px;
-  padding: 0 12px;
-  background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+  height: 38px;
+  padding: 0 11px;
+  background: var(--primary-navy);
   color: #F8FAFC;
-  border: 1.5px solid #334155;
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.15);
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .btn-pitch-pipe-open:hover, .btn-pitch-pipe-open:active {
