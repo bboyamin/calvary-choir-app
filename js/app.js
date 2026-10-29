@@ -703,7 +703,7 @@ class ChoirApp {
     this.resetAllPracticeHelpers();
 
     this.praiseSubtab = subtab;
-    document.querySelectorAll('.sub-tab-btn').forEach(btn => {
+    document.querySelectorAll('.sub-tab-btn[data-subtab]').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.subtab === subtab);
     });
     document.getElementById('praiseSubtabAll').classList.toggle('active', subtab === 'all');
@@ -1610,7 +1610,7 @@ class ChoirApp {
             this.praiseMonthFilter = 'LATEST';
           }
         }
-        document.querySelectorAll('.sub-tab-btn').forEach(btn => {
+        document.querySelectorAll('.sub-tab-btn[data-subtab]').forEach(btn => {
           btn.classList.toggle('active', btn.dataset.subtab === this.praiseSubtab);
         });
         const subAll = document.getElementById('praiseSubtabAll');
@@ -1787,6 +1787,11 @@ class ChoirApp {
   renderNotices() {
     this.renderDailyVerse();
     this.updateNoticeFavBadge();
+
+    // 공지 탭 활성화 시 서브탭(전체 공지 vs 즐겨찾기)의 활성 상태를 100% 보장
+    document.querySelectorAll('[data-notice-filter]').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-notice-filter') === (this.noticeFilter || 'all'));
+    });
 
     const listEl = document.getElementById('noticeList');
     if (!listEl) return;
