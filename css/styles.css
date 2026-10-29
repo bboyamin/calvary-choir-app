@@ -3804,26 +3804,35 @@ body {
 /* 3. 음색 선택 & 옥타브 제어 툴바 */
 .pitch-toolbar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  flex-direction: column;
+  gap: 8px;
   background: #FFFFFF;
   border: 1px solid #E2E8F0;
-  border-radius: 11px;
-  padding: 8px 11px;
+  border-radius: 12px;
+  padding: 10px 12px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+  forced-color-adjust: none;
 }
 
 .pitch-toolbar-group {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.pitch-toolbar-group + .pitch-toolbar-group {
+  border-top: 1px solid #F1F5F9;
+  padding-top: 8px;
 }
 
 .toolbar-label {
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
   color: #64748B;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .pitch-timbre-pills {
@@ -3860,6 +3869,7 @@ body {
   border-radius: 8px;
   padding: 2px;
   gap: 3px;
+  flex-shrink: 0;
 }
 
 .btn-octave-step {
@@ -3893,6 +3903,23 @@ body {
   color: #0F172A;
   padding: 0 5px;
   white-space: nowrap;
+  text-align: center;
+}
+
+@media (max-width: 360px) {
+  .pitch-toolbar-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .pitch-timbre-pills,
+  .pitch-octave-stepper {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .pitch-octave-readout {
+    flex: 1;
+  }
 }
 
 /* 4. 1옥타브 실물감 3D 피아노 건반 */
