@@ -69,6 +69,7 @@ body {
   background: #0B132B;
   color: #FFFFFF;
   color-scheme: dark;
+  forced-color-adjust: none;
   padding-top: max(14px, env(safe-area-inset-top, 0px));
   padding-bottom: 12px;
   padding-left: max(18px, env(safe-area-inset-left, 0px));
@@ -2174,7 +2175,7 @@ body {
 }
 
 .tab-item.active .tab-label {
-  color: var(--primary-navy);
+  color: var(--gold-accent);
   font-weight: 750;
 }
 
@@ -3902,6 +3903,7 @@ body {
   padding: 10px 8px 12px 8px;
   box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.4), 0 4px 14px rgba(15, 23, 42, 0.15);
   position: relative;
+  forced-color-adjust: none;
 }
 
 /* 어쿠스틱 피아노 펠트 띠 효과 */
