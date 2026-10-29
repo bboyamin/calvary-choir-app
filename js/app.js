@@ -2837,10 +2837,10 @@ class ChoirApp {
                 </div>
               </div>
               <h3 class="card-title">${this.escapeHtml(s.title || '')}</h3>
-              <p class="card-body-text" style="font-size: 14.5px;"><strong>장소:</strong> ${this.escapeHtml(s.location || '')}</p>
-              ${s.note ? `<p class="card-body-text" style="font-size: 14px; color: var(--text-sub);">${this.escapeHtml(s.note || '')}</p>` : ''}
+              ${s.location ? `<p class="sched-location-text"><strong>장소:</strong> ${this.escapeHtml(s.location)}</p>` : ''}
             </div>
           </div>
+          ${s.note ? `<p class="sched-body-text">${this.escapeHtml(s.note)}</p>` : ''}
           ${s.imageUrl ? `<div style="margin-top: 6px;">${this.getNoticeMediaHtml(s.imageUrl, s.title)}</div>` : ''}
           ${s.youtubeUrl ? `<div class="video-responsive" style="margin-top: 6px;">${this.getYoutubeIframe(s.youtubeUrl)}</div>` : ''}
 

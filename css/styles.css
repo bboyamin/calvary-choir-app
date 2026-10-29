@@ -1384,6 +1384,28 @@ body {
   gap: 6px;
 }
 
+.sched-location-text {
+  font-size: 14.5px;
+  color: var(--text-main);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.sched-location-text strong {
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.sched-body-text {
+  font-size: 14.5px;
+  color: var(--text-sub);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-top: 10px;
+}
+
 /* 일정 참가/신청 버튼 스타일 */
 .sched-apply-box {
   display: flex;
