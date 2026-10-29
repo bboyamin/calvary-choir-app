@@ -19,8 +19,85 @@ let globalData = {
   schedules: null,
   members: null,
   prayers: null,
+  officer_pin: null,
+  member_pin: null,
   lastUpdated: Date.now()
 };
+
+/**
+ * 다중 대원 동시 작성 시 데이터 유실 방지를 위한 스마트 병합 함수
+ */
+function mergeCategoryData(category, clientData, serverData) {
+  if (!Array.isArray(clientData)) return clientData;
+  if (!Array.isArray(serverData) || serverData.length === 0) return clientData;
+
+  // 1. 중보기도: 댓글 및 아멘(❤️) 병합
+  if (category === 'prayers') {
+    const serverMap = new Map();
+    serverData.forEach(p => { if (p && p.id) serverMap.set(p.id, p); });
+
+    const clientIds = new Set(clientData.map(p => p && p.id).filter(Boolean));
+    const mergedList = clientData.map(cp => {
+      const sp = serverMap.get(cp.id);
+      if (!sp) return cp;
+
+      // 아멘 카운트는 서버와 클라이언트 중 더 큰 값(누적치) 유지
+      const amenCount = Math.max(sp.amenCount || 0, cp.amenCount || 0);
+
+      // 댓글 목록 ID 기반 병합 (서로 다른 기기에서 달린 댓글 모두 보존)
+      const commentMap = new Map();
+      (sp.comments || []).forEach(c => { if (c && c.id) commentMap.set(c.id, c); });
+      (cp.comments || []).forEach(c => { if (c && c.id) commentMap.set(c.id, c); });
+      const comments = Array.from(commentMap.values());
+
+      return {
+        ...sp,
+        ...cp,
+        amenCount,
+        comments
+      };
+    });
+
+    // 최근 1시간 이내에 다른 대원이 작성한 새 기도제목이 클라이언트 목록에 없으면 보존
+    const recentThreshold = Date.now() - 3600000;
+    serverData.forEach(sp => {
+      if (sp && sp.id && !clientIds.has(sp.id)) {
+        const createdAt = sp.createdAt || 0;
+        if (createdAt > recentThreshold) {
+          mergedList.push(sp);
+        }
+      }
+    });
+
+    mergedList.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    return mergedList;
+  }
+
+  // 2. 주요 일정: 티켓 신청 및 참석자 명단(applications) 병합
+  if (category === 'schedules') {
+    const serverMap = new Map();
+    serverData.forEach(s => { if (s && s.id) serverMap.set(s.id, s); });
+
+    return clientData.map(cs => {
+      const ss = serverMap.get(cs.id);
+      if (!ss) return cs;
+
+      // 신청 내역 ID 기반 병합 (동시 신청 시 다른 대원의 신청 누락 방지)
+      const appMap = new Map();
+      (ss.applications || []).forEach(a => { if (a && a.id) appMap.set(a.id, a); });
+      (cs.applications || []).forEach(a => { if (a && a.id) appMap.set(a.id, a); });
+      const applications = Array.from(appMap.values());
+
+      return {
+        ...ss,
+        ...cs,
+        applications
+      };
+    });
+  }
+
+  return clientData;
+}
 
 export default async function handler(req, res) {
   // 모바일 PWA 및 웹 크로스 오리진 CORS 헤더 설정
@@ -85,15 +162,39 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     res.setHeader('Cache-Control', 'public, s-maxage=3, stale-while-revalidate=15');
     const key = req.query.key || 'all';
+    const since = Number(req.query.since || 0);
+
+    // ⚡ 2단계 최적화: key=all 이고 since 파라미터가 유효한 경우,
+    // 서버 최종 갱신 시각과 비교하여 변경사항이 없으면 143KB 전송 대신 초경량(수십 바이트) 응답 반환
+    if (key === 'all' && since > 0) {
+      const kvLastUpdated = await kvGet('calvary_last_updated');
+      const serverLastUpdated = Number(kvLastUpdated || globalData.lastUpdated || 0);
+
+      if (serverLastUpdated > 0 && since >= serverLastUpdated) {
+        return res.status(200).json({
+          modified: false,
+          lastUpdated: serverLastUpdated
+        });
+      }
+    }
 
     if (key === 'all') {
-      const categories = ['notices', 'praises', 'schedules', 'members', 'prayers', 'officer_pin'];
+      const categories = ['notices', 'praises', 'schedules', 'members', 'prayers', 'officer_pin', 'member_pin'];
       const values = await Promise.all(categories.map(cat => kvGet(`calvary_${cat}`)));
-      const result = { lastUpdated: globalData.lastUpdated || Date.now() };
+
+      // 🛑 안전 가드: KV가 설정되어 있으나 서버 통신 장애로 전 카테고리가 null이고 메모리 캐시도 없는 경우
+      // 클라이언트 로컬스토리지를 빈 값으로 덮어쓰지 못하도록 503 오류 반환
+      if (baseUrl && token && values.slice(0, 5).every(v => v === null) && !globalData.notices) {
+        return res.status(503).json({ error: 'Database temporarily unavailable', message: 'DB 연결 지연으로 이전 데이터를 안전하게 유지합니다.' });
+      }
+
+      const kvLastUpdated = await kvGet('calvary_last_updated');
+      const finalLastUpdated = Number(kvLastUpdated || globalData.lastUpdated || Date.now());
+      const result = { lastUpdated: finalLastUpdated };
 
       categories.forEach((cat, idx) => {
         const kvVal = values[idx];
-        const defaultFallback = cat === 'officer_pin' ? null : [];
+        const defaultFallback = (cat === 'officer_pin' || cat === 'member_pin') ? null : [];
         result[cat] = (kvVal !== null && kvVal !== undefined) ? kvVal : (globalData[cat] !== null ? globalData[cat] : defaultFallback);
       });
 
@@ -114,20 +215,40 @@ export default async function handler(req, res) {
       }
 
       globalData.lastUpdated = Date.now();
+      await kvSet('calvary_last_updated', globalData.lastUpdated);
 
       const { category, data } = body;
       if (category && data !== undefined) {
-        globalData[category] = data;
-        await kvSet(`calvary_${category}`, data);
-        return res.status(200).json({ success: true, category, data, lastUpdated: globalData.lastUpdated });
+        // 단일 값 (PIN 암호 등) 처리
+        if (category === 'officer_pin' || category === 'member_pin') {
+          globalData[category] = data;
+          await kvSet(`calvary_${category}`, data);
+          return res.status(200).json({ success: true, category, data, lastUpdated: globalData.lastUpdated });
+        }
+
+        // 다중 대원 동시 작성 충돌 방지를 위한 스마트 병합 처리
+        let finalData = data;
+        if (Array.isArray(data)) {
+          const serverExisting = await kvGet(`calvary_${category}`);
+          finalData = mergeCategoryData(category, data, serverExisting);
+        }
+
+        globalData[category] = finalData;
+        await kvSet(`calvary_${category}`, finalData);
+        return res.status(200).json({ success: true, category, data: finalData, mergedData: finalData, lastUpdated: globalData.lastUpdated });
       }
 
       // 전체 객체 구조 저장 지원
-      const categories = ['notices', 'praises', 'schedules', 'members', 'prayers'];
+      const categories = ['notices', 'praises', 'schedules', 'members', 'prayers', 'officer_pin', 'member_pin'];
       for (const cat of categories) {
         if (body[cat] !== undefined) {
-          globalData[cat] = body[cat];
-          await kvSet(`calvary_${cat}`, body[cat]);
+          let finalData = body[cat];
+          if (Array.isArray(finalData)) {
+            const serverExisting = await kvGet(`calvary_${cat}`);
+            finalData = mergeCategoryData(cat, finalData, serverExisting);
+          }
+          globalData[cat] = finalData;
+          await kvSet(`calvary_${cat}`, finalData);
         }
       }
 

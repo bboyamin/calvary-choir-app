@@ -100,7 +100,16 @@ class ChoirStorage {
       try {
         const isDev = (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.hostname.startsWith('192.168.') || location.hostname.startsWith('10.') || location.hostname.startsWith('172.'));
         const apiBaseUrl = isDev ? 'https://calvary-ch.vercel.app/api/storage' : './api/storage';
-        const resp = await fetch(`${apiBaseUrl}?key=all`);
+
+        // ⚡ 2단계 최적화: 기존 데이터가 있고 첫 동기화 이후의 정기/포커스 검사인 경우
+        // 변경사항이 없을 때 143KB 전송을 건너뛰는 조건부 since 파라미터 전달
+        let queryUrl = `${apiBaseUrl}?key=all`;
+        const canUseConditionalSync = !isManualRetry && this.initialSyncDone && (this.lastSyncedAt > 0) && hadLocalDataBeforeSync;
+        if (canUseConditionalSync) {
+          queryUrl += `&since=${this.lastSyncedAt}`;
+        }
+
+        const resp = await fetch(queryUrl);
         if (!resp.ok) {
           this.lastSyncFailed = true;
           return false;
@@ -108,6 +117,19 @@ class ChoirStorage {
 
         const cloudData = await resp.json();
         syncSucceeded = true;
+
+        // ⚡ 서버에 변경사항이 없는 경우 (초경량 응답: 143KB 파싱 및 불필요한 비교 생략)
+        if (cloudData && cloudData.modified === false) {
+          this.initialSyncDone = true;
+          this.lastSyncFailed = false;
+          if (cloudData.lastUpdated) {
+            this.lastSyncedAt = Number(cloudData.lastUpdated);
+            try {
+              localStorage.setItem('calvary_last_cloud_sync_at', String(this.lastSyncedAt));
+            } catch (e) { }
+          }
+          return false;
+        }
 
         const categoryMap = [
           { cat: 'notices', key: STORAGE_KEYS.NOTICES },
@@ -131,6 +153,14 @@ class ChoirStorage {
           if (cloudData[item.cat] !== undefined && cloudData[item.cat] !== null && Array.isArray(cloudData[item.cat])) {
             const localObj = this.get(item.key);
             const cloudObj = cloudData[item.cat];
+
+            // 🛑 안전 가드: 로컬에 기존 데이터가 이미 존재하는데 서버에서 빈 배열[]이 내려온 경우
+            // 서버 DB 일시 장애 등으로 인한 데이터 전체 소실을 방지하기 위해 로컬 데이터를 덮어쓰지 않고 안전하게 보존
+            if (Array.isArray(localObj) && localObj.length > 0 && cloudObj.length === 0) {
+              console.warn(`[Sync Safety] 로컬에 ${localObj.length}건의 ${item.cat} 데이터가 있으나 클라우드 응답이 비어있어 로컬 데이터를 안전하게 보존합니다.`);
+              continue;
+            }
+
             const localStr = JSON.stringify(localObj);
             const cloudStr = JSON.stringify(cloudObj);
 
@@ -149,9 +179,17 @@ class ChoirStorage {
           }
         }
 
+        // 대원명단 접근 비밀번호 클라우드 단일 동기화
+        if (cloudData.member_pin && typeof cloudData.member_pin === 'string' && cloudData.member_pin.trim().length > 0) {
+          const localMemberPin = localStorage.getItem('calvary_choir_member_pin');
+          if (cloudData.member_pin !== localMemberPin) {
+            localStorage.setItem('calvary_choir_member_pin', cloudData.member_pin);
+          }
+        }
+
         this.initialSyncDone = true;
         this.lastSyncFailed = false;
-        this.lastSyncedAt = Date.now();
+        this.lastSyncedAt = Number(cloudData.lastUpdated || Date.now());
         try {
           localStorage.setItem('calvary_last_cloud_sync_at', String(this.lastSyncedAt));
         } catch (e) { }
@@ -214,6 +252,31 @@ class ChoirStorage {
       });
       if (resp.ok) {
         this.lastMutationTime[category] = Date.now();
+
+        // 서버에서 다른 대원의 변경사항과 스마트 병합된 최신 결과가 회신되면 로컬에 즉시 안전 동기화
+        try {
+          const resJson = await resp.json();
+          if (resJson && resJson.mergedData && Array.isArray(resJson.mergedData)) {
+            const categoryKeyMap = {
+              notices: STORAGE_KEYS.NOTICES,
+              praises: STORAGE_KEYS.PRAISES,
+              schedules: STORAGE_KEYS.SCHEDULES,
+              members: STORAGE_KEYS.MEMBERS,
+              prayers: STORAGE_KEYS.PRAYERS
+            };
+            const targetKey = categoryKeyMap[category];
+            if (targetKey) {
+              const curStr = localStorage.getItem(targetKey);
+              const newStr = JSON.stringify(resJson.mergedData);
+              if (curStr !== newStr) {
+                localStorage.setItem(targetKey, newStr);
+                if (window.app && typeof window.app.renderAll === 'function') {
+                  window.app.renderAll();
+                }
+              }
+            }
+          }
+        } catch (mergeErr) {}
       }
     } catch (e) {
       console.warn('Cloud push error:', e);
@@ -234,13 +297,58 @@ class ChoirStorage {
     }
   }
 
+  cleanupStorageQuota() {
+    let freedBytes = 0;
+    try {
+      // 🛑 Quota Guard: 저장공간 부족 시 최신 3개를 제외한 4번째 이전의 오래된 공지에서 무거운 Base64 사진 데이터만 캐시 정리
+      // (텍스트 및 구글드라이브/외부URL은 100% 온전히 보존되며, 사진 원본은 클라우드에 안전하게 보관됨)
+      const noticesRaw = localStorage.getItem(STORAGE_KEYS.NOTICES);
+      if (noticesRaw) {
+        const notices = JSON.parse(noticesRaw);
+        if (Array.isArray(notices) && notices.length > 3) {
+          let modified = false;
+          for (let i = 3; i < notices.length; i++) {
+            const n = notices[i];
+            if (n.imageUrl && n.imageUrl.startsWith('data:image/')) {
+              freedBytes += n.imageUrl.length;
+              delete n.imageUrl;
+              modified = true;
+            }
+            if (n.mediaList && Array.isArray(n.mediaList)) {
+              n.mediaList.forEach(m => {
+                if (m && m.url && m.url.startsWith('data:image/')) {
+                  freedBytes += m.url.length;
+                  delete m.url;
+                  modified = true;
+                }
+              });
+            }
+          }
+          if (modified) {
+            localStorage.setItem(STORAGE_KEYS.NOTICES, JSON.stringify(notices));
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Quota cleanup error:', err);
+    }
+    return freedBytes;
+  }
+
   saveLocal(key, data) {
     try {
       localStorage.setItem(key, JSON.stringify(data));
     } catch (e) {
-      console.error('Storage save error:', e);
-      if (e.name === 'QuotaExceededError' || e.code === 22) {
-        alert('⚠️ 저장 공간이 부족하여 저장이 거부되었습니다. 불필요한 사진 용량을 자동으로 압축 정리합니다.');
+      console.warn('Storage save error:', e);
+      if (e.name === 'QuotaExceededError' || e.code === 22 || e.number === -2147024882) {
+        // 🛑 Quota Guard: 저장 공간 부족 감지 시 오래된 공지 사진 캐시를 자동 정리한 후 즉시 재시도
+        const freed = this.cleanupStorageQuota();
+        console.info(`[Quota Guard] 저장 공간 부족 감지: ${freed} 바이트를 확보한 후 저장을 안전하게 재시도합니다.`);
+        try {
+          localStorage.setItem(key, JSON.stringify(data));
+        } catch (retryErr) {
+          console.error('[Quota Guard] 재시도 실패:', retryErr);
+        }
       }
     }
   }
@@ -292,6 +400,7 @@ class ChoirStorage {
 
   setMemberPin(pin) {
     localStorage.setItem('calvary_choir_member_pin', pin);
+    this.pushCategoryToCloud('member_pin', pin);
   }
 
   isMemberUnlocked() {

@@ -225,7 +225,7 @@ class ChoirApp {
       this._syncBannerMorphTimer = null;
     }
 
-    // 6초 이상 클라우드 응답 지연 시 첫 접속자/기존 대원 모두에게 재시도 안내 표시
+    // 6초 이상 클라우드 응답 지연 시 안내 표시
     this._syncBannerDelayTimer = setTimeout(() => {
       if (this.storage && this.storage.isSyncing && !this._isApplyingAppUpdate) {
         const helpEl = document.getElementById('initialSyncTimeoutHelp');
@@ -242,24 +242,17 @@ class ChoirApp {
       }
     }, 6000);
 
-    // 로컬 데이터가 아예 없는 첫 방문 대원은 본문 중앙의 환영 로딩 카드가 안내를 담당
-    if (!hadLocalData && !isManualRetry) {
+    // ⚡ UX 최적화: 사용자가 직접 버튼을 누른 수동 재시도(isManualRetry)일 때만 시작 배너 표시!
+    // 창 전환, 포커스 복귀, 5분 주기 등 평상시 백그라운드 검사는 일절 배너를 띄우지 않고 0.03초 만에 무음 처리
+    if (!isManualRetry) {
       return;
     }
 
-    const now = Date.now();
-    const elapsedSinceLastSync = prevSyncedAt > 0 ? (now - prevSyncedAt) : Infinity;
-    const shouldShowBanner = isFirstSync || isManualRetry || elapsedSinceLastSync >= 300000;
-
-    if (!shouldShowBanner) return;
-
-    const isLongAbsence = prevSyncedAt > 0 && elapsedSinceLastSync >= 86400000;
-    const title = isManualRetry
-      ? '최신 공지와 찬양 음원을 다시 불러오는 중'
-      : (isLongAbsence ? '그동안 등록된 새 글과 음원을 불러오는 중' : '최신 공지와 찬양 음원을 불러오는 중');
-    const sub = '잠시만 기다려 주시면 최신 목록으로 자동 갱신됩니다';
-
-    this.showCloudSyncBanner('syncing', title, sub);
+    this.showCloudSyncBanner(
+      'syncing',
+      '최신 공지와 찬양 음원을 다시 불러오는 중',
+      '잠시만 기다려 주시면 최신 목록으로 자동 갱신됩니다'
+    );
   }
 
   onCloudSyncComplete({ isFirstSync = false, hasChanges = false, success = false, isManualRetry = false, hadLocalData = false } = {}) {
@@ -273,7 +266,7 @@ class ChoirApp {
       if (!this.storage || !this.storage.hasAnyLocalData()) {
         const helpEl = document.getElementById('initialSyncTimeoutHelp');
         if (helpEl) helpEl.classList.remove('hidden');
-      } else if (this._syncBannerVisible || isFirstSync || isManualRetry) {
+      } else if (isManualRetry) {
         this.showCloudSyncBanner(
           'delayed',
           '오프라인 상태이거나 연결이 불안정합니다',
@@ -290,7 +283,7 @@ class ChoirApp {
     const helpEl = document.getElementById('initialSyncTimeoutHelp');
     if (helpEl) helpEl.classList.add('hidden');
 
-    // 첫 방문 대원이 데이터를 성공적으로 다 받았을 때 환영 완료 배너 살짝 표시
+    // 첫 방문 대원이 데이터를 성공적으로 다 받았을 때
     if (!hadLocalData) {
       if (hasChanges) {
         this.showCloudSyncBanner(
@@ -305,33 +298,38 @@ class ChoirApp {
       return;
     }
 
-    const elapsed = this._syncBannerVisible ? (Date.now() - this._syncBannerShownAt) : 9999;
-    const minWait = this._syncBannerVisible ? Math.max(0, 650 - elapsed) : 0;
+    // ⚡ 1. 실제 새로운 글/음원이 등록되어 반영되었을 때: 기분 좋게 1회 안내 배너 노출
+    if (hasChanges) {
+      if (this._syncBannerMorphTimer) clearTimeout(this._syncBannerMorphTimer);
+      this.showCloudSyncBanner(
+        'updated',
+        '새로 등록된 최신 글과 음원이 반영되었습니다!',
+        '방금 업데이트된 최신 목록을 바로 확인해 보세요 ✨'
+      );
+      this._syncBannerHideTimer = setTimeout(() => {
+        this.hideCloudSyncBanner();
+      }, 1800);
+      return;
+    }
 
-    if (this._syncBannerMorphTimer) clearTimeout(this._syncBannerMorphTimer);
-    this._syncBannerMorphTimer = setTimeout(() => {
-      if (this._isApplyingAppUpdate) return;
+    // ⚡ 2. 사용자가 직접 '다시 불러오기'를 눌렀는데 변경사항이 없던 경우: 최신 상태임을 1.2초간 확인시켜줌
+    if (isManualRetry && this._syncBannerVisible) {
+      this.showCloudSyncBanner(
+        'uptodate',
+        '모든 공지와 찬양 음원이 최신 상태입니다',
+        '새로 추가된 항목까지 확인을 마쳤습니다 ✓'
+      );
+      this._syncBannerHideTimer = setTimeout(() => {
+        this.hideCloudSyncBanner();
+      }, 1200);
+      return;
+    }
 
-      if (hasChanges) {
-        this.showCloudSyncBanner(
-          'updated',
-          '새로 등록된 최신 글과 음원이 반영되었습니다!',
-          '방금 업데이트된 최신 목록을 바로 확인해 보세요 ✨'
-        );
-        this._syncBannerHideTimer = setTimeout(() => {
-          this.hideCloudSyncBanner();
-        }, 1750);
-      } else if (this._syncBannerVisible) {
-        this.showCloudSyncBanner(
-          'uptodate',
-          '모든 공지와 찬양 음원이 최신 상태입니다',
-          '새로 추가된 항목까지 확인을 마쳤습니다 ✓'
-        );
-        this._syncBannerHideTimer = setTimeout(() => {
-          this.hideCloudSyncBanner();
-        }, 950);
-      }
-    }, minWait);
+    // ⚡ 3. 평상시 백그라운드 점검(창 전환, 포커스 복귀 등)이고 변경사항이 없는 경우:
+    // 어떠한 배너도 띄우지 않고 고요하게 유지! 혹시 떠 있던 배너가 있다면 닫음.
+    if (this._syncBannerVisible) {
+      this.hideCloudSyncBanner();
+    }
   }
 
   getInitialLoadingHtml(categoryName = '자료') {
@@ -488,6 +486,10 @@ class ChoirApp {
         if (!created && item.id) {
           const match = item.id.match(/\d{10,}/);
           if (match) created = parseInt(match[0], 10);
+        }
+        if (!created && item.date) {
+          const dTime = new Date(`${item.date}T23:59:59`).getTime();
+          if (!isNaN(dTime)) created = dTime;
         }
         return created && created > lastTime;
       }).length;
@@ -1739,7 +1741,7 @@ class ChoirApp {
               ` : ''}
             </div>
           </div>
-          <h3 class="card-title">${item.title}</h3>
+          <h3 class="card-title">${this.escapeHtml(item.title || '')}</h3>
           <div class="card-body-text">${this.formatNoticeContentWithLinks(content)}</div>
           ${renderNoticeMediaItems(item)}
         </div>
@@ -1764,7 +1766,7 @@ class ChoirApp {
             ` : ''}
           </div>
         </div>
-        <h3 class="card-title">${item.title}</h3>
+        <h3 class="card-title">${this.escapeHtml(item.title || '')}</h3>
 
         <div class="notice-preview-box" style="display: ${isExpanded ? 'none' : 'block'};">
           <div class="card-body-text notice-text-preview">${this.formatNoticeContentWithLinks(previewText)}</div>
@@ -2568,7 +2570,7 @@ class ChoirApp {
             ` : ''}
           </div>
         </div>
-        <h3 class="card-title">${item.title}</h3>
+        <h3 class="card-title">${this.escapeHtml(item.title || '')}</h3>
         
         <div class="video-responsive">
           ${this.getYoutubeIframe(item.youtubeUrl, iframeId)}
@@ -2820,9 +2822,9 @@ class ChoirApp {
               ` : ''}
             </div>
           </div>
-          <h3 class="card-title">${s.title}</h3>
-          <p class="card-body-text">📍 <strong>장소:</strong> ${s.location}</p>
-          ${s.note ? `<p class="card-body-text" style="color: var(--text-sub);">💡 ${s.note}</p>` : ''}
+          <h3 class="card-title">${this.escapeHtml(s.title || '')}</h3>
+          <p class="card-body-text">📍 <strong>장소:</strong> ${this.escapeHtml(s.location || '')}</p>
+          ${s.note ? `<p class="card-body-text" style="color: var(--text-sub);">💡 ${this.escapeHtml(s.note || '')}</p>` : ''}
           ${s.imageUrl ? `<div style="margin-top: 10px;">${this.getNoticeMediaHtml(s.imageUrl, s.title)}</div>` : ''}
           ${s.youtubeUrl ? `<div class="video-responsive" style="margin-top: 10px;">${this.getYoutubeIframe(s.youtubeUrl)}</div>` : ''}
 
@@ -4340,6 +4342,13 @@ class ChoirApp {
   }
 
   addAmen(id) {
+    if (!this._amenThrottle) this._amenThrottle = {};
+    const now = Date.now();
+    if (this._amenThrottle[id] && (now - this._amenThrottle[id] < 800)) {
+      return; // 0.8초 이내 빠른 연타 및 중복 전송 방지
+    }
+    this._amenThrottle[id] = now;
+
     const prayers = this.storage.get(STORAGE_KEYS.PRAYERS);
     const prayer = prayers.find(p => p.id === id);
     if (prayer) {
@@ -4620,8 +4629,6 @@ class ChoirApp {
     const wrapId = fileId ? `media_wrap_${fileId}` : ('media_wrap_' + Math.random().toString(36).substring(2, 9));
 
     if (fileId) {
-      setTimeout(() => this.checkDrivePdfFile(fileId), 30);
-
       return `
         <div id="${wrapId}">
           <img src="${convertedImg}" loading="lazy" referrerpolicy="no-referrer" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${convertedImg}', '${escapedTitle}')" onerror="app.convertMediaToPdf('${wrapId}', '${fileId}', this)" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">
@@ -4632,70 +4639,15 @@ class ChoirApp {
     return `<img src="${convertedImg}" loading="lazy" referrerpolicy="no-referrer" class="card-img-preview clickable-photo" onclick="app.openImageViewer('${convertedImg}', '${escapedTitle}')" alt="공지 사진" title="클릭하여 원본 사진 크게 보기">`;
   }
 
-  async checkDrivePdfFile(fileId) {
-    if (!fileId) return;
-    if (!this.drivePdfCache) this.drivePdfCache = {};
-    if (this.drivePdfCache[fileId] !== undefined) return;
-
-    // 🛑 1. 중복 요청 방지: 요청 시작 시점에 즉시 'pending' 처리하여 동일 fileId의 중복 fetch 전면 차단
-    this.drivePdfCache[fileId] = 'pending';
-
-    let timeoutId = null;
-    try {
-      // 🛑 2. 타임아웃 3.5초 제한 (느린 스마트폰 통신망에서 무한 대기/먹통 현상 100% 방지)
-      const controller = new AbortController();
-      timeoutId = setTimeout(() => controller.abort(), 3500);
-
-      const res = await fetch(`https://drive.google.com/file/d/${fileId}/view`, {
-        signal: controller.signal
-      });
-
-      if (timeoutId) clearTimeout(timeoutId);
-
-      if (!res || !res.ok) {
-        this.drivePdfCache[fileId] = false;
-        return;
-      }
-      const html = await res.text();
-      const isPdf = /itemprop="name"\s+content="[^"]*\.pdf"/i.test(html) ||
-        /property="og:title"\s+content="[^"]*\.pdf"/i.test(html) ||
-        /<title>[^<]*\.pdf\s*(?:-[^<]*)?<\/title>/i.test(html);
-
-      this.drivePdfCache[fileId] = isPdf;
-
-      if (isPdf) {
-        const wrapEl = document.getElementById(`media_wrap_${fileId}`);
-        // 🛑 3. 화면 이동 후에도 안전하게 현재 활성 DOM에 위치할 때만 PDF 뷰어로 업데이트
-        if (wrapEl && document.body.contains(wrapEl)) {
-          const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-          const openUrl = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
-          wrapEl.innerHTML = this.getPdfViewerHtml(embedUrl, openUrl);
-        }
-      }
-    } catch (e) {
-      if (timeoutId) clearTimeout(timeoutId);
-      this.drivePdfCache[fileId] = false;
-    }
-  }
-
   convertMediaToPdf(wrapId, fileId, imgEl) {
     if (imgEl) {
-      imgEl.onerror = null; // 🛑 무한 재귀 호출 및 모바일 멈춤 현상 100% 방지 (이벤트 핸들러 즉시 제거)
+      imgEl.onerror = null; // 🛑 무한 재귀 호출 방지
     }
-
-    // 1. 이미 이미지 파일(isPdf: false)로 확정되었으면 절대로 PDF 뷰어로 전환하지 않음
-    if (this.drivePdfCache && this.drivePdfCache[fileId] === false) {
-      return;
-    }
-
-    // 2. 백그라운드 검사가 완료되었고 100% PDF(true)임이 확인된 경우에만 PDF 뷰어로 전환
-    if (this.drivePdfCache && this.drivePdfCache[fileId] === true) {
-      const wrap = document.getElementById(wrapId);
-      if (!wrap) return;
-      const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-      const openUrl = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
-      wrap.innerHTML = this.getPdfViewerHtml(embedUrl, openUrl);
-    }
+    const wrap = document.getElementById(wrapId);
+    if (!wrap) return;
+    const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+    const openUrl = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+    wrap.innerHTML = this.getPdfViewerHtml(embedUrl, openUrl);
   }
 
   getPdfViewerHtml(embedUrl, openUrl) {
@@ -4919,6 +4871,8 @@ class ChoirApp {
             'onStateChange': (e) => {
               if (window.YT && e.data === YT.PlayerState.PLAYING) {
                 this.startPracticeMonitor(itemId);
+              } else if (window.YT && (e.data === YT.PlayerState.PAUSED || e.data === YT.PlayerState.ENDED)) {
+                this.stopPracticeMonitor(itemId);
               }
             }
           }
@@ -4942,6 +4896,13 @@ class ChoirApp {
     return null;
   }
 
+  stopPracticeMonitor(itemId) {
+    if (this.loopIntervals && this.loopIntervals[itemId]) {
+      try { clearInterval(this.loopIntervals[itemId]); } catch (e) {}
+      delete this.loopIntervals[itemId];
+    }
+  }
+
   startPracticeMonitor(itemId) {
     if (this.loopIntervals[itemId]) {
       clearInterval(this.loopIntervals[itemId]);
@@ -4952,6 +4913,16 @@ class ChoirApp {
       if (!player || typeof player.getCurrentTime !== 'function') return;
 
       try {
+        let playerState = -1;
+        if (typeof player.getPlayerState === 'function') {
+          try { playerState = player.getPlayerState(); } catch (e) {}
+        }
+
+        // 재생이 멈췄거나(2) 끝났으면(0) 즉시 모니터링 인터벌을 종료하여 스마트폰 배터리 절약
+        if (playerState === 2 || playerState === 0) {
+          this.stopPracticeMonitor(itemId);
+          return;
+        }
         const curr = player.getCurrentTime() || 0;
         const dur = player.getDuration() || 0;
 
@@ -4963,11 +4934,6 @@ class ChoirApp {
           if (totalEl && (totalEl.textContent === '--:--' || totalEl.textContent === '00:00')) {
             totalEl.textContent = this.formatTime(dur);
           }
-        }
-
-        let playerState = -1;
-        if (typeof player.getPlayerState === 'function') {
-          try { playerState = player.getPlayerState(); } catch (e) {}
         }
 
         const cfg = this.practiceConfigs[itemId];

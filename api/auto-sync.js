@@ -170,6 +170,7 @@ export default async function handler(req, res) {
 
       newPraises.push({
         id: `p_imm_auto_${v.videoId}`,
+        createdAt: Date.now(),
         type: 'all',
         partTarget: '',
         title: cleanSong,
@@ -206,6 +207,7 @@ export default async function handler(req, res) {
       const merged = [...addedItems, ...currentPraises];
       merged.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
       await kvSet('calvary_praises', merged);
+      await kvSet('calvary_last_updated', Date.now());
       return res.status(200).json({
         success: true,
         message: `새로운 주일 성가대 찬양 ${addedItems.length}건이 자동으로 추가되었습니다!`,

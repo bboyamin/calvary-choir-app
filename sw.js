@@ -1,4 +1,4 @@
-const CACHE_NAME = 'calvary-choir-v1109';
+const CACHE_NAME = 'calvary-choir-v1110';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -39,9 +39,20 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // 1. GET 메서드만 캐싱 대상
+  if (event.request.method !== 'GET') {
+    return;
+  }
+
   const url = new URL(event.request.url);
 
-  // API 및 버전 체크 파일은 절대로 서비스 워커 캐시에 보관하지 않고 100% 라이브 네트워크 동기화
+  // 2. 외부 도메인(chrome-extension, youtube, doubleclick, google drive 등)은
+  // 서비스 워커 캐시를 오염시키지 않도록 브라우저 기본 네트워크로 통과
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // 3. API 및 버전 체크 파일은 절대로 서비스 워커 캐시에 보관하지 않고 100% 라이브 네트워크 동기화
   if (url.pathname.includes('/api/') || url.pathname.includes('version.json')) {
     event.respondWith(
       fetch(event.request).catch((err) => {
@@ -55,11 +66,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-First + 1.8초 지연 안전 폴백: 온라인에선 최신 코드를 우선 받되, 통신이 지연되면 저장된 캐시 화면을 즉시 먼저 열어 멈춤 방지
+  // 4. Network-First + 1.8초 지연 안전 폴백: 온라인에선 최신 코드를 우선 받되, 통신이 지연되면 저장된 캐시 화면을 즉시 먼저 열어 멈춤 방지
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
+        if (networkResponse && networkResponse.status === 200) {
           const responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseClone);
