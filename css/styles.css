@@ -66,9 +66,7 @@ body {
    상단 브랜드 헤더 (공식 갈보리교회 로고)
    ========================================== */
 .app-header {
-  background: rgba(11, 19, 43, 0.94);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: #0B132B;
   color: #FFFFFF;
   color-scheme: dark;
   padding-top: max(14px, env(safe-area-inset-top, 0px));
@@ -83,6 +81,9 @@ body {
   z-index: 100;
   border-bottom: 1px solid rgba(212, 175, 55, 0.22);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .header-brand {
@@ -95,6 +96,8 @@ body {
   display: flex;
   align-items: center;
   isolation: isolate;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
 .official-header-logo {
@@ -102,6 +105,9 @@ body {
   max-width: 180px;
   object-fit: contain;
   forced-color-adjust: none;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  image-rendering: -webkit-optimize-contrast;
 }
 
 .header-actions {
@@ -142,6 +148,8 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   line-height: 1;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
 .btn-header-admin-icon:hover, .btn-header-admin-icon:active {
