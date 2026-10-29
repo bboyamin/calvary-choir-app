@@ -2824,7 +2824,7 @@ class ChoirApp {
               <span class="sched-stamp-dow">${dowStr}</span>
             </div>
             <div class="sched-details">
-              <div class="card-top" style="margin-bottom: 2px;">
+              <div class="card-top">
                 <span class="card-badge ${isPast ? 'badge-past' : 'badge-praise'}">${isPast ? '지난 일정' : '예정 일정'} · ${timeStr}</span>
                 <div class="card-top-right">
                   ${this.getShareButtonHtml('schedule', s.id)}
