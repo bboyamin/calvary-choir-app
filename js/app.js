@@ -1728,7 +1728,7 @@ class ChoirApp {
       return `
         <div class="item-card" id="notice_card_${item.id}">
           <div class="card-top">
-            <span class="card-badge badge-notice">📢 성가대 공지</span>
+            <span class="card-badge badge-notice">공지사항</span>
             <div class="card-top-right">
               <span class="card-date">${item.date}</span>
               ${starButtonHtml}
@@ -1753,7 +1753,7 @@ class ChoirApp {
     return `
       <div class="item-card notice-card-collapsible ${isExpanded ? 'is-expanded' : ''}" id="notice_card_${item.id}">
         <div class="card-top">
-          <span class="card-badge badge-notice">📢 성가대 공지</span>
+          <span class="card-badge badge-notice">공지사항</span>
           <div class="card-top-right">
             <span class="card-date">${item.date}</span>
             ${starButtonHtml}
@@ -2014,8 +2014,8 @@ class ChoirApp {
     const html = `
       <div class="daily-verse-card">
         <div class="daily-verse-header">
-          <span class="daily-verse-badge">📖 오늘의 말씀</span>
-          <span class="daily-verse-date">🗓️ ${dateStr}</span>
+          <span class="daily-verse-badge">오늘의 말씀</span>
+          <span class="daily-verse-date">${dateStr}</span>
         </div>
         <p class="daily-verse-text">"${verse.text}"</p>
         <p class="daily-verse-ref">- ${verse.ref} -</p>
@@ -2420,7 +2420,7 @@ class ChoirApp {
     const partBadges = { 'ALL_PART': 'badge-praise', 'S': 'badge-part-s', 'A': 'badge-part-a', 'T': 'badge-part-t', 'B': 'badge-part-b' };
 
     const badgeClass = item.type === 'part' ? (partBadges[item.partTarget] || 'badge-praise') : 'badge-notice';
-    const badgeText = item.type === 'part' ? `🎼 ${partNames[item.partTarget] || '파트'} 연습` : '🎬 성가대 찬양 영상';
+    const badgeText = item.type === 'part' ? `${partNames[item.partTarget] || '파트'} 연습` : '찬양 영상';
 
     const iframeId = `yt_player_${item.id}`;
 
@@ -2560,7 +2560,7 @@ class ChoirApp {
         <div class="card-top">
           <span class="card-badge ${badgeClass}">${badgeText}</span>
           <div class="card-top-right">
-            <span class="card-date">🗓️ ${item.date}</span>
+            <span class="card-date">${item.date}</span>
             ${this.getShareButtonHtml('praise', item.id)}
             ${isOfficer ? `
               <div class="card-admin-actions">
@@ -2811,7 +2811,7 @@ class ChoirApp {
       return `
         <div class="item-card ${isPast ? 'opacity-80' : ''}" id="schedule_card_${s.id}">
           <div class="card-top">
-            <span class="card-badge ${isPast ? 'badge-past' : 'badge-praise'}">${isPast ? '📜 지난 일정' : '📅 주요 일정'} · ${dateStr} ${timeStr}</span>
+            <span class="card-badge ${isPast ? 'badge-past' : 'badge-praise'}">${isPast ? '지난 일정' : '예정 일정'} · ${dateStr} ${timeStr}</span>
             <div class="card-top-right">
               ${this.getShareButtonHtml('schedule', s.id)}
               ${isOfficer ? `
@@ -2823,8 +2823,8 @@ class ChoirApp {
             </div>
           </div>
           <h3 class="card-title">${this.escapeHtml(s.title || '')}</h3>
-          <p class="card-body-text">📍 <strong>장소:</strong> ${this.escapeHtml(s.location || '')}</p>
-          ${s.note ? `<p class="card-body-text" style="color: var(--text-sub);">💡 ${this.escapeHtml(s.note || '')}</p>` : ''}
+          <p class="card-body-text"><strong>장소:</strong> ${this.escapeHtml(s.location || '')}</p>
+          ${s.note ? `<p class="card-body-text" style="color: var(--text-sub);">${this.escapeHtml(s.note || '')}</p>` : ''}
           ${s.imageUrl ? `<div style="margin-top: 10px;">${this.getNoticeMediaHtml(s.imageUrl, s.title)}</div>` : ''}
           ${s.youtubeUrl ? `<div class="video-responsive" style="margin-top: 10px;">${this.getYoutubeIframe(s.youtubeUrl)}</div>` : ''}
 
@@ -4217,7 +4217,7 @@ class ChoirApp {
       return `
         <div class="item-card" id="prayer_card_${p.id}">
           <div class="card-top">
-            <span class="card-badge badge-notice">🙏 ${this.escapeHtml(p.author || '익명')} 대원</span>
+            <span class="card-badge badge-notice">${this.escapeHtml(p.author || '익명')} 대원의 기도</span>
             <div class="card-top-right">
               <span class="card-date">${p.date || ''}</span>
               ${this.getShareButtonHtml('prayer', p.id)}
@@ -4233,7 +4233,8 @@ class ChoirApp {
 
           <!-- 함께 기도해요 (아멘) 버튼 -->
           <button type="button" class="amen-button" onclick="app.addAmen('${p.id}')">
-            ❤️ 함께 기도해요 (아멘 ${p.amenCount || 0})
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+            <span>함께 기도해요 (아멘 ${p.amenCount || 0})</span>
           </button>
 
           <!-- 댓글 목록 -->

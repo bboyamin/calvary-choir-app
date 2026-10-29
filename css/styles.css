@@ -589,30 +589,34 @@ body {
 }
 
 .pane-header h2 {
-  font-size: 20px;
-  font-weight: 800;
+  font-size: 21px;
+  font-weight: 750;
   color: var(--primary-navy);
-  letter-spacing: -0.4px;
+  letter-spacing: -0.6px;
+  line-height: 1.25;
 }
 
 .btn-add-content {
-  height: 42px;
-  padding: 0 14px;
+  height: 38px;
+  padding: 0 13px;
   background-color: var(--gold-accent);
   color: #FFFFFF;
   border: none;
-  border-radius: 10px;
-  font-size: 15px;
-  font-weight: 700;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 3px 8px rgba(217, 119, 6, 0.25);
-  display: flex;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.2);
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  transition: all 0.15s ease;
 }
 
 .btn-add-content:active {
-  transform: scale(0.96);
+  transform: scale(0.97);
+  box-shadow: 0 1px 3px rgba(217, 119, 6, 0.2);
+}
 }
 
 /* ==========================================
@@ -874,29 +878,35 @@ body {
    ========================================== */
 .sub-tab-bar {
   display: flex;
-  background: #E2E8F0;
+  background: #F1F5F9;
   padding: 3px;
-  border-radius: 12px;
-  margin-bottom: 10px;
+  border-radius: 11px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  margin-bottom: 12px;
 }
 
 .sub-tab-btn {
   flex: 1;
-  height: 42px;
+  height: 38px;
   border: none;
   background: transparent;
-  border-radius: 9px;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-sub);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 
 .sub-tab-btn.active {
   background: #FFFFFF;
   color: var(--primary-navy);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 /* 주일/월별 날짜 검색 필터 박스 */
@@ -983,14 +993,20 @@ body {
 
 .item-card {
   background: var(--bg-card);
-  border-radius: 14px;
-  padding: 16px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
-  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  padding: 18px 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.03);
+  border: 1px solid rgba(226, 232, 240, 0.85);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   position: relative;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.item-card:hover {
+  border-color: rgba(203, 213, 225, 0.9);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06), 0 8px 20px rgba(15, 23, 42, 0.04);
 }
 
 .card-top {
@@ -1001,19 +1017,24 @@ body {
 }
 
 .card-badge {
-  padding: 3px 8px;
+  padding: 4px 9px;
   border-radius: 6px;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1.2;
 }
 
-.badge-notice { background: var(--gold-soft); color: var(--gold-hover); }
-.badge-praise { background: #E0F2FE; color: #0284C7; }
-.badge-past { background: #F1F5F9; color: #64748B; }
-.badge-part-s { background: #FCE7F3; color: var(--soprano-color); }
-.badge-part-a { background: #EDE9FE; color: var(--alto-color); }
-.badge-part-t { background: #DBEAFE; color: var(--tenor-color); }
-.badge-part-b { background: #D1FAE5; color: var(--bass-color); }
+.badge-notice { background: #FEF3C7; color: #92400E; border: 1px solid rgba(217, 119, 6, 0.15); }
+.badge-praise { background: #E0F2FE; color: #0369A1; border: 1px solid rgba(2, 132, 199, 0.15); }
+.badge-past { background: #F1F5F9; color: #64748B; border: 1px solid rgba(148, 163, 184, 0.15); }
+.badge-part-s { background: #FCE7F3; color: #BE185D; border: 1px solid rgba(236, 72, 153, 0.15); }
+.badge-part-a { background: #EDE9FE; color: #6D28D9; border: 1px solid rgba(139, 92, 246, 0.15); }
+.badge-part-t { background: #DBEAFE; color: #1D4ED8; border: 1px solid rgba(59, 130, 246, 0.15); }
+.badge-part-b { background: #D1FAE5; color: #047857; border: 1px solid rgba(16, 185, 129, 0.15); }
 .opacity-80 { opacity: 0.88; }
 
 .item-card {
@@ -1108,16 +1129,19 @@ body {
 }
 
 .card-date {
-  font-size: 13.5px;
+  font-size: 13px;
   color: var(--text-muted);
   font-weight: 500;
+  letter-spacing: -0.2px;
+  font-variant-numeric: tabular-nums;
 }
 
 .card-title {
-  font-size: 18px;
-  font-weight: 800;
+  font-size: 17.5px;
+  font-weight: 750;
   color: var(--primary-navy);
-  line-height: 1.35;
+  line-height: 1.4;
+  letter-spacing: -0.4px;
 }
 
 /* 사진 보관함/카메라 직접 파일 업로드 스타일 */
@@ -1226,11 +1250,12 @@ body {
 }
 
 .card-body-text {
-  font-size: 16px;
+  font-size: 15.5px;
   color: var(--text-main);
   white-space: pre-wrap;
   word-break: break-word;
-  line-height: 1.55;
+  line-height: 1.65;
+  letter-spacing: -0.15px;
 }
 
 .card-img-preview {
@@ -1607,23 +1632,25 @@ body {
 }
 
 .amen-button {
-  height: 46px;
-  background: #FEF2F2;
-  border: 1px solid #FCA5A5;
-  color: #DC2626;
-  border-radius: 10px;
-  font-size: 16px;
-  font-weight: 800;
-  display: flex;
+  height: 44px;
+  background: #FFF1F2;
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  color: #E11D48;
+  border-radius: 11px;
+  font-size: 15px;
+  font-weight: 700;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 7px;
   cursor: pointer;
   width: 100%;
+  transition: all 0.15s ease;
 }
 
 .amen-button:active {
-  background: #FEE2E2;
+  background: #FFE4E6;
+  transform: scale(0.985);
 }
 
 .comment-section {
@@ -1927,18 +1954,18 @@ body {
   width: calc(100% - 24px);
   max-width: 450px;
   height: 60px;
-  padding: 0 4px;
+  padding: 0 6px;
   box-sizing: border-box;
-  background: rgba(255, 255, 255, 0.97);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-light);
-  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 22px;
   display: flex;
   justify-content: space-around;
   align-items: center;
   z-index: 9999;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+  box-shadow: 0 10px 28px -4px rgba(15, 23, 42, 0.12), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
 }
 
 /* 홈화면 추가(PWA standalone 모드) 및 모바일 스탠드얼론 실행 시 여백 강화 */
@@ -1965,7 +1992,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   color: var(--text-muted);
   cursor: pointer;
   transition: all 0.15s ease;
@@ -1978,7 +2005,7 @@ body {
   position: absolute;
   top: 1px;
   left: 50%;
-  transform: translateX(4px);
+  transform: translateX(6px);
   background: #EF4444;
   color: #FFFFFF;
   font-size: 10px;
@@ -2002,15 +2029,22 @@ body {
 }
 
 .tab-icon {
-  font-size: 19px;
-  line-height: 1;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  height: 24px;
+}
+
+.tab-icon-svg {
+  display: block;
+  stroke: var(--text-muted);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .tab-label {
-  font-size: 10.5px !important;
-  font-weight: 700;
+  font-size: 11px !important;
+  font-weight: 600;
   letter-spacing: -0.3px;
   white-space: nowrap;
   line-height: 1.1;
@@ -2020,14 +2054,19 @@ body {
   max-width: 100%;
   overflow: visible;
   -webkit-text-size-adjust: 100%;
+  color: var(--text-muted);
+  transition: color 0.15s ease, font-weight 0.15s ease;
 }
 
-.tab-item.active {
-  color: var(--gold-accent);
+.tab-item.active .tab-icon-svg {
+  stroke: var(--gold-accent);
+  stroke-width: 2.3;
+  transform: translateY(-1px) scale(1.08);
 }
 
-.tab-item.active .tab-icon {
-  transform: scale(1.08);
+.tab-item.active .tab-label {
+  color: var(--primary-navy);
+  font-weight: 750;
 }
 
 /* ==========================================
