@@ -252,31 +252,6 @@ class ChoirStorage {
       });
       if (resp.ok) {
         this.lastMutationTime[category] = Date.now();
-
-        // 서버에서 다른 대원의 변경사항과 스마트 병합된 최신 결과가 회신되면 로컬에 즉시 안전 동기화
-        try {
-          const resJson = await resp.json();
-          if (resJson && resJson.mergedData && Array.isArray(resJson.mergedData)) {
-            const categoryKeyMap = {
-              notices: STORAGE_KEYS.NOTICES,
-              praises: STORAGE_KEYS.PRAISES,
-              schedules: STORAGE_KEYS.SCHEDULES,
-              members: STORAGE_KEYS.MEMBERS,
-              prayers: STORAGE_KEYS.PRAYERS
-            };
-            const targetKey = categoryKeyMap[category];
-            if (targetKey) {
-              const curStr = localStorage.getItem(targetKey);
-              const newStr = JSON.stringify(resJson.mergedData);
-              if (curStr !== newStr) {
-                localStorage.setItem(targetKey, newStr);
-                if (window.app && typeof window.app.renderAll === 'function') {
-                  window.app.renderAll();
-                }
-              }
-            }
-          }
-        } catch (mergeErr) {}
       }
     } catch (e) {
       console.warn('Cloud push error:', e);
