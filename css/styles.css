@@ -1732,12 +1732,6 @@ body {
   z-index: 1;
 }
 
-/* 중보기도 전용 웜 골드 카드 악센트 */
-.prayer-card-themed {
-  background: #FCFDFE;
-  border-left: 3.5px solid var(--gold-accent);
-}
-
 .amen-button {
   height: 44px;
   background: #FFF1F2;

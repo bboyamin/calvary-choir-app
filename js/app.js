@@ -4226,7 +4226,7 @@ class ChoirApp {
       const canEditPrayer = isMyPrayer || isOfficer;
 
       return `
-        <div class="item-card prayer-card-themed" id="prayer_card_${p.id}">
+        <div class="item-card" id="prayer_card_${p.id}">
           <div class="card-top">
             <span class="card-badge badge-notice">${this.escapeHtml(p.author || '익명')} 대원의 기도</span>
             <div class="card-top-right">
