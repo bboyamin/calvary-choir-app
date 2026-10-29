@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=1113">
+  <link rel="stylesheet" href="css/styles.css?v=1114">
   <script src="https://www.youtube.com/iframe_api" async></script>
 </head>
 <body>
@@ -27,7 +27,7 @@
     <header class="app-header">
       <div class="header-brand">
         <div class="church-logo-container">
-          <img src="assets/church-logo-white.svg?v=1113" alt="갈보리교회 공식 로고" class="official-header-logo">
+          <img src="assets/church-logo-white.svg?v=1114" alt="갈보리교회 공식 로고" class="official-header-logo">
         </div>
       </div>
 
@@ -1187,13 +1187,13 @@
   <!-- 실시간 공유 알림 토스트 메시지 -->
   <div id="appToast" class="app-toast-container"></div>
 
-  <script src="js/storage.js?v=1113"></script>
-  <script src="js/app.js?v=1113"></script>
+  <script src="js/storage.js?v=1114"></script>
+  <script src="js/app.js?v=1114"></script>
   <script>
     // 서비스 워커 등록 및 실시간 캐시 갱신 (PWA)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js?v=1113')
+        navigator.serviceWorker.register('sw.js?v=1114')
           .then(reg => {
             console.log('PWA ServiceWorker registered', reg);
             reg.update(); // 강제 SW 최신버전 업데이트 검사
