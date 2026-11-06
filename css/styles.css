@@ -3668,12 +3668,10 @@ body {
     margin: 0 auto;
     box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.45);
     animation: modalSheetSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  #modalPitchPipe .modal-pitch-pipe {
-    max-height: 94vh;
-  }
-  #modalUserManual .modal-user-manual-card {
-    max-height: 90vh;
+    max-height: 86vh;
+    max-height: calc(100dvh - 36px);
+    display: flex;
+    flex-direction: column;
   }
 }
 
@@ -3726,7 +3724,9 @@ body {
   gap: 12px;
   background: #F8FAFC;
   overflow-y: auto;
-  max-height: calc(90vh - 120px);
+  -webkit-overflow-scrolling: touch;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /* 파트별 첫 음 프리셋 칩 */
@@ -4287,30 +4287,30 @@ body {
 /* 7. 하단 닫기 바 */
 .pitch-modal-actions {
   margin: 0;
-  padding: 10px 14px 14px 14px;
+  padding: 12px 18px max(18px, calc(env(safe-area-inset-bottom, 0px) + 12px)) 18px;
   border-top: 1px solid #E2E8F0;
   background: #FFFFFF;
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .pitch-btn-done {
-  width: auto;
-  min-width: 130px;
-  height: 38px;
-  padding: 0 24px;
+  width: 100%;
+  max-width: 280px;
+  height: 44px;
   background: #0F172A;
   color: #FFFFFF;
-  border: 1px solid rgba(217, 119, 6, 0.35);
-  border-radius: 8px;
-  font-size: 13.5px;
+  border: 1px solid rgba(217, 119, 6, 0.4);
+  border-radius: 12px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.18);
   transition: all 0.18s ease;
 }
 
@@ -4331,7 +4331,7 @@ body {
 .modal-user-manual-card {
   max-width: 520px;
   width: 100%;
-  max-height: 88vh;
+  max-height: min(88vh, calc(100dvh - 40px));
   display: flex;
   flex-direction: column;
   border-radius: 20px;
@@ -4379,7 +4379,8 @@ body {
   padding: 16px 18px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   background: #F8FAFC;
   display: flex;
   flex-direction: column;
@@ -4519,7 +4520,7 @@ body {
 
 .manual-footer-actions {
   margin: 0;
-  padding: 12px 20px 16px 20px;
+  padding: 12px 18px max(18px, calc(env(safe-area-inset-bottom, 0px) + 12px)) 18px;
   border-top: 1px solid #E2E8F0;
   background: #FFFFFF;
   display: flex;
@@ -4530,16 +4531,19 @@ body {
 
 .manual-btn-done {
   width: 100%;
-  max-width: 240px;
-  height: 42px;
+  max-width: 280px;
+  height: 44px;
   background: var(--primary-navy);
   color: #FFFFFF;
-  border: 1px solid rgba(217, 119, 6, 0.35);
-  border-radius: 10px;
-  font-size: 14.5px;
+  border: 1px solid rgba(217, 119, 6, 0.4);
+  border-radius: 12px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.18);
   transition: all 0.18s ease;
 }
 

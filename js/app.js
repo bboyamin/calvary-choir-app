@@ -426,8 +426,13 @@ class ChoirApp {
         const loadedCodeVer = getLoadedScriptVersion();
         const localVer = localStorage.getItem('calvary_app_code_ver');
 
-        // 현재 실행 중인 스크립트가 이미 서버 최신 버전과 일치하면 불필요한 강제 새로고침 생략
-        if (loadedCodeVer && loadedCodeVer === serverVer) {
+        const parseVerNum = (v) => parseInt(String(v || '').replace(/\D/g, ''), 10) || 0;
+        const serverNum = parseVerNum(serverVer);
+        const loadedNum = parseVerNum(loadedCodeVer);
+        const localNum = parseVerNum(localVer);
+
+        // 현재 실행 중인 코드가 서버 버전 이상이면 이미 최신 상태이므로 불필요한 새로고침 완전 차단
+        if (loadedNum >= serverNum && serverNum > 0) {
           if (localVer !== serverVer) {
             localStorage.setItem('calvary_app_code_ver', serverVer);
           }
@@ -443,7 +448,7 @@ class ChoirApp {
         }
 
         const alreadyReloadedForVer = sessionStorage.getItem('calvary_reloaded_for_ver');
-        const needsUpdateReload = (loadedCodeVer && loadedCodeVer !== serverVer) || (!loadedCodeVer && localVer && localVer !== serverVer);
+        const needsUpdateReload = (serverNum > loadedNum) || (serverNum > localNum && !loadedNum);
 
         if (needsUpdateReload && alreadyReloadedForVer !== serverVer) {
           this._isApplyingAppUpdate = true;
@@ -5478,9 +5483,17 @@ class ChoirApp {
   ];
 
   unlockMobileAudio() {
-    // 이미 언락되어 컨텍스트가 동작 중이면 즉시 반환 (반복적인 무음 버퍼 재생으로 인한 팝/클릭 노이즈 100% 방지)
-    if (this.isAudioHardwareUnlocked && this.pitchAudioCtx && this.pitchAudioCtx.state === 'running') {
-      return this.pitchAudioCtx;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+
+    // 모바일 브라우저 절전/전환으로 인해 closed 되었거나 인스턴스가 없으면 즉시 신규 생성
+    if (!this.pitchAudioCtx || this.pitchAudioCtx.state === 'closed') {
+      try {
+        this.pitchAudioCtx = new AudioCtx();
+        this.isAudioHardwareUnlocked = false;
+      } catch (e) {
+        return null;
+      }
     }
 
     // 1. iOS 15+ AudioSession API를 미디어 재생(playback) 모드로 설정하여 무음 스위치 우회
@@ -5490,18 +5503,14 @@ class ChoirApp {
       } catch (e) {}
     }
 
-    // 2. Web Audio Context 인스턴스 초기화
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!this.pitchAudioCtx && AudioCtx) {
-      this.pitchAudioCtx = new AudioCtx();
-    }
-
     if (this.pitchAudioCtx) {
       if (this.pitchAudioCtx.state === 'suspended') {
-        this.pitchAudioCtx.resume().catch(() => {});
+        try {
+          this.pitchAudioCtx.resume().catch(() => {});
+        } catch (e) {}
       }
 
-      // 3. 최초 1회만 하드웨어 오디오 연결 활성화 (중복 실행 방지)
+      // 최초 1회 하드웨어 무음 버퍼 결합 (오디오 출력단 깨우기)
       if (!this.isAudioHardwareUnlocked) {
         this.isAudioHardwareUnlocked = true;
 
@@ -5512,21 +5521,6 @@ class ChoirApp {
           src.connect(this.pitchAudioCtx.destination);
           src.start(0);
         } catch (e) {}
-
-        try {
-          if (!this.silentAudioEl) {
-            this.silentAudioEl = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
-            this.silentAudioEl.setAttribute('playsinline', '');
-            this.silentAudioEl.setAttribute('webkit-playsinline', '');
-            this.silentAudioEl.volume = 0.01;
-          }
-          const p = this.silentAudioEl.play();
-          if (p && typeof p.then === 'function') {
-            p.then(() => {
-              this.silentAudioEl.pause();
-            }).catch(() => {});
-          }
-        } catch (e) {}
       }
     }
 
@@ -5534,13 +5528,15 @@ class ChoirApp {
   }
 
   initPitchAudioContext() {
-    this.unlockMobileAudio();
-    return this.pitchAudioCtx;
+    return this.unlockMobileAudio();
   }
 
   openPitchPipeModal() {
     this.resetAllPracticeHelpers();
-    this.unlockMobileAudio();
+    const ctx = this.unlockMobileAudio();
+    if (ctx && ctx.state === 'suspended') {
+      try { ctx.resume().catch(() => {}); } catch(e) {}
+    }
     this.openModal('modalPitchPipe');
     this.updatePitchOctaveLabels();
     this.updatePitchDisplay(0, 4);
@@ -5735,49 +5731,59 @@ class ChoirApp {
     this.stopCurrentPitchVoice();
     const ctx = this.unlockMobileAudio();
     if (!ctx) return;
+
+    const playFn = () => {
+      const freq = this.calculateNoteFrequency(index, octave);
+      const voice = this.synthesizeTone(freq, this.pitchState.timbre, duration, ctx);
+      if (!voice) return;
+
+      this.pitchState.activeVoice = voice;
+      this.pitchState.activeKeyIndex = index;
+      this.highlightPianoKey(index, true);
+      this.setSoundWaveActive(true);
+
+      if (this.pitchState.safetyTimer) clearTimeout(this.pitchState.safetyTimer);
+      this.pitchState.safetyTimer = setTimeout(() => {
+        this.highlightPianoKey(index, false);
+        this.setSoundWaveActive(false);
+        this.pitchState.activeVoice = null;
+        this.pitchState.activeKeyIndex = null;
+      }, duration * 1000 + 100);
+    };
+
     if (ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
+      ctx.resume().then(playFn).catch(playFn);
+    } else {
+      playFn();
     }
-
-    const freq = this.calculateNoteFrequency(index, octave);
-    const voice = this.synthesizeTone(freq, this.pitchState.timbre, duration, ctx);
-    if (!voice) return;
-
-    this.pitchState.activeVoice = voice;
-    this.pitchState.activeKeyIndex = index;
-    this.highlightPianoKey(index, true);
-    this.setSoundWaveActive(true);
-
-    if (this.pitchState.safetyTimer) clearTimeout(this.pitchState.safetyTimer);
-    this.pitchState.safetyTimer = setTimeout(() => {
-      this.highlightPianoKey(index, false);
-      this.setSoundWaveActive(false);
-      this.pitchState.activeVoice = null;
-      this.pitchState.activeKeyIndex = null;
-    }, duration * 1000 + 100);
   }
 
   startPitchVoice(index, octave) {
     this.stopCurrentPitchVoice();
     const ctx = this.unlockMobileAudio();
     if (!ctx) return;
+
+    const startFn = () => {
+      const freq = this.calculateNoteFrequency(index, octave);
+      const voice = this.synthesizeTone(freq, this.pitchState.timbre, null, ctx);
+      if (!voice) return;
+
+      this.pitchState.activeVoice = voice;
+      this.pitchState.activeKeyIndex = index;
+      this.highlightPianoKey(index, true);
+      this.setSoundWaveActive(true);
+
+      if (this.pitchState.safetyTimer) clearTimeout(this.pitchState.safetyTimer);
+      this.pitchState.safetyTimer = setTimeout(() => {
+        this.stopCurrentPitchVoice();
+      }, 8000);
+    };
+
     if (ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
+      ctx.resume().then(startFn).catch(startFn);
+    } else {
+      startFn();
     }
-
-    const freq = this.calculateNoteFrequency(index, octave);
-    const voice = this.synthesizeTone(freq, this.pitchState.timbre, null, ctx);
-    if (!voice) return;
-
-    this.pitchState.activeVoice = voice;
-    this.pitchState.activeKeyIndex = index;
-    this.highlightPianoKey(index, true);
-    this.setSoundWaveActive(true);
-
-    if (this.pitchState.safetyTimer) clearTimeout(this.pitchState.safetyTimer);
-    this.pitchState.safetyTimer = setTimeout(() => {
-      this.stopCurrentPitchVoice();
-    }, 8000);
   }
 
   stopCurrentPitchVoice() {
@@ -5823,31 +5829,29 @@ class ChoirApp {
     masterGain.gain.setValueAtTime(0.85, now);
 
     if (timbre === 'piano') {
-      // 🎹 맑고 청아한 어쿠스틱 피아노/피치파이프 (Pure Sine Harmonics)
+      // 🎹 맑은 어쿠스틱 피아노 (해머 타현의 맑은 어택 & 그랜드 피아노 감쇠)
       const harmonics = [
-        { mult: 1, gain: 0.58 }, // 기음
-        { mult: 2, gain: 0.18 }, // 2배음
-        { mult: 3, gain: 0.05 }, // 3배음
-        { mult: 4, gain: 0.02 }  // 4배음
+        { mult: 1.0, gain: 0.65 }, // 기음 (풍부한 바디감)
+        { mult: 2.0, gain: 0.22 }, // 옥타브 배음
+        { mult: 3.0, gain: 0.08 }, // 3배음
+        { mult: 4.0, gain: 0.03 }  // 4배음
       ];
 
       const filter = ctx.createBiquadFilter();
       filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(2800, now);
-      filter.frequency.setTargetAtTime(700, now + 0.02, 0.8);
+      filter.frequency.setValueAtTime(3200, now);
+      filter.frequency.setTargetAtTime(800, now + 0.02, 0.7);
       filter.connect(masterGain);
 
       const noteGain = ctx.createGain();
       noteGain.connect(filter);
 
-      // Attack: 15ms 부드럽게 1.0으로 상승 (클릭 노이즈 제로)
+      // 12ms 타현 어택 후 자연스러운 지수 감쇠 (어쿠스틱 피아노 현의 공명)
       noteGain.gain.setValueAtTime(0, now);
-      noteGain.gain.linearRampToValueAtTime(1.0, now + 0.015);
+      noteGain.gain.linearRampToValueAtTime(1.0, now + 0.012);
+      noteGain.gain.setTargetAtTime(0, now + 0.02, 0.75);
 
-      // Natural Decay: 그랜드 피아노 현의 자연스러운 지수 감쇠 (setTargetAtTime으로 0을 향해 끝없이 부드럽게 감쇠)
-      noteGain.gain.setTargetAtTime(0, now + 0.015, 0.75);
-
-      const maxSec = (duration || 2.5) + 0.5;
+      const maxSec = (duration || 2.4) + 0.5;
       const oscs = harmonics.map(h => {
         const osc = ctx.createOscillator();
         osc.type = 'sine';
@@ -5859,7 +5863,6 @@ class ChoirApp {
         hGain.connect(noteGain);
 
         osc.start(now);
-        // 완전히 소리가 0에 도달한 후 안전 정지 (끝에서 잘려 생기는 '띡' 소리 원천 차단)
         osc.stop(now + maxSec + 0.5);
         return osc;
       });
@@ -5868,8 +5871,6 @@ class ChoirApp {
         stop: () => {
           try {
             const stopTime = ctx.currentTime;
-            // 🛑 중요: gain.value를 읽어 재설정하면 불연속 점프로 인한 '띡' 소리가 발생하므로 절대 하지 않음!
-            // setTargetAtTime은 현재 실시간 볼륨 위치에서부터 0으로 40ms 동안 완벽하게 부드럽게 페이드아웃시킴
             noteGain.gain.cancelScheduledValues(stopTime);
             noteGain.gain.setTargetAtTime(0, stopTime, 0.04);
             setTimeout(() => {
@@ -5879,48 +5880,59 @@ class ChoirApp {
         }
       };
     } else {
-      // ⛪ 파이프 오르간 (순수 정현파 기반 8' 4' 2' 플루트 스톱 사운드)
-      const organRanks = [
-        { type: 'sine', mult: 1, gain: 0.52 },
-        { type: 'sine', mult: 2, gain: 0.20 },
-        { type: 'sine', mult: 3, gain: 0.08 },
-        { type: 'sine', mult: 4, gain: 0.03 }
+      // ⛪ 파이프 오르간 (장엄한 파이프 오르간 합창 스톱 8'+4'+2⅔'+2' & 지속 서스테인)
+      // 교회 오르간 특유의 풍성한 코러스 배음 구조 (Triangle + Sine + 미세 디튜닝)
+      const organPipes = [
+        { type: 'triangle', mult: 1.0, detune: 0, gain: 0.38 },   // 8' 메인 플루트/프린시펄
+        { type: 'sine',     mult: 1.0, detune: 4, gain: 0.22 },   // 8' 코러스 디튜닝
+        { type: 'triangle', mult: 2.0, detune: -3, gain: 0.20 },  // 4' 옥타브 스톱
+        { type: 'sine',     mult: 3.0, detune: 2, gain: 0.10 },   // 2 2/3' 퀸트 스톱
+        { type: 'sine',     mult: 4.0, detune: 0, gain: 0.08 }    // 2' 수퍼옥타브
       ];
 
-      const noteGain = ctx.createGain();
-      noteGain.connect(masterGain);
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(4500, now);
+      filter.connect(masterGain);
 
+      const noteGain = ctx.createGain();
+      noteGain.connect(filter);
+
+      // 오르간은 건반을 누르는 동안 계속 소리가 유지됨 (서스테인 0.85 유지)
       noteGain.gain.setValueAtTime(0, now);
       noteGain.gain.linearRampToValueAtTime(0.85, now + 0.035);
 
       if (duration) {
-        const fadeStart = Math.max(0.1, duration - 0.25);
-        noteGain.gain.setTargetAtTime(0, now + fadeStart, 0.06);
+        // 프리셋 버튼 청음 시 duration 후 성당 잔향(리버브)처럼 0.35초 동안 페이드아웃
+        const sustainEnd = Math.max(0.1, duration - 0.35);
+        noteGain.gain.setValueAtTime(0.85, now + sustainEnd);
+        noteGain.gain.setTargetAtTime(0, now + sustainEnd, 0.12);
       }
 
+      // 성당 파이프 공명 트레몰로 (LFO)
       const lfo = ctx.createOscillator();
-      lfo.frequency.setValueAtTime(4.5, now);
+      lfo.frequency.setValueAtTime(5.2, now); // 5.2Hz 부드러운 오르간 바이브레이션
       const lfoGain = ctx.createGain();
-      lfoGain.gain.setValueAtTime(freq * 0.005, now);
+      lfoGain.gain.setValueAtTime(freq * 0.008, now);
       lfo.connect(lfoGain);
 
-      const maxSec = (duration || 2.8) + 0.5;
-      const oscs = organRanks.map(rank => {
+      const maxSec = (duration || 3.0) + 0.8;
+      const oscs = organPipes.map(pipe => {
         const osc = ctx.createOscillator();
-        osc.type = rank.type;
-        osc.frequency.setValueAtTime(freq * rank.mult, now);
+        osc.type = pipe.type;
+        osc.frequency.setValueAtTime(freq * pipe.mult, now);
+        osc.detune.setValueAtTime(pipe.detune, now);
         lfoGain.connect(osc.frequency);
 
-        const rGain = ctx.createGain();
-        rGain.gain.setValueAtTime(rank.gain, now);
-        osc.connect(rGain);
-        rGain.connect(noteGain);
+        const pGain = ctx.createGain();
+        pGain.gain.setValueAtTime(pipe.gain, now);
+        osc.connect(pGain);
+        pGain.connect(noteGain);
 
         osc.start(now);
         osc.stop(now + maxSec + 0.5);
         return osc;
       });
-
       lfo.start(now);
       lfo.stop(now + maxSec + 0.5);
 
@@ -5929,11 +5941,12 @@ class ChoirApp {
           try {
             const stopTime = ctx.currentTime;
             noteGain.gain.cancelScheduledValues(stopTime);
-            noteGain.gain.setTargetAtTime(0, stopTime, 0.04);
+            // 오르간 건반을 뗄 때 성당 잔향처럼 0.18초 부드러운 릴리즈
+            noteGain.gain.setTargetAtTime(0, stopTime, 0.08);
             setTimeout(() => {
               oscs.forEach(o => { try { o.stop(); } catch(e){} });
               try { lfo.stop(); } catch(e){}
-            }, 250);
+            }, 350);
           } catch (e) {}
         }
       };
