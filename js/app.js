@@ -129,21 +129,28 @@ class ChoirApp {
 
     this.updateHeaderHeightVariable();
 
-    // 슬라이딩 세그먼트 인디케이터 초기 배치 및 리사이즈 대응
+    // 슬라이딩 세그먼트 & 하단 리퀴드 물방울 인디케이터 초기 배치 및 리사이즈 대응
+    this.updateTabLiquidPill(null, true);
+
     window.addEventListener('resize', () => {
       this.updateHeaderHeightVariable();
       this.updateSegmentIndicator(document.getElementById('noticeSubTabBar'));
       this.updateSegmentIndicator(document.getElementById('praiseSubTabBar'));
+      this.updateTabLiquidPill(null, true);
     }, { passive: true });
 
     window.addEventListener('orientationchange', () => {
-      setTimeout(() => this.updateHeaderHeightVariable(), 100);
+      setTimeout(() => {
+        this.updateHeaderHeightVariable();
+        this.updateTabLiquidPill(null, true);
+      }, 100);
     }, { passive: true });
 
     setTimeout(() => {
       this.updateHeaderHeightVariable();
       this.updateSegmentIndicator(document.getElementById('noticeSubTabBar'));
       this.updateSegmentIndicator(document.getElementById('praiseSubTabBar'));
+      this.updateTabLiquidPill(null, true);
     }, 150);
   }
 
@@ -705,6 +712,7 @@ class ChoirApp {
     document.querySelectorAll('.tab-item').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.tab === tabId);
     });
+    this.updateTabLiquidPill();
     document.querySelectorAll('.tab-pane').forEach(pane => {
       pane.classList.toggle('active', pane.id === `tab-${tabId}`);
     });
@@ -733,6 +741,52 @@ class ChoirApp {
       if (width > 0) {
         indicator.style.left = `${left}px`;
         indicator.style.width = `${width}px`;
+      }
+    });
+  }
+
+  // 💧 하단 플로팅 독: 탭 간 이동 시 부드럽게 글라이딩하는 대형 리퀴드 물방울 인디케이터 (아이콘 + 타이틀 포용)
+  updateTabLiquidPill(targetBtn, isInitial = false) {
+    const bar = document.querySelector('.app-tabbar');
+    const pill = document.getElementById('tabLiquidPill');
+    if (!bar || !pill) return;
+
+    const btn = targetBtn || bar.querySelector('.tab-item.active') || bar.querySelector('.tab-item');
+    if (!btn) return;
+
+    requestAnimationFrame(() => {
+      const barRect = bar.getBoundingClientRect();
+      const btnRect = btn.getBoundingClientRect();
+
+      // 버튼 너비에 맞춰 5개 메뉴 전체에서 정확히 균등하게 중앙 정렬되는 대형 리퀴드 물방울 캡슐
+      const pillWidth = Math.round(btnRect.width - 6);
+      const pillHeight = Math.round(btnRect.height - 4);
+      const left = Math.round(btnRect.left - barRect.left + (btnRect.width - pillWidth) / 2);
+      const top = Math.round(btnRect.top - barRect.top + (btnRect.height - pillHeight) / 2);
+      const width = pillWidth;
+      const height = pillHeight;
+
+      if (isInitial) {
+        pill.classList.remove('is-sliding');
+        pill.style.transition = 'none';
+        pill.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+        pill.style.width = `${width}px`;
+        pill.style.height = `${height}px`;
+        pill.style.opacity = '1';
+        void pill.offsetHeight; // reflow 강제
+        pill.style.transition = '';
+      } else {
+        // 이동 중: 물방울이 투명하게 변하며 유연하게 미끄러지는 효과 적용
+        pill.classList.add('is-sliding');
+        pill.style.opacity = '1';
+        pill.style.transform = `translate3d(${left}px, ${top}px, 0)`;
+        pill.style.width = `${width}px`;
+        pill.style.height = `${height}px`;
+
+        if (this._tabPillTimer) clearTimeout(this._tabPillTimer);
+        this._tabPillTimer = setTimeout(() => {
+          pill.classList.remove('is-sliding');
+        }, 360);
       }
     });
   }

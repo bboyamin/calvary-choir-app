@@ -2176,95 +2176,92 @@ body {
 
 /* ==========================================
    하단 대형 탭 바 (5대 메인 메뉴)
-   ========================================== */
-/* ==========================================
-   하단 플로팅 독 탭 바 (5대 메인 메뉴)
-   - 홈화면 추가(PWA standalone) 실행 시 곡면 모서리 짤림 100% 방지
+   - 최신 애플 리퀴드 글래스 (Liquid Glass / visionOS Stadium Dock)
+   - Threads 스타일 액티브 아이콘 솔리드 채움 & 캡슐 알약 효과
    ========================================== */
 .app-tabbar {
   position: fixed;
-  bottom: max(10px, env(safe-area-inset-bottom, 10px));
+  bottom: max(12px, env(safe-area-inset-bottom, 12px));
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 24px);
-  max-width: 450px;
-  height: 60px;
-  padding: 0 6px;
+  max-width: 440px;
+  height: 64px;
+  padding: 4px 8px;
   box-sizing: border-box;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  border-radius: 22px;
-  display: flex;
-  justify-content: space-around;
+  /* 💧 리퀴드 글래스: 초고투명 굴절 & 서리 유리 효과 */
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(28px) saturate(200%) brightness(1.02);
+  -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(1.02);
+  /* 🌟 리퀴드 림: 스타디움 풀 라운드 캡슐 & 은은한 엣지 */
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 9999px;
+  /* 5개 메뉴 정확히 균등 분할 그리드 시스템 */
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   align-items: center;
+  justify-items: center;
   z-index: 9999;
-  box-shadow: 0 10px 28px -4px rgba(15, 23, 42, 0.12), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+  box-shadow: 
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -0.5px 1px 0 rgba(0, 0, 0, 0.03),
+    0 12px 36px -4px rgba(15, 23, 42, 0.14),
+    0 2px 8px -1px rgba(15, 23, 42, 0.05);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
 }
 
-/* 홈화면 추가(PWA standalone 모드) 및 모바일 스탠드얼론 실행 시 여백 강화 */
+/* 홈화면 추가(PWA standalone 모드) 및 모바일 스탠드얼론 실행 시 여백 */
 @media all and (display-mode: standalone), (display-mode: fullscreen), (-webkit-touch-callout: none) {
   .app-tabbar {
     bottom: max(14px, env(safe-area-inset-bottom, 14px));
     width: calc(100% - 28px);
-    height: 62px;
+    height: 66px;
   }
 }
 
 .tab-item {
   position: relative;
-  flex: 1 1 0%;
-  width: 20%;
-  max-width: 20%;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
   height: 54px;
-  padding: 3px 0 2px 0;
+  padding: 2px 0;
   margin: 0;
-  background: none;
+  background: transparent;
   border: none;
+  border-radius: 9999px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
-  color: var(--text-muted);
+  color: #64748B;
   cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-sizing: border-box;
   overflow: visible;
   -webkit-text-size-adjust: none;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* 상단 골드 탭 인디케이터 바 (Tab Indicator) */
-.tab-item::before {
-  content: '';
-  position: absolute;
-  top: 1px;
-  left: 50%;
-  transform: translateX(-50%) scaleX(0);
-  transform-origin: center;
-  width: 24px;
-  height: 3px;
-  border-radius: 2px;
-  background: linear-gradient(90deg, #D97706, #F59E0B);
-  box-shadow: 0 1px 4px rgba(217, 119, 6, 0.45);
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
-  opacity: 0;
-  pointer-events: none;
+/* 탭 터치 시 액체 탄성 물리 스프링 */
+.tab-item:active {
+  transform: scale(0.92);
+  transition-duration: 0.1s;
 }
 
-.tab-item.active::before {
-  transform: translateX(-50%) scaleX(1);
-  opacity: 1;
+/* 활성 탭 전체 배경은 투명 (아이콘 뒤에만 리퀴드 캡슐 생성) */
+.tab-item.active {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .tab-badge {
   position: absolute;
-  top: 1px;
+  top: 2px;
   left: 50%;
-  transform: translateX(6px);
+  transform: translateX(8px);
   background: #EF4444;
   color: #FFFFFF;
   font-size: 10px;
@@ -2276,7 +2273,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 2px 5px rgba(239, 68, 68, 0.45);
   animation: pulseBadge 2s infinite;
   z-index: 10;
 }
@@ -2287,28 +2284,141 @@ body {
   100% { transform: scale(1); }
 }
 
-/* 탭 아이콘 캡슐 하이라이트 */
+/* 💧 대형 리퀴드 글래스 무빙 물방울 (영상과 100% 동일한 미니멀 서리 캡슐) */
+.tab-liquid-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 20px;
+  /* 안착 상태: 영상 속 은은하고 세련된 미니멀 리퀴드 글래스 */
+  background: rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 
+    inset 0 1.2px 1.5px rgba(255, 255, 255, 0.95),
+    inset 0 -1px 1px rgba(0, 0, 0, 0.03),
+    0 4px 14px -2px rgba(15, 23, 42, 0.08);
+  pointer-events: none;
+  z-index: 1;
+  will-change: transform, width, height, opacity, background;
+  transition: 
+    transform 0.38s cubic-bezier(0.34, 1.48, 0.64, 1),
+    width 0.36s cubic-bezier(0.34, 1.48, 0.64, 1),
+    height 0.36s cubic-bezier(0.34, 1.48, 0.64, 1),
+    background 0.25s ease,
+    opacity 0.25s ease;
+  opacity: 0;
+}
+
+/* 🌊 이동 중: 물방울이 투명해지며 수분처럼 유연하게 글라이딩 */
+.tab-liquid-pill.is-sliding {
+  background: rgba(15, 23, 42, 0.02);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+}
+
+/* 탭 아이콘 컨테이너 (비활성) */
 .tab-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 38px;
-  height: 26px;
-  border-radius: 13px;
-  transition: background-color 0.22s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  width: 28px;
+  height: 24px;
+  border-radius: 9999px;
+  background: transparent;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+  z-index: 2;
 }
 
+/* 🌟 활성 탭: 배경은 대형 무빙 물방울 인디케이터가 담당하고 아이콘 미세 부각 */
+.tab-item.active .tab-icon {
+  background: transparent;
+  transform: translateY(-1px) scale(1.06);
+}
+
+/* 기본 비활성 아이콘: 깔끔한 라인 아웃라인 */
 .tab-icon-svg {
   display: block;
-  stroke: var(--text-muted);
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  stroke: #475569;
+  stroke-width: 2.2;
+  fill: none;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* 🌟 활성 탭 아이콘: 영상과 100% 동일한 Solid Fill */
+.tab-item.active .tab-icon-svg {
+  stroke: #0F172A;
+  fill: #0F172A;
+  stroke-width: 0.5;
+}
+
+/* 1. 찬양/음원 (음표): 음표 머리(circle) 솔리드 채움, 기둥과 보(path)는 굵은 라인 유지 */
+.tab-item.active[data-tab="praise"] .tab-icon-svg {
+  fill: none;
+  stroke: #0F172A;
+  stroke-width: 2.4;
+}
+.tab-item.active[data-tab="praise"] .tab-icon-svg circle {
+  fill: #0F172A;
+}
+
+/* 2. 주요일정 (달력): 달력 바디 솔리드 채움, 내부 구분선은 흰색으로 반전 */
+.tab-item.active[data-tab="schedule"] .tab-icon-svg {
+  fill: none;
+  stroke: #0F172A;
+  stroke-width: 2;
+}
+.tab-item.active[data-tab="schedule"] .tab-icon-svg rect {
+  fill: #0F172A;
+  stroke: #0F172A;
+}
+.tab-item.active[data-tab="schedule"] .tab-icon-svg line {
+  stroke: #FFFFFF;
+  stroke-width: 2;
+}
+.tab-item.active[data-tab="schedule"] .tab-icon-svg line:not(:last-child) {
+  stroke: #0F172A;
+  stroke-width: 2.2;
+}
+
+/* 3. 대원소개 (2인 커뮤니티 아이콘): 첨부 이미지와 100% 동일한 솔리드 채움 */
+.tab-item.active[data-tab="member"] .tab-icon-svg {
+  stroke: #0F172A;
+  fill: #0F172A;
+  stroke-width: 0.5;
+}
+.tab-item.active[data-tab="member"] .tab-icon-svg circle,
+.tab-item.active[data-tab="member"] .tab-icon-svg path {
+  fill: #0F172A;
+  stroke: #0F172A;
+  stroke-width: 0.5;
+}
+
+/* 4. 중보기도 (하트): 하트 내부 완전 솔리드 채움 */
+.tab-item.active[data-tab="prayer"] .tab-icon-svg path {
+  fill: #0F172A;
+  stroke: #0F172A;
+}
+
+/* 5. 공지사항 (홈 아이콘): 도어 하단 선 없는 완벽한 오픈 아치 도어 솔리드 채움 */
+.tab-item.active[data-tab="notice"] .tab-icon-svg {
+  fill: none;
+  stroke: #0F172A;
+}
+.tab-item.active[data-tab="notice"] .tab-icon-svg .home-body {
+  fill: #0F172A;
+  stroke: #0F172A;
+  stroke-width: 0.5;
+}
+
+/* 하단 텍스트 라벨 */
 .tab-label {
-  font-size: 11px !important;
+  font-size: 10.5px !important;
   font-weight: 600;
-  letter-spacing: -0.3px;
+  letter-spacing: -0.4px;
   white-space: nowrap;
   line-height: 1.1;
   text-align: center;
@@ -2317,24 +2427,17 @@ body {
   max-width: 100%;
   overflow: visible;
   -webkit-text-size-adjust: 100%;
-  color: var(--text-muted);
-  transition: color 0.18s ease, font-weight 0.18s ease, transform 0.18s ease;
+  color: #64748B;
+  position: relative;
+  z-index: 2;
+  transition: color 0.2s ease, font-weight 0.2s ease, transform 0.2s ease;
 }
 
-.tab-item.active .tab-icon {
-  background: rgba(217, 119, 6, 0.12); /* 은은한 샴페인 골드빛 캡슐 */
-  transform: translateY(-1px);
-}
-
-.tab-item.active .tab-icon-svg {
-  stroke: var(--gold-accent);
-  stroke-width: 2.3;
-  transform: scale(1.06);
-}
-
+/* 활성 상태 텍스트 라벨: 깊은 슬레이트 볼드 */
 .tab-item.active .tab-label {
-  color: var(--gold-accent);
-  font-weight: 750;
+  color: #0F172A;
+  font-weight: 800;
+  transform: translateY(-0.5px);
 }
 
 /* ==========================================
