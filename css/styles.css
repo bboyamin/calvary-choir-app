@@ -902,37 +902,61 @@ body {
 /* ==========================================
    서브 탭 & 파트 필터 바 & 날짜 필터 (찬양 탭)
    ========================================== */
+/* 슬라이딩 세그먼트 컨트롤 (iOS / Android 표준) */
 .sub-tab-bar {
+  position: relative;
   display: flex;
-  background: #F1F5F9;
+  background: #E2E8F0;
   padding: 3px;
-  border-radius: 11px;
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  border-radius: 12px;
+  border: 1px solid rgba(203, 213, 225, 0.9);
   margin-bottom: 12px;
+  isolation: isolate;
+}
+
+.sub-tab-indicator {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  background: #FFFFFF;
+  border-radius: 9px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.1), 0 1px 2px rgba(15, 23, 42, 0.05);
+  transition: left 0.26s cubic-bezier(0.16, 1, 0.3, 1), width 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1;
+  pointer-events: none;
 }
 
 .sub-tab-btn {
+  position: relative;
+  z-index: 2;
   flex: 1;
   height: 38px;
   border: none;
   background: transparent;
-  border-radius: 8px;
+  border-radius: 9px;
   font-size: 14px;
   font-weight: 600;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: color 0.18s ease, transform 0.1s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sub-tab-btn:active {
+  transform: scale(0.98);
 }
 
 .sub-tab-btn.active {
-  background: #FFFFFF;
+  background: transparent;
   color: var(--primary-navy);
   font-weight: 700;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow: none;
 }
 
 /* 주일/월별 날짜 검색 필터 박스 */
@@ -975,12 +999,20 @@ body {
   display: block;
 }
 
+/* 파트 필터 바 (Sticky Header 적용) */
 .part-filter-bar, .member-part-bar {
+  position: sticky;
+  top: -14px; /* .app-content padding-top 상쇄 */
+  z-index: 40;
+  background: rgba(248, 250, 252, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   display: flex;
-  gap: 6px;
+  gap: 8px;
   overflow-x: auto;
-  padding-bottom: 6px;
-  margin-bottom: 12px;
+  padding: 6px 2px 8px 2px;
+  margin: -6px -2px 10px -2px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.85);
   scrollbar-width: none;
 }
 
@@ -988,20 +1020,53 @@ body {
   display: none;
 }
 
+/* 필터 칩 (Chip) & 둥근 인원수 배지 (Badge) 분리 디자인 */
 .part-chip, .member-chip {
-  height: 35px;
-  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
   border-radius: 18px;
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.95);
   background: #FFFFFF;
   font-size: 13.5px;
   font-weight: 600;
-  color: #64748B;
+  color: #475569;
   white-space: nowrap;
   cursor: pointer;
   flex-shrink: 0;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
-  transition: all 0.16s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 텍스트 단독 파트 칩 여백 최적화 */
+.part-chip {
+  padding: 0 14px;
+}
+
+.chip-label {
+  display: inline-block;
+  line-height: 1;
+}
+
+.chip-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: #F1F5F9;
+  color: #64748B;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  line-height: 1;
+  transition: all 0.18s ease;
 }
 
 .part-chip:hover, .member-chip:hover {
@@ -1014,7 +1079,29 @@ body {
   color: #FFFFFF;
   border-color: var(--primary-navy);
   font-weight: 700;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.2);
+}
+
+.part-chip.active .chip-badge, .member-chip.active .chip-badge {
+  background: rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
+}
+
+.part-chip.active.soprano, .member-chip.active.soprano {
+  background: #BE185D;
+  border-color: #BE185D;
+}
+.part-chip.active.alto, .member-chip.active.alto {
+  background: #6D28D9;
+  border-color: #6D28D9;
+}
+.part-chip.active.tenor, .member-chip.active.tenor {
+  background: #1D4ED8;
+  border-color: #1D4ED8;
+}
+.part-chip.active.bass, .member-chip.active.bass {
+  background: #047857;
+  border-color: #047857;
 }
 
 /* ==========================================
@@ -2129,7 +2216,7 @@ body {
   max-width: 20%;
   min-width: 0;
   height: 54px;
-  padding: 2px 0;
+  padding: 3px 0 2px 0;
   margin: 0;
   background: none;
   border: none;
@@ -2137,13 +2224,37 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
   overflow: visible;
   -webkit-text-size-adjust: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 상단 골드 탭 인디케이터 바 (Tab Indicator) */
+.tab-item::before {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  transform-origin: center;
+  width: 24px;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #D97706, #F59E0B);
+  box-shadow: 0 1px 4px rgba(217, 119, 6, 0.45);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tab-item.active::before {
+  transform: translateX(-50%) scaleX(1);
+  opacity: 1;
 }
 
 .tab-badge {
@@ -2173,12 +2284,16 @@ body {
   100% { transform: scale(1); }
 }
 
+/* 탭 아이콘 캡슐 하이라이트 */
 .tab-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  height: 24px;
+  width: 38px;
+  height: 26px;
+  border-radius: 13px;
+  transition: background-color 0.22s ease, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .tab-icon-svg {
@@ -2200,17 +2315,24 @@ body {
   overflow: visible;
   -webkit-text-size-adjust: 100%;
   color: var(--text-muted);
-  transition: color 0.15s ease, font-weight 0.15s ease;
+  transition: color 0.18s ease, font-weight 0.18s ease, transform 0.18s ease;
+}
+
+.tab-item.active .tab-icon {
+  background: rgba(217, 119, 6, 0.12); /* 은은한 샴페인 골드빛 캡슐 */
+  transform: translateY(-1px);
 }
 
 .tab-item.active .tab-icon-svg {
   stroke: var(--gold-accent);
   stroke-width: 2.3;
-  transform: translateY(-1px) scale(1.08);
+  transform: scale(1.06);
 }
 
 .tab-item.active .tab-label {
   color: var(--gold-accent);
+  font-weight: 750;
+}
   font-weight: 750;
 }
 
@@ -3513,13 +3635,17 @@ body {
   font-size: 15px;
 }
 
-/* 피치 파이프 모달 컨테이너 (모바일 바텀 시트 지원) */
+/* ==========================================
+   첫 음 조율 피치 건반 모달 (Pitch Pipe)
+   - 갈보리교회 임마누엘 성가대 클래식 피아노 & 조율기 디자인
+   ========================================== */
 .modal-pitch-pipe {
   max-width: 480px;
   width: 100%;
-  border-radius: 18px;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.35);
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.3);
+  border: 1px solid rgba(226, 232, 240, 0.9);
 }
 
 @media (max-width: 600px) {
@@ -3541,11 +3667,11 @@ body {
   to { transform: translateY(0); }
 }
 
-/* 모달 헤더 */
+/* 1. 모달 헤더 */
 .pitch-modal-header {
-  background: #0F172A;
-  border-bottom: 2px solid var(--gold-accent);
-  padding: 13px 18px;
+  background: #0B132B;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+  padding: 14px 18px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -3554,39 +3680,41 @@ body {
 .pitch-title-badge {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
 }
 
 .pitch-title-icon {
-  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .pitch-title-main {
-  font-size: 17px;
-  font-weight: 900;
+  font-size: 16.5px;
+  font-weight: 700;
   color: #FFFFFF;
   letter-spacing: -0.3px;
 }
 
 .pitch-modal-sub {
-  font-size: 11px;
+  font-size: 11.5px;
   color: #94A3B8;
-  margin-top: 2px;
+  margin-top: 3px;
   font-weight: 500;
 }
 
-/* 모달 바디 */
+/* 2. 모달 바디 */
 .pitch-modal-body {
-  padding: 12px 14px 14px 14px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   background: #F8FAFC;
   overflow-y: auto;
   max-height: calc(90vh - 120px);
 }
 
-/* 1. 파트별 추천 첫 음 프리셋 칩 */
+/* 파트별 첫 음 프리셋 칩 */
 .pitch-preset-section {
   display: flex;
   flex-direction: column;
@@ -3600,112 +3728,121 @@ body {
 }
 
 .pitch-preset-title {
-  font-size: 11.5px;
-  font-weight: 800;
-  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
   letter-spacing: -0.2px;
 }
 
 .pitch-preset-chips {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 5px;
+  gap: 6px;
 }
 
 .pitch-chip {
-  padding: 6px 3px;
-  border-radius: 8px;
-  border: 1.5px solid #CBD5E1;
+  padding: 8px 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
   background: #FFFFFF;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   text-align: center;
-  transition: all 0.15s ease;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .pitch-chip .chip-part-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   margin-bottom: 1px;
 }
 
 .pitch-chip .chip-part-name {
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #1E293B;
   white-space: nowrap;
+  letter-spacing: -0.3px;
 }
 
 .pitch-chip .chip-note-name {
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 600;
+  color: #64748B;
   white-space: nowrap;
-  opacity: 0.85;
 }
 
-/* 파트별 개별 테마 색상 */
-.chip-soprano {
-  border-color: #FBCFE8;
-  background: #FDF2F8;
-  color: #9D174D;
-}
+/* 파트별 테마 점 색상 */
 .chip-soprano .chip-part-dot { background: #EC4899; }
-
-.chip-alto {
-  border-color: #DDD6FE;
-  background: #F5F3FF;
-  color: #5B21B6;
-}
 .chip-alto .chip-part-dot { background: #8B5CF6; }
-
-.chip-tenor {
-  border-color: #BFDBFE;
-  background: #EFF6FF;
-  color: #1E40AF;
-}
 .chip-tenor .chip-part-dot { background: #3B82F6; }
-
-.chip-bass {
-  border-color: #A7F3D0;
-  background: #ECFDF5;
-  color: #065F46;
-}
 .chip-bass .chip-part-dot { background: #10B981; }
-
-.chip-ref {
-  border-color: #FDE68A;
-  background: #FFFBEB;
-  color: #92400E;
-}
 .chip-ref .chip-part-dot { background: #F59E0B; }
 
-.pitch-chip:active, .pitch-chip.is-active-preset {
-  transform: scale(0.96);
-  border-width: 2px;
-  box-shadow: 0 0 10px rgba(217, 119, 6, 0.4);
+.pitch-chip:hover {
+  border-color: #CBD5E1;
+  transform: translateY(-1px);
 }
-.chip-soprano.is-active-preset { border-color: #EC4899; box-shadow: 0 0 10px rgba(236, 72, 153, 0.5); }
-.chip-alto.is-active-preset { border-color: #8B5CF6; box-shadow: 0 0 10px rgba(139, 92, 246, 0.5); }
-.chip-tenor.is-active-preset { border-color: #3B82F6; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
-.chip-bass.is-active-preset { border-color: #10B981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
-.chip-ref.is-active-preset { border-color: #F59E0B; box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
 
-/* 2. 실시간 디지털 음계 & 주파수 모니터 전광판 */
+.pitch-chip:active {
+  transform: scale(0.97);
+}
+
+/* 활성 프리셋 상태 (성가대 고유 테마 톤온톤 적용) */
+.pitch-chip.is-active-preset {
+  background: #0F172A;
+  border-color: #D97706;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.18);
+}
+
+.pitch-chip.is-active-preset .chip-part-name {
+  color: #FFFFFF;
+}
+
+.pitch-chip.is-active-preset .chip-note-name {
+  color: #FBBF24;
+}
+
+.chip-soprano.is-active-preset {
+  background: #831843;
+  border-color: #F472B6;
+}
+.chip-alto.is-active-preset {
+  background: #4C1D95;
+  border-color: #A78BFA;
+}
+.chip-tenor.is-active-preset {
+  background: #1E3A8A;
+  border-color: #60A5FA;
+}
+.chip-bass.is-active-preset {
+  background: #064E3B;
+  border-color: #34D399;
+}
+.chip-ref.is-active-preset {
+  background: #78350F;
+  border-color: #FBBF24;
+}
+
+/* 3. 실시간 음계 & 주파수 모니터 패널 */
 .pitch-display-screen {
-  background: linear-gradient(135deg, #090E1A 0%, #0F172A 100%);
-  border: 1.5px solid rgba(217, 119, 6, 0.4);
+  background: linear-gradient(135deg, #0B132B 0%, #1E293B 100%);
+  border: 1px solid rgba(217, 119, 6, 0.3);
   border-radius: 12px;
   padding: 10px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 4px 14px rgba(11, 19, 43, 0.12);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   min-height: 56px;
   box-sizing: border-box;
@@ -3713,7 +3850,7 @@ body {
 
 .pitch-display-screen.is-active {
   border-color: #F59E0B;
-  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5), 0 0 12px rgba(245, 158, 11, 0.35);
+  box-shadow: 0 4px 16px rgba(217, 119, 6, 0.25);
 }
 
 .pitch-screen-left {
@@ -3725,10 +3862,11 @@ body {
 }
 
 .pitch-note-korean {
-  font-size: 17px;
-  font-weight: 900;
+  font-family: 'Gowun Batang', 'Noto Sans KR', serif;
+  font-size: 18px;
+  font-weight: 700;
   color: #FFFFFF;
-  letter-spacing: -0.4px;
+  letter-spacing: -0.3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3737,8 +3875,8 @@ body {
 
 .pitch-note-english {
   font-size: 13px;
-  font-weight: 800;
-  color: #F59E0B;
+  font-weight: 700;
+  color: #FBBF24;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -3747,8 +3885,8 @@ body {
 
 .pitch-octave-tag {
   font-size: 9.5px;
-  font-weight: 700;
-  background: rgba(255, 255, 255, 0.15);
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.12);
   color: #E2E8F0;
   padding: 1px 5px;
   border-radius: 4px;
@@ -3780,7 +3918,7 @@ body {
 }
 
 .pitch-sound-wave.is-sounding .p-wave-bar {
-  background: linear-gradient(to top, #F59E0B, #38BDF8);
+  background: #F59E0B;
   animation: pitchWaveAnim 0.7s infinite alternate ease-in-out;
 }
 
@@ -3796,8 +3934,8 @@ body {
 }
 
 .pitch-timbre-indicator {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 10.5px;
+  font-weight: 600;
   color: #94A3B8;
   white-space: nowrap;
 }
@@ -3812,15 +3950,15 @@ body {
 
 .pitch-freq-label {
   font-size: 10px;
-  font-weight: 700;
-  color: #64748B;
+  font-weight: 600;
+  color: #94A3B8;
   white-space: nowrap;
 }
 
 .pitch-freq-value {
   font-size: 16px;
-  font-weight: 900;
-  color: #38BDF8;
+  font-weight: 700;
+  color: #F59E0B;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.3px;
   white-space: nowrap;
@@ -3832,11 +3970,11 @@ body {
 .pitch-freq-value .freq-unit {
   font-size: 10.5px;
   color: #94A3B8;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
 }
 
-/* 3. 음색 선택 & 옥타브 제어 툴바 */
+/* 4. 음색 선택 & 옥타브 제어 툴바 */
 .pitch-toolbar {
   display: flex;
   flex-direction: column;
@@ -3844,7 +3982,7 @@ body {
   background: #FFFFFF;
   border: 1px solid #E2E8F0;
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 10px 14px;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
   forced-color-adjust: none;
 }
@@ -3863,7 +4001,7 @@ body {
 }
 
 .toolbar-label {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 700;
   color: #64748B;
   white-space: nowrap;
@@ -3880,21 +4018,22 @@ body {
 
 .btn-timbre-pill {
   border: none;
-  background: none;
-  padding: 5px 10px;
+  background: transparent;
+  padding: 5px 12px;
   border-radius: 6px;
   font-size: 12px;
-  font-weight: 700;
-  color: #475569;
+  font-weight: 600;
+  color: #64748B;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.16s ease;
   white-space: nowrap;
 }
 
 .btn-timbre-pill.active {
   background: #0F172A;
   color: #FFFFFF;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.2);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.15);
 }
 
 .pitch-octave-stepper {
@@ -3911,9 +4050,9 @@ body {
   border: none;
   background: #FFFFFF;
   color: #1E293B;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
-  padding: 5px 8px;
+  padding: 5px 9px;
   border-radius: 6px;
   cursor: pointer;
   box-shadow: 0 1px 2px rgba(0,0,0,0.04);
@@ -3933,10 +4072,10 @@ body {
 }
 
 .pitch-octave-readout {
-  font-size: 11.5px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 700;
   color: #0F172A;
-  padding: 0 5px;
+  padding: 0 6px;
   white-space: nowrap;
   text-align: center;
 }
@@ -3957,26 +4096,26 @@ body {
   }
 }
 
-/* 4. 1옥타브 실물감 3D 피아노 건반 */
+/* 5. 1옥타브 실물감 피아노 건반 */
 .piano-keyboard-wrapper {
-  background: linear-gradient(to bottom, #1E293B 0%, #0F172A 100%);
-  border: 2px solid #334155;
-  border-radius: 14px;
-  padding: 10px 8px 12px 8px;
-  box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.4), 0 4px 14px rgba(15, 23, 42, 0.15);
+  background: #0F172A;
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  border-radius: 12px;
+  padding: 8px 6px 10px 6px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.15);
   position: relative;
   forced-color-adjust: none;
 }
 
-/* 어쿠스틱 피아노 펠트 띠 효과 */
+/* 어쿠스틱 피아노 클래식 버건디 펠트 띠 */
 .piano-keyboard-wrapper::before {
   content: '';
   position: absolute;
-  top: 7px;
-  left: 8px;
-  right: 8px;
+  top: 6px;
+  left: 6px;
+  right: 6px;
   height: 3px;
-  background: #991B1B;
+  background: #881337;
   border-radius: 2px;
   z-index: 5;
 }
@@ -4003,11 +4142,11 @@ body {
 .piano-key.white-key {
   flex: 1;
   height: 100%;
-  background: linear-gradient(to bottom, #FFFFFF 0%, #FAFAFA 80%, #E2E8F0 100%);
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAFAFA 85%, #EEF2F6 100%);
   border: 1px solid #CBD5E1;
   border-bottom: 3.5px solid #94A3B8;
-  border-radius: 0 0 7px 7px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.12), inset 0 -3px 4px rgba(0, 0, 0, 0.05);
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.08), inset 0 -2px 3px rgba(0, 0, 0, 0.03);
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -4020,7 +4159,7 @@ body {
 
 .white-key .key-eng-label {
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   color: #64748B;
   margin-bottom: 2px;
   letter-spacing: -0.2px;
@@ -4028,24 +4167,22 @@ body {
 
 .white-key .key-solfege-label {
   font-size: 13.5px;
-  font-weight: 900;
+  font-weight: 700;
   color: #0F172A;
   letter-spacing: -0.3px;
 }
 
-
-
 /* 흰건반 눌림 상태 */
 .piano-key.white-key:active, .piano-key.white-key.is-pressed {
-  transform: translateY(3.5px);
-  background: #E2E8F0;
+  transform: translateY(2.5px);
+  background: #EEF2F6;
   border-bottom-width: 1px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.15);
-  border-color: #3B82F6;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  border-color: #D97706;
 }
 
 .piano-key.white-key.is-pressed .key-solfege-label {
-  color: #1D4ED8;
+  color: #B45309;
 }
 
 /* 검은건반 컨테이너 & 개별 키 */
@@ -4062,11 +4199,11 @@ body {
   position: absolute;
   width: 8.4%;
   height: 100%;
-  background: linear-gradient(to bottom, #1E293B 0%, #0F172A 75%, #020617 100%);
+  background: linear-gradient(180deg, #1E293B 0%, #0F172A 70%, #020617 100%);
   border: 1px solid #000000;
   border-bottom: 3.5px solid #000000;
   border-radius: 0 0 5px 5px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2);
   cursor: pointer;
   pointer-events: auto;
   z-index: 10;
@@ -4086,7 +4223,7 @@ body {
   letter-spacing: -0.3px;
 }
 
-/* 검은건반 5개 수학적 위치 지정 (8개 흰건반 사이) */
+/* 검은건반 위치 지정 (8개 흰건반 사이) */
 .black-key-1 { left: calc(12.5% - 4.2%); }
 .black-key-2 { left: calc(25% - 4.2%); }
 .black-key-3 { left: calc(50% - 4.2%); }
@@ -4095,43 +4232,47 @@ body {
 
 /* 검은건반 눌림 상태 */
 .piano-key.black-key:active, .piano-key.black-key.is-pressed {
-  transform: translateY(2.5px) scale(0.98);
+  transform: translateY(2px);
   background: #020617;
   border-bottom-width: 1px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
-  border-color: #38BDF8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  border-color: #F59E0B;
 }
 
 .piano-key.black-key.is-pressed .black-key-label {
-  color: #38BDF8;
+  color: #FBBF24;
 }
 
-/* 5. 팁 & 하단 버튼 */
+/* 6. 친절한 사용 팁 바 */
 .pitch-footer-tip {
   display: flex;
   align-items: center;
-  gap: 6px;
-  background: #EFF6FF;
-  border: 1px solid #BFDBFE;
+  gap: 7px;
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
   border-radius: 8px;
-  padding: 6px 10px;
+  padding: 7px 11px;
 }
 
 .pitch-tip-icon {
-  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  color: #D97706;
 }
 
 .pitch-tip-text {
-  font-size: 11px;
-  color: #1E40AF;
+  font-size: 11.5px;
+  color: #92400E;
   font-weight: 600;
   line-height: 1.4;
 }
 
+/* 7. 하단 닫기 바 */
 .pitch-modal-actions {
   margin: 0;
-  padding: 8px 14px 12px 14px;
+  padding: 10px 14px 14px 14px;
   border-top: 1px solid #E2E8F0;
   background: #FFFFFF;
   display: flex;
@@ -4141,12 +4282,12 @@ body {
 
 .pitch-btn-done {
   width: auto;
-  min-width: 120px;
-  height: 36px;
-  padding: 0 22px;
-  background: var(--gold-accent);
+  min-width: 130px;
+  height: 38px;
+  padding: 0 24px;
+  background: #0F172A;
   color: #FFFFFF;
-  border: none;
+  border: 1px solid rgba(217, 119, 6, 0.35);
   border-radius: 8px;
   font-size: 13.5px;
   font-weight: 700;
@@ -4154,16 +4295,245 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.2);
-  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+  transition: all 0.18s ease;
 }
 
 .pitch-btn-done:hover {
-  filter: brightness(1.05);
+  background: #1E293B;
+  border-color: #D97706;
   transform: translateY(-1px);
 }
 
 .pitch-btn-done:active {
+  transform: translateY(0);
+}
+
+/* ==========================================
+   사용 설명서 모달 (User Manual)
+   - 갈보리교회 임마누엘 성가대 쉬운 가이드 디자인
+   ========================================== */
+.modal-user-manual-card {
+  max-width: 520px;
+  width: 100%;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: 20px;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.3);
+}
+
+.manual-header {
+  background: #0B132B;
+  padding: 15px 20px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.manual-title-group {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.manual-title-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.manual-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.manual-body {
+  font-size: 15px;
+  color: #1E293B;
+  line-height: 1.65;
+  padding: 16px 18px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+  background: #F8FAFC;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 5대 메뉴 미니어처 바 (실제 하단 탭바와 100% 동일한 SVG 아이콘 시스템) */
+.manual-nav-preview {
+  background: #FFFFFF;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 16px;
+  padding: 12px 10px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+
+.manual-nav-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--primary-navy);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.manual-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.manual-nav-item {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 8px 2px 7px 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.manual-nav-item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold-accent);
+  height: 22px;
+}
+
+.manual-nav-item-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1E293B;
+  letter-spacing: -0.3px;
+}
+
+/* 개별 기능 카드 */
+.manual-card-item {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+}
+
+.manual-card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--primary-navy);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  letter-spacing: -0.3px;
+}
+
+.manual-badge-pill {
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 5px;
+  letter-spacing: -0.2px;
+  line-height: 1.35;
+  margin: 0 2px;
+  white-space: nowrap;
+}
+
+.manual-badge-blue { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
+.manual-badge-gold { background: #FEF3C7; color: #B45309; border: 1px solid #FDE68A; }
+.manual-badge-green { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
+.manual-badge-navy { background: #0F172A; color: #FFFFFF; }
+
+.manual-card-desc {
+  display: block;
+  font-size: 14.5px;
+  color: #334155;
+  line-height: 1.65;
+  margin-bottom: 7px;
+  padding-left: 14px;
+  text-indent: -14px;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+.manual-card-desc:last-child {
+  margin-bottom: 0;
+}
+
+.manual-bullet {
+  color: var(--gold-accent);
+  font-weight: 700;
+  display: inline;
+  margin-right: 4px;
+}
+
+/* 중요 안내 배너 */
+.manual-notice-banner {
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #78350F;
+  line-height: 1.55;
+}
+
+.manual-notice-banner strong {
+  color: #B91C1C;
+}
+
+.manual-footer-actions {
+  margin: 0;
+  padding: 12px 20px 16px 20px;
+  border-top: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.manual-btn-done {
+  width: 100%;
+  max-width: 240px;
+  height: 42px;
+  background: var(--primary-navy);
+  color: #FFFFFF;
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  border-radius: 10px;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15);
+  transition: all 0.18s ease;
+}
+
+.manual-btn-done:hover {
+  background: #1E293B;
+  border-color: var(--gold-accent);
+  transform: translateY(-1px);
+}
+
+.manual-btn-done:active {
   transform: translateY(0);
 }
 

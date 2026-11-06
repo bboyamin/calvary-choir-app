@@ -125,13 +125,14 @@
           </div>
         </div>
 
-        <!-- 서브 탭: 전체 공지 vs 즐겨찾기 -->
-        <div class="sub-tab-bar" style="margin-bottom: 12px;">
+        <!-- 서브 탭: 전체 공지 vs 즐겨찾기 (슬라이딩 세그먼트 컨트롤) -->
+        <div class="sub-tab-bar" id="noticeSubTabBar" style="margin-bottom: 12px;">
+          <div class="sub-tab-indicator"></div>
           <button type="button" class="sub-tab-btn active" data-notice-filter="all" onclick="app.setNoticeFilter('all')">
-            전체 공지
+            <span class="sub-tab-text">전체 공지</span>
           </button>
           <button type="button" class="sub-tab-btn" data-notice-filter="fav" onclick="app.setNoticeFilter('fav')">
-            즐겨찾기 <span id="noticeFavCountBadge" class="fav-badge" style="background: var(--gold-accent, #D97706); color: #ffffff; font-size: 11px; padding: 1px 6px; border-radius: 10px; margin-left: 4px;">0</span>
+            <span class="sub-tab-text">즐겨찾기</span> <span id="noticeFavCountBadge" class="fav-badge" style="background: var(--gold-accent, #D97706); color: #ffffff; font-size: 11px; padding: 1px 6px; border-radius: 10px; margin-left: 4px;">0</span>
           </button>
         </div>
 
@@ -177,13 +178,14 @@
           </div>
         </div>
 
-        <!-- 서브 탭: 성가대 찬양 영상 vs 파트별 연습실 -->
-        <div class="sub-tab-bar">
+        <!-- 서브 탭: 성가대 찬양 영상 vs 파트별 연습실 (슬라이딩 세그먼트 컨트롤) -->
+        <div class="sub-tab-bar" id="praiseSubTabBar">
+          <div class="sub-tab-indicator"></div>
           <button class="sub-tab-btn active" data-subtab="all" onclick="app.switchPraiseSubtab('all')">
-            성가대 찬양 영상
+            <span class="sub-tab-text">성가대 찬양 영상</span>
           </button>
           <button class="sub-tab-btn" data-subtab="part" onclick="app.switchPraiseSubtab('part')">
-            파트별 연습실
+            <span class="sub-tab-text">파트별 연습실</span>
           </button>
         </div>
 
@@ -205,7 +207,7 @@
 
         <!-- 파트별 연습실 서브 뷰 -->
         <div id="praiseSubtabPart" class="subtab-pane">
-          <!-- 파트 필터 바 (기본 전체 5개 파트 표시) -->
+          <!-- 파트 필터 바 (Sticky Header 적용) -->
           <div class="part-filter-bar">
             <button class="part-chip active" data-part="ALL" onclick="app.filterPartPraise('ALL')">전체</button>
             <button class="part-chip" data-part="ALL_PART" onclick="app.filterPartPraise('ALL_PART')">4부 합창</button>
@@ -245,14 +247,26 @@
           </button>
         </div>
 
-        <!-- 파트 필터 버튼 -->
+        <!-- 파트 필터 버튼 (Sticky Header & 칩+배지 결합) -->
         <div class="member-part-bar">
-          <button class="member-chip active" data-mpart="ALL" onclick="app.filterMembers('ALL')">전체</button>
-          <button class="member-chip" data-mpart="임원" onclick="app.filterMembers('임원')">지휘자/반주자</button>
-          <button class="member-chip soprano" data-mpart="소프라노" onclick="app.filterMembers('소프라노')">소프라노</button>
-          <button class="member-chip alto" data-mpart="알토" onclick="app.filterMembers('알토')">알토</button>
-          <button class="member-chip tenor" data-mpart="테너" onclick="app.filterMembers('테너')">테너</button>
-          <button class="member-chip bass" data-mpart="베이스" onclick="app.filterMembers('베이스')">베이스</button>
+          <button class="member-chip active" data-mpart="ALL" onclick="app.filterMembers('ALL')">
+            <span class="chip-label">전체</span><span class="chip-badge">0</span>
+          </button>
+          <button class="member-chip" data-mpart="임원" onclick="app.filterMembers('임원')">
+            <span class="chip-label">지휘자/반주자</span><span class="chip-badge">0</span>
+          </button>
+          <button class="member-chip soprano" data-mpart="소프라노" onclick="app.filterMembers('소프라노')">
+            <span class="chip-label">소프라노</span><span class="chip-badge">0</span>
+          </button>
+          <button class="member-chip alto" data-mpart="알토" onclick="app.filterMembers('알토')">
+            <span class="chip-label">알토</span><span class="chip-badge">0</span>
+          </button>
+          <button class="member-chip tenor" data-mpart="테너" onclick="app.filterMembers('테너')">
+            <span class="chip-label">테너</span><span class="chip-badge">0</span>
+          </button>
+          <button class="member-chip bass" data-mpart="베이스" onclick="app.filterMembers('베이스')">
+            <span class="chip-label">베이스</span><span class="chip-badge">0</span>
+          </button>
         </div>
 
         <div id="memberList" class="member-grid">
@@ -946,64 +960,164 @@
 
   <!-- 📖 15. 사용 설명서 팝업 모달 -->
   <div id="modalUserManual" class="modal-overlay hidden" onclick="app.closeModal('modalUserManual')">
-    <div class="modal-card" style="max-width: 520px; max-height: 85vh; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; padding: 0;" onclick="event.stopPropagation()">
-      <div class="modal-header" style="background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); padding: 16px 20px; border-bottom: 3px solid #D97706; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
-        <h3 style="font-size: 19px; font-weight: 900; color: #FFFFFF; display: flex; align-items: center; gap: 8px; margin: 0; letter-spacing: -0.3px;">
-          📖 임마누엘 성가대 앱 쉬운 설명서
-        </h3>
-        <button class="btn-close-modal" onclick="app.closeModal('modalUserManual')" style="color: #FFFFFF; background: transparent; border: none; font-size: 22px; cursor: pointer; padding: 0 4px; line-height: 1;">✕</button>
+    <div class="modal-card modal-user-manual-card" onclick="event.stopPropagation()">
+      <div class="modal-header manual-header">
+        <div class="manual-title-group">
+          <span class="manual-title-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+            </svg>
+          </span>
+          <h3 class="manual-title">임마누엘 성가대 앱 사용 설명서</h3>
+        </div>
+        <button type="button" class="btn-close-modal" onclick="app.closeModal('modalUserManual')" title="닫기">✕</button>
       </div>
       
-      <div class="manual-modal-body" style="font-size: 15px; color: #1E293B; line-height: 1.65; padding: 18px 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1;">
-        <div style="background: #F8FAFC; border: 1.5px solid #CBD5E1; border-radius: 12px; padding: 14px; margin-bottom: 16px; text-align: center;">
-          <div style="font-weight: 900; color: #1E3A8A; font-size: 15.5px; margin-bottom: 8px;">📱 스마트폰 아래 5개 메뉴를 누르세요!</div>
-          <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; text-align: center; font-size: 11.5px; font-weight: 700;">
-            <div style="background:#FFF; padding:6px 2px; border-radius:6px; border:1px solid #E2E8F0;"><span style="font-size:18px;">📢</span><br>공지사항</div>
-            <div style="background:#FFF; padding:6px 2px; border-radius:6px; border:1px solid #E2E8F0;"><span style="font-size:18px;">🎵</span><br>찬양/음원</div>
-            <div style="background:#FFF; padding:6px 2px; border-radius:6px; border:1px solid #E2E8F0;"><span style="font-size:18px;">📅</span><br>주요일정</div>
-            <div style="background:#FFF; padding:6px 2px; border-radius:6px; border:1px solid #E2E8F0;"><span style="font-size:18px;">👥</span><br>대원소개</div>
-            <div style="background:#FFF; padding:6px 2px; border-radius:6px; border:1px solid #E2E8F0;"><span style="font-size:18px;">🙏</span><br>중보기도</div>
+      <div class="manual-body">
+        <!-- 5개 메인 메뉴 안내 (실제 하단 탭바와 100% 동일한 아이콘) -->
+        <div class="manual-nav-preview">
+          <div class="manual-nav-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+            <span>스마트폰 화면 아래 5개 메뉴를 눌러 이용하세요</span>
+          </div>
+          <div class="manual-nav-grid">
+            <div class="manual-nav-item">
+              <span class="manual-nav-item-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+              </span>
+              <span class="manual-nav-item-label">공지사항</span>
+            </div>
+            <div class="manual-nav-item">
+              <span class="manual-nav-item-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 18V5l12-2v13"></path>
+                  <circle cx="6" cy="18" r="3"></circle>
+                  <circle cx="18" cy="16" r="3"></circle>
+                </svg>
+              </span>
+              <span class="manual-nav-item-label">찬양/음원</span>
+            </div>
+            <div class="manual-nav-item">
+              <span class="manual-nav-item-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+              </span>
+              <span class="manual-nav-item-label">주요일정</span>
+            </div>
+            <div class="manual-nav-item">
+              <span class="manual-nav-item-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+              </span>
+              <span class="manual-nav-item-label">대원소개</span>
+            </div>
+            <div class="manual-nav-item">
+              <span class="manual-nav-item-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                </svg>
+              </span>
+              <span class="manual-nav-item-label">중보기도</span>
+            </div>
           </div>
         </div>
 
-        <div style="margin-bottom: 16px;">
-          <h4 style="font-size: 16px; font-weight: 900; color: #1D4ED8; margin-bottom: 5px;">📢 1. 공지사항 보기 (이미지/PDF)</h4>
-          <p style="margin-bottom: 3px;">• 소식은 화면을 위아래로 밀어서 봅니다.</p>
-          <p style="margin-bottom: 3px;">• PDF 자료는 <span style="background:#2563EB; color:#FFF; font-size:12px; padding:2px 6px; border-radius:4px; font-weight:700;">👁️ 미리보기 열기</span>를 누르면 바로 열립니다.</p>
-          <p style="margin-bottom: 3px;">• 중요 공지는 별(☆)을 눌러 <strong style="color:#D97706;">⭐ 즐겨찾기</strong> 탭에 모아봅니다.</p>
-          <p>• 카드 상단의 공유(🔗) 버튼을 눌러 카카오톡이나 메시지로 특정 공지, 찬양, 일정, 기도를 다른 대원에게 공유할 수 있습니다.</p>
+        <!-- 1. 공지사항 -->
+        <div class="manual-card-item">
+          <div class="manual-card-title">
+            <span>1. 공지사항 & 주간 소식</span>
+            <span class="manual-badge-pill manual-badge-blue">소식 확인</span>
+          </div>
+          <div class="manual-card-desc"><span class="manual-bullet">•</span> 화면을 위아래로 밀어 이번 주 성가대 소식과 오늘의 말씀을 확인합니다.</div>
+          <div class="manual-card-desc"><span class="manual-bullet">•</span> 악보 및 주보 PDF는 <strong>[미리보기 열기]</strong> 버튼을 누르면 다운로드 없이 즉시 열립니다. 사진은 터치하면 크게 확대됩니다.</div>
+          <div class="manual-card-desc"><span class="manual-bullet">•</span> 중요 공지 카드의 <strong>별(☆) 아이콘</strong>을 누르면 상단 <strong>[즐겨찾기]</strong> 탭에 모아볼 수 있습니다.</div>
+          <div class="manual-card-desc"><span class="manual-bullet">•</span> 우측 상단 <strong>돋보기 아이콘</strong>을 눌러 제목이나 본문 내용을 실시간 검색할 수 있습니다.</div>
         </div>
 
-        <div style="margin-bottom: 16px;">
-          <h4 style="font-size: 16px; font-weight: 900; color: #1D4ED8; margin-bottom: 5px;">🎵 2. 찬양 & 파트별 연습실</h4>
-          <p style="margin-bottom: 3px;">• 주일 찬양 영상을 감상하실 수 있습니다. (월별로 자동 모아집니다.)</p>
-          <p>• 다음주 찬양곡을 합창, 파트별로 버튼을 눌러 내 파트 음원으로 연습합니다.</p>
+        <!-- 2. 찬양 영상 & 파트별 연습실 -->
+        <div class="manual-card-item">
+          <div class="manual-card-title">
+            <span>2. 찬양 영상 & 파트별 연습실</span>
+            <span class="manual-badge-pill manual-badge-gold">음원 연습</span>
+          </div>
+          <div class="manual-card-desc"><span class="manual-bullet">•</span> <strong>성가대 찬양 영상</strong>: 지난 예배 찬양 영상을 월별 및 최신순으로 감상하실 수 있습니다.</div>
+          <div class="manual-card-desc"><span class="manual-bullet">•</span> <strong>파트별 연습실</strong>: 4부 합창, 소프라노, 알토, 테너, 베이스 버튼을 눌러 내 파트 맞춤 음원으로 편리하게 연습합니다.</div>
+          <div class="manual-card-desc"><span class="manual-bullet">•</span> <strong>첫 음 조율 피치 건반</strong>: 찬양 전 우측 상단 <strong>[첫 음 건반]</strong>을 열어 내 파트의 첫 음정과 피아노/오르간 소리를 정확하게 맞춰볼 수 있습니다.</div>
+          <div class="manual-card-desc"><span class="manual-bullet">•</span> <strong>연습 도우미 기능</strong>: 찬양 카드 하단의 <strong>A-B 구간 반복</strong> 및 <strong>배속 조절 (0.8x / 1.0x / 1.2x)</strong>을 활용해 어려운 마디를 집중 연습할 수 있습니다.</div>
         </div>
 
-        <div style="margin-bottom: 16px;">
-          <h4 style="font-size: 16px; font-weight: 900; color: #1D4ED8; margin-bottom: 5px;">📅 3. 주요 일정 & 참석 신청</h4>
-          <p style="margin-bottom: 3px;">• 대원들 참석하는 행사 및 공연 등 일정을 확인합니다.</p>
-          <p>• <span style="background:#1E293B; color:#FFF; font-size:12px; padding:3px 7px; border-radius:4px; font-weight:700;">✍️ 참석, 티켓 신청서 작성하기</span>를 눌러 이름과 파트를 적어 제출합니다.</p>
+        <!-- 3. 주요 일정 & 참석 신청 -->
+        <div class="manual-card-item">
+          <div class="manual-card-title">
+            <span>3. 주요 일정 & 티켓/참석 신청</span>
+            <span class="manual-badge-pill manual-badge-green">일정·행사</span>
+          </div>
+          <div class="manual-card-desc"><span class="manual-bullet">•</span> 주간 성가대 연습, 절기 특별 찬양, 수련회 등 주요 일정을 캘린더 스탬프로 한눈에 확인합니다.</div>
+          <div class="manual-card-desc"><span class="manual-bullet">•</span> 특별 행사나 공연 시 <strong>[참석·티켓 신청서 작성하기]</strong>를 눌러 본인 이름과 파트를 제출할 수 있으며, 제출 후 언제든 수정이 가능합니다.</div>
         </div>
 
-        <div style="margin-bottom: 16px;">
-          <h4 style="font-size: 16px; font-weight: 900; color: #1D4ED8; margin-bottom: 5px;">👥 4. 대원소개 (초기 접속시 암호)</h4>
-          <p>• 개인정보 보호 암호창이 뜨면 숫자 4자리를 입력하고 확인을 누릅니다. (암호는 임원에게 문의)</p>
+        <!-- 4. 대원 명단 & 원클릭 연락 -->
+        <div class="manual-card-item">
+          <div class="manual-card-title">
+            <span>4. 대원 명단 & 원클릭 연락</span>
+            <span class="manual-badge-pill manual-badge-blue">대원 연락망</span>
+          </div>
+          <div class="manual-card-desc"><span class="manual-bullet">•</span> 파트별 가나다순으로 정렬된 대원 명단과 파트별 인원수를 확인할 수 있습니다.</div>
+          <div class="manual-card-desc"><span class="manual-bullet">•</span> 대원 카드 우측의 <strong>[전화]</strong> 또는 <strong>[문자]</strong> 버튼을 누르면 스마트폰 전화/문자 앱이 바로 연결됩니다.</div>
+          <div class="manual-card-desc"><span class="manual-bullet">•</span> <strong>개인정보 보호</strong>: 대원 명단 최초 접속 시 4자리 비밀번호를 입력해야 열람할 수 있습니다. (비밀번호는 임원에게 문의)</div>
         </div>
 
-        <div style="margin-bottom: 16px;">
-          <h4 style="font-size: 16px; font-weight: 900; color: #1D4ED8; margin-bottom: 5px;">🙏 5. 중보기도방</h4>
-          <p style="margin-bottom: 3px;">• <span style="background:#059669; color:#FFF; font-size:12px; padding:3px 7px; border-radius:4px; font-weight:700;">🙏 기도제목 나누기</span>를 눌러 글을 올립니다.</p>
-          <p>• 대원 기도글 아래 <span style="background:#F59E0B; color:#FFF; font-size:12px; padding:3px 7px; border-radius:4px; font-weight:700;">🖐️ 아멘</span> 버튼을 눌러 함께 기도합니다.</p>
+        <!-- 5. 중보기도방 -->
+        <div class="manual-card-item">
+          <div class="manual-card-title">
+            <span>5. 중보기도방 (대원 사랑방)</span>
+            <span class="manual-badge-pill manual-badge-gold">마음 나누기</span>
+          </div>
+          <div class="manual-card-desc"><span class="manual-bullet">•</span> <strong>[기도제목 나누기]</strong> 버튼을 눌러 기도제목과 감사 제목을 올리고 함께 나눕니다.</div>
+          <div class="manual-card-desc"><span class="manual-bullet">•</span> 대원 기도글 아래 <strong>[함께 기도해요 (아멘 ❤️)]</strong> 버튼을 터치하여 영적 응원을 보내고 응원 댓글을 남길 수 있습니다.</div>
         </div>
 
-        <div style="background:#FEF3C7; border:1px solid #FCD34D; border-radius:10px; padding:12px 14px; font-size:13.5px; color:#78350F; line-height: 1.6;">
-          💡 스마트폰 홈화면에 바로가기를 만들면 접속하기가 편합니다. 방법을 모르시면 임원들에게 물어보세요.<br><strong style="color:#DC2626;">(중요) 임마누엘 전용 앱이기에 대원 이외의 사람에게 공유하지 마세요.</strong>
+        <!-- 6. 공유 및 홈화면 앱 설치 -->
+        <div class="manual-card-item">
+          <div class="manual-card-title">
+            <span>6. 간편 공유 & 홈 화면 바로가기 (PWA)</span>
+            <span class="manual-badge-pill manual-badge-green">스마트폰 팁</span>
+          </div>
+          <div class="manual-card-desc"><span class="manual-bullet">•</span> 카드 상단의 <strong>공유 아이콘</strong>을 누르면 카카오톡이나 문자로 특정 공지, 찬양곡, 일정을 다른 대원에게 전송할 수 있습니다.</div>
+          <div class="manual-card-desc"><span class="manual-bullet">•</span> 스마트폰 브라우저 메뉴에서 <strong>[홈 화면에 추가]</strong>를 누르면 앱스토어 없이 스마트폰 바탕화면 앱으로 1초 만에 바로 접속할 수 있습니다.</div>
+        </div>
+
+        <!-- 7. 임원 관리자 모드 -->
+        <div class="manual-card-item">
+          <div class="manual-card-title">
+            <span>7. 임원 관리자 모드</span>
+            <span class="manual-badge-pill manual-badge-navy">임원 전용</span>
+          </div>
+          <div class="manual-card-desc"><span class="manual-bullet">•</span> 상단 헤더 우측의 <strong>톱니바퀴 아이콘</strong>을 누른 뒤 관리자 4자리 PIN을 입력하면 관리자 모드로 전환됩니다.</div>
+          <div class="manual-card-desc"><span class="manual-bullet">•</span> 관리자 모드에서는 공지 작성, 찬양 등록, 일정 추가, 대원 명단 관리 및 수정·삭제 버튼이 활성화됩니다.</div>
+        </div>
+
+        <!-- 보안 안내 배너 -->
+        <div class="manual-notice-banner">
+          💡 스마트폰 홈 화면에 바로가기를 추가해 두시면 주일 아침과 연습 시간마다 가장 빠르고 편리하게 접속하실 수 있습니다.<br>
+          <strong>(주의) 본 앱은 갈보리교회 임마누엘 성가대원 전용 앱이므로 대원 이외의 외부인에게 주소를 무단 공유하지 말아주세요.</strong>
         </div>
       </div>
 
-      <div class="form-actions" style="margin: 0; padding: 12px 20px 16px 20px; border-top: 1px solid #E2E8F0; background: #FFFFFF; flex-shrink: 0;">
-        <button type="button" class="btn-primary-large" onclick="app.closeModal('modalUserManual')">닫기</button>
+      <div class="manual-footer-actions">
+        <button type="button" class="manual-btn-done" onclick="app.closeModal('modalUserManual')">설명서 닫기</button>
       </div>
     </div>
   </div>
@@ -1015,7 +1129,13 @@
       <div class="modal-header pitch-modal-header">
         <div class="pitch-modal-title-group">
           <div class="pitch-title-badge">
-            <span class="pitch-title-icon">🎹</span>
+            <span class="pitch-title-icon">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 18V5l12-2v13"></path>
+                <circle cx="6" cy="18" r="3"></circle>
+                <circle cx="18" cy="16" r="3"></circle>
+              </svg>
+            </span>
             <span class="pitch-title-main">첫 음 조율 피치 건반</span>
           </div>
           <p class="pitch-modal-sub">찬양 전 내 파트 첫 음을 찾아 정확한 음정을 맞춰보세요</p>
@@ -1027,7 +1147,7 @@
         <!-- 2. 파트별 첫 음 원터치 프리셋 칩 -->
         <div class="pitch-preset-section">
           <div class="pitch-preset-header">
-            <span class="pitch-preset-title">🎯 파트별 추천 첫 음 & 기준음 (원터치 청음)</span>
+            <span class="pitch-preset-title">파트별 첫 음 & 기준음 (원터치 청음)</span>
           </div>
           <div class="pitch-preset-chips">
             <button type="button" class="pitch-chip chip-soprano" id="chip_soprano" onclick="app.playPartPreset('soprano')" title="소프라노 고음역 기준 (C5)">
@@ -1086,10 +1206,10 @@
             <span class="toolbar-label">악기 음색</span>
             <div class="pitch-timbre-pills">
               <button type="button" class="btn-timbre-pill active" id="btnTimbrePiano" onclick="app.setPitchTimbre('piano')">
-                🎹 피아노
+                피아노
               </button>
               <button type="button" class="btn-timbre-pill" id="btnTimbreOrgan" onclick="app.setPitchTimbre('organ')">
-                ⛪ 오르간
+                오르간
               </button>
             </div>
           </div>
@@ -1170,7 +1290,9 @@
 
         <!-- 6. 친절한 사용 팁 바 -->
         <div class="pitch-footer-tip">
-          <span class="pitch-tip-icon">💡</span>
+          <span class="pitch-tip-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pitch-tip-svg"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          </span>
           <span class="pitch-tip-text">건반이나 파트 버튼을 누르면 첫 음이 울립니다. (소리가 안 날 때는 스마트폰 측면 무음 스위치 및 미디어 볼륨을 확인해 주세요)</span>
         </div>
       </div>

@@ -126,6 +126,17 @@ class ChoirApp {
     this.markTabAsRead(this.currentTab);
     this.startAutoUpdateChecker();
     this.checkFirstVisitManual();
+
+    // 슬라이딩 세그먼트 인디케이터 초기 배치 및 리사이즈 대응
+    window.addEventListener('resize', () => {
+      this.updateSegmentIndicator(document.getElementById('noticeSubTabBar'));
+      this.updateSegmentIndicator(document.getElementById('praiseSubTabBar'));
+    }, { passive: true });
+
+    setTimeout(() => {
+      this.updateSegmentIndicator(document.getElementById('noticeSubTabBar'));
+      this.updateSegmentIndicator(document.getElementById('praiseSubTabBar'));
+    }, 150);
   }
 
   updateCloudSyncBannerOffset() {
@@ -677,6 +688,30 @@ class ChoirApp {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     this.renderTab(tabId);
     this.markTabAsRead(tabId);
+
+    // 슬라이딩 세그먼트 인디케이터 초기 위치 갱신
+    if (tabId === 'notice') {
+      this.updateSegmentIndicator(document.getElementById('noticeSubTabBar'));
+    } else if (tabId === 'praise') {
+      this.updateSegmentIndicator(document.getElementById('praiseSubTabBar'));
+    }
+  }
+
+  updateSegmentIndicator(barEl, activeBtn) {
+    if (!barEl) return;
+    const indicator = barEl.querySelector('.sub-tab-indicator');
+    if (!indicator) return;
+    const targetBtn = activeBtn || barEl.querySelector('.sub-tab-btn.active') || barEl.querySelector('.sub-tab-btn');
+    if (!targetBtn) return;
+
+    requestAnimationFrame(() => {
+      const left = targetBtn.offsetLeft;
+      const width = targetBtn.offsetWidth;
+      if (width > 0) {
+        indicator.style.left = `${left}px`;
+        indicator.style.width = `${width}px`;
+      }
+    });
   }
 
   renderCurrentTab() {
@@ -703,9 +738,14 @@ class ChoirApp {
     this.resetAllPracticeHelpers();
 
     this.praiseSubtab = subtab;
+    let activeBtn = null;
     document.querySelectorAll('.sub-tab-btn[data-subtab]').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.subtab === subtab);
+      const isActive = (btn.dataset.subtab === subtab);
+      btn.classList.toggle('active', isActive);
+      if (isActive) activeBtn = btn;
     });
+    this.updateSegmentIndicator(document.getElementById('praiseSubTabBar'), activeBtn);
+
     document.getElementById('praiseSubtabAll').classList.toggle('active', subtab === 'all');
     document.getElementById('praiseSubtabPart').classList.toggle('active', subtab === 'part');
 
@@ -1177,9 +1217,13 @@ class ChoirApp {
 
   setNoticeFilter(filter) {
     this.noticeFilter = filter || 'all';
+    let activeBtn = null;
     document.querySelectorAll('[data-notice-filter]').forEach(btn => {
-      btn.classList.toggle('active', btn.getAttribute('data-notice-filter') === this.noticeFilter);
+      const isActive = (btn.getAttribute('data-notice-filter') === this.noticeFilter);
+      btn.classList.toggle('active', isActive);
+      if (isActive) activeBtn = btn;
     });
+    this.updateSegmentIndicator(document.getElementById('noticeSubTabBar'), activeBtn);
     this.renderNotices();
   }
 
@@ -3669,10 +3713,8 @@ class ChoirApp {
       const mpart = chip.dataset.mpart;
       if (mpart && counts[mpart] !== undefined) {
         const name = labels[mpart] || mpart;
-        const newText = `${name} (${counts[mpart]}명)`;
-        if (chip.textContent !== newText) {
-          chip.textContent = newText;
-        }
+        const count = counts[mpart] || 0;
+        chip.innerHTML = `<span class="chip-label">${name}</span><span class="chip-badge">${count}</span>`;
       }
     });
   }
