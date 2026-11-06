@@ -151,6 +151,7 @@ class ChoirApp {
       this.updateSegmentIndicator(document.getElementById('noticeSubTabBar'));
       this.updateSegmentIndicator(document.getElementById('praiseSubTabBar'));
       this.updateTabLiquidPill(null, true);
+      this.initTabbarDragGestures();
     }, 150);
   }
 
@@ -709,10 +710,13 @@ class ChoirApp {
     }
 
     this.currentTab = tabId;
+    let targetTabBtn = null;
     document.querySelectorAll('.tab-item').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.tab === tabId);
+      const isActive = btn.dataset.tab === tabId;
+      btn.classList.toggle('active', isActive);
+      if (isActive) targetTabBtn = btn;
     });
-    this.updateTabLiquidPill();
+    this.updateTabLiquidPill(targetTabBtn);
     document.querySelectorAll('.tab-pane').forEach(pane => {
       pane.classList.toggle('active', pane.id === `tab-${tabId}`);
     });
@@ -745,7 +749,7 @@ class ChoirApp {
     });
   }
 
-  // 💧 하단 플로팅 독: 탭 간 이동 시 부드럽게 글라이딩하는 대형 리퀴드 물방울 인디케이터 (아이콘 + 타이틀 포용)
+  // 💧 당근 & 쓰레드 스타일: 부드럽게 글라이딩하는 네이티브 서리 캡슐 인디케이터
   updateTabLiquidPill(targetBtn, isInitial = false) {
     const bar = document.querySelector('.app-tabbar');
     const pill = document.getElementById('tabLiquidPill');
@@ -757,38 +761,184 @@ class ChoirApp {
     requestAnimationFrame(() => {
       const barRect = bar.getBoundingClientRect();
       const btnRect = btn.getBoundingClientRect();
+      if (!btnRect || btnRect.width <= 0 || btnRect.height <= 0) return;
 
-      // 버튼 너비에 맞춰 5개 메뉴 전체에서 정확히 균등하게 중앙 정렬되는 대형 리퀴드 물방울 캡슐
       const pillWidth = Math.round(btnRect.width - 6);
-      const pillHeight = Math.round(btnRect.height - 4);
       const left = Math.round(btnRect.left - barRect.left + (btnRect.width - pillWidth) / 2);
-      const top = Math.round(btnRect.top - barRect.top + (btnRect.height - pillHeight) / 2);
       const width = pillWidth;
-      const height = pillHeight;
 
       if (isInitial) {
-        pill.classList.remove('is-sliding');
+        pill.classList.remove('is-dragging');
         pill.style.transition = 'none';
-        pill.style.transform = `translate3d(${left}px, ${top}px, 0)`;
         pill.style.width = `${width}px`;
-        pill.style.height = `${height}px`;
+        pill.style.transform = `translate3d(${left}px, 0, 0)`;
         pill.style.opacity = '1';
-        void pill.offsetHeight; // reflow 강제
+        void pill.offsetHeight;
         pill.style.transition = '';
       } else {
-        // 이동 중: 물방울이 투명하게 변하며 유연하게 미끄러지는 효과 적용
-        pill.classList.add('is-sliding');
         pill.style.opacity = '1';
-        pill.style.transform = `translate3d(${left}px, ${top}px, 0)`;
         pill.style.width = `${width}px`;
-        pill.style.height = `${height}px`;
-
-        if (this._tabPillTimer) clearTimeout(this._tabPillTimer);
-        this._tabPillTimer = setTimeout(() => {
-          pill.classList.remove('is-sliding');
-        }, 360);
+        pill.style.transform = `translate3d(${left}px, 0, 0)`;
       }
     });
+  }
+
+  // 👆 터치 & 드래그 제스처: 손가락으로 탭 바를 누르고 좌우로 이동 시 서리 알약이 자석처럼 부드럽게 따라다니는 인터랙션
+  initTabbarDragGestures() {
+    const bar = document.querySelector('.app-tabbar');
+    const pill = document.getElementById('tabLiquidPill');
+    if (!bar || !pill) return;
+
+    let isTracking = false;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let currentTargetBtn = null;
+    let suppressClick = false;
+
+    // 클릭 이벤트 중복 방지 (드래그 직후 발생하는 click 이벤트 차단)
+    bar.addEventListener('click', (e) => {
+      if (suppressClick) {
+        e.preventDefault();
+        e.stopPropagation();
+        suppressClick = false;
+      }
+    }, true);
+
+    const onPointerDown = (e) => {
+      if (e.button && e.button !== 0) return;
+      isTracking = true;
+      isDragging = false;
+      startX = e.clientX;
+      startY = e.clientY;
+      currentTargetBtn = e.target.closest('.tab-item');
+    };
+
+    const onPointerMove = (e) => {
+      if (!isTracking) return;
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+
+      // 수평 이동 5px 이상 시 드래그 개시
+      if (!isDragging) {
+        if (Math.abs(deltaX) > 5 && Math.abs(deltaX) > Math.abs(deltaY)) {
+          isDragging = true;
+          try {
+            bar.setPointerCapture(e.pointerId);
+          } catch (_) {}
+          pill.classList.add('is-dragging');
+        } else if (Math.abs(deltaY) > 10) {
+          isTracking = false;
+          return;
+        }
+      }
+
+      if (!isDragging) return;
+
+      const barRect = bar.getBoundingClientRect();
+      const clientX = e.clientX;
+      const buttons = Array.from(bar.querySelectorAll('.tab-item'));
+      let closestBtn = null;
+      let minDistance = Infinity;
+
+      buttons.forEach(btn => {
+        const rect = btn.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const dist = Math.abs(clientX - centerX);
+        
+        // 🔍 구면 돋보기 굴절: 손가락(물방울 렌즈) 반경 32px 이내에 들어온 아이콘을 부드럽게 돋보기 굴절 팽창
+        btn.classList.toggle('is-in-lens', dist < 32);
+
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestBtn = btn;
+        }
+      });
+
+      if (closestBtn && closestBtn !== currentTargetBtn) {
+        currentTargetBtn = closestBtn;
+        buttons.forEach(b => b.classList.toggle('active', b === closestBtn));
+      }
+
+      // 서리 알약이 손가락을 1:1로 부드럽게 추종
+      const activeRectBtn = currentTargetBtn || bar.querySelector('.tab-item.active') || buttons[0];
+      const btnRect = activeRectBtn.getBoundingClientRect();
+      const pillWidth = Math.round(btnRect.width - 6);
+      const left = clientX - barRect.left - (pillWidth / 2);
+
+      // 탭 바 안에서 벗어나지 않도록 클램핑
+      const minLeft = 4;
+      const maxLeft = barRect.width - pillWidth - 4;
+      const clampedLeft = Math.max(minLeft, Math.min(maxLeft, left));
+
+      pill.style.transition = 'none';
+      pill.style.width = `${pillWidth}px`;
+      pill.style.transform = `translate3d(${Math.round(clampedLeft)}px, 0, 0)`;
+    };
+
+    const onPointerUp = (e) => {
+      if (!isTracking) return;
+      isTracking = false;
+
+      // 돋보기 렌즈 굴절 상태 해제
+      const buttons = Array.from(bar.querySelectorAll('.tab-item'));
+      buttons.forEach(btn => btn.classList.remove('is-in-lens'));
+
+      if (isDragging) {
+        isDragging = false;
+        suppressClick = true;
+        pill.classList.remove('is-dragging');
+        try {
+          bar.releasePointerCapture(e.pointerId);
+        } catch (_) {}
+
+        // 마지막 손가락 위치에서 가장 가까운 탭 버튼으로 자석 스냅 & 화면 전환
+        let targetBtn = currentTargetBtn;
+
+        if (!targetBtn) {
+          const clientX = e.clientX;
+          let minDistance = Infinity;
+          buttons.forEach(btn => {
+            const rect = btn.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const dist = Math.abs(clientX - centerX);
+            if (dist < minDistance) {
+              minDistance = dist;
+              targetBtn = btn;
+            }
+          });
+        }
+
+        if (targetBtn && targetBtn.dataset.tab) {
+          this.switchTab(targetBtn.dataset.tab);
+        } else {
+          this.updateTabLiquidPill();
+        }
+
+        setTimeout(() => {
+          suppressClick = false;
+        }, 120);
+      }
+    };
+
+    const onPointerCancel = (e) => {
+      if (isTracking || isDragging) {
+        isTracking = false;
+        isDragging = false;
+        pill.classList.remove('is-dragging');
+        const buttons = Array.from(bar.querySelectorAll('.tab-item'));
+        buttons.forEach(btn => btn.classList.remove('is-in-lens'));
+        try {
+          bar.releasePointerCapture(e.pointerId);
+        } catch (_) {}
+        this.updateTabLiquidPill();
+      }
+    };
+
+    bar.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerCancel);
   }
 
   renderCurrentTab() {

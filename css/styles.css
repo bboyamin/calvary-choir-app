@@ -2176,8 +2176,8 @@ body {
 
 /* ==========================================
    하단 대형 탭 바 (5대 메인 메뉴)
-   - 최신 애플 리퀴드 글래스 (Liquid Glass / visionOS Stadium Dock)
-   - Threads 스타일 액티브 아이콘 솔리드 채움 & 캡슐 알약 효과
+   - Threads & 당근 스타일 네이티브 프로스티드 글래스 도크
+   - 정갈한 투명 서리 유리 + 은은한 글라이딩 캡슐 + 쓰레드 시그니처 아이콘 팝
    ========================================== */
 .app-tabbar {
   position: fixed;
@@ -2187,26 +2187,27 @@ body {
   width: calc(100% - 24px);
   max-width: 440px;
   height: 64px;
-  padding: 4px 8px;
+  padding: 4px 6px;
   box-sizing: border-box;
-  /* 💧 리퀴드 글래스: 초고투명 굴절 & 서리 유리 효과 */
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(28px) saturate(200%) brightness(1.02);
-  -webkit-backdrop-filter: blur(28px) saturate(200%) brightness(1.02);
-  /* 🌟 리퀴드 림: 스타디움 풀 라운드 캡슐 & 은은한 엣지 */
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 9999px;
   /* 5개 메뉴 정확히 균등 분할 그리드 시스템 */
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   align-items: center;
   justify-items: center;
+  border-radius: 9999px;
   z-index: 9999;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+
+  /* 🌿 당근 & 쓰레드: 초고투명 애플 프로스티드 서리 유리 (Clean Native Frosted Glass) */
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(25px) saturate(190%);
+  -webkit-backdrop-filter: blur(25px) saturate(190%);
+  border: 0.5px solid rgba(0, 0, 0, 0.08);
   box-shadow: 
-    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -0.5px 1px 0 rgba(0, 0, 0, 0.03),
-    0 12px 36px -4px rgba(15, 23, 42, 0.14),
-    0 2px 8px -1px rgba(15, 23, 42, 0.05);
+    0 12px 32px -4px rgba(15, 23, 42, 0.1),
+    0 2px 8px -1px rgba(15, 23, 42, 0.04);
   transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), background 0.3s ease;
 }
 
@@ -2221,6 +2222,7 @@ body {
 
 .tab-item {
   position: relative;
+  z-index: 2;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -2237,24 +2239,32 @@ body {
   gap: 2px;
   color: #64748B;
   cursor: pointer;
-  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: color 0.25s ease;
   box-sizing: border-box;
   overflow: visible;
   -webkit-text-size-adjust: none;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* 탭 터치 시 액체 탄성 물리 스프링 */
+/* 탭 터치 시 가벼운 피드백 */
 .tab-item:active {
   transform: scale(0.92);
-  transition-duration: 0.1s;
+  transition: transform 0.1s ease;
 }
 
-/* 활성 탭 전체 배경은 투명 (아이콘 뒤에만 리퀴드 캡슐 생성) */
+/* 🌟 활성 탭: 텍스트 딥 네이비 & 굵기 강조 */
 .tab-item.active {
+  color: #0F172A;
+  font-weight: 700;
   background: transparent;
   border-color: transparent;
   box-shadow: none;
+}
+
+.tab-label {
+  font-size: 11px;
+  letter-spacing: -0.2px;
+  transition: color 0.25s ease, font-weight 0.25s ease;
 }
 
 .tab-badge {
@@ -2284,41 +2294,65 @@ body {
   100% { transform: scale(1); }
 }
 
-/* 💧 대형 리퀴드 글래스 무빙 물방울 (영상과 100% 동일한 미니멀 서리 캡슐) */
+/* 💧 당근 & 쓰레드 스타일 글라이딩 서리 알약 (Minimal Frosted Pill & Convex Lens) */
 .tab-liquid-pill {
   position: absolute;
-  top: 0;
+  top: 4px;
   left: 0;
-  border-radius: 20px;
-  /* 안착 상태: 영상 속 은은하고 세련된 미니멀 리퀴드 글래스 */
-  background: rgba(15, 23, 42, 0.08);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 
-    inset 0 1.2px 1.5px rgba(255, 255, 255, 0.95),
-    inset 0 -1px 1px rgba(0, 0, 0, 0.03),
-    0 4px 14px -2px rgba(15, 23, 42, 0.08);
-  pointer-events: none;
+  height: calc(100% - 8px);
+  border-radius: 9999px;
   z-index: 1;
-  will-change: transform, width, height, opacity, background;
+  pointer-events: none;
+
+  /* 눈이 편안하고 극도로 고급스러운 네이티브 틴트 캡슐 */
+  background: rgba(15, 23, 42, 0.055);
+  border: 1px solid rgba(0, 0, 0, 0.035);
+  box-shadow: 
+    inset 0 1px 1.5px rgba(255, 255, 255, 0.95),
+    inset 0 -0.5px 1px rgba(0, 0, 0, 0.02);
+
   transition: 
-    transform 0.38s cubic-bezier(0.34, 1.48, 0.64, 1),
-    width 0.36s cubic-bezier(0.34, 1.48, 0.64, 1),
-    height 0.36s cubic-bezier(0.34, 1.48, 0.64, 1),
-    background 0.25s ease,
-    opacity 0.25s ease;
+    transform 0.36s cubic-bezier(0.25, 1.15, 0.35, 1.05),
+    width 0.32s ease,
+    opacity 0.2s ease;
+  will-change: transform, width;
   opacity: 0;
 }
 
-/* 🌊 이동 중: 물방울이 투명해지며 수분처럼 유연하게 글라이딩 */
-.tab-liquid-pill.is-sliding {
-  background: rgba(15, 23, 42, 0.02);
-  border-color: rgba(255, 255, 255, 0.4);
-  box-shadow: 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+/* 🌊 손가락 드래그 시: 1:1 즉각 밀착 & 구면 렌즈 미세 팽창 + 상하단 맑은 스펙큘러 림 */
+.tab-liquid-pill.is-dragging {
+  transition: none !important;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(10px) contrast(1.08) brightness(1.04);
+  -webkit-backdrop-filter: blur(10px) contrast(1.08) brightness(1.04);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 
+    0 8px 20px rgba(15, 23, 42, 0.1),
+    0 2px 6px rgba(15, 23, 42, 0.04),
+    inset 0 1.5px 2px rgba(255, 255, 255, 0.98),
+    inset 0 -1.2px 2px rgba(186, 230, 253, 0.4); /* 상하단 투명 프리즘 미세 굴절광 */
 }
 
-/* 탭 아이콘 컨테이너 (비활성) */
+/* 렌즈 상단 미세 수분 하이라이트 글레어 */
+.tab-liquid-pill::before {
+  content: '';
+  position: absolute;
+  top: 1.5px;
+  left: 10px;
+  right: 10px;
+  height: 40%;
+  border-radius: 9999px 9999px 40% 40%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.tab-liquid-pill.is-dragging::before {
+  opacity: 0.9;
+}
+
+/* 탭 아이콘 컨테이너 */
 .tab-icon {
   display: flex;
   align-items: center;
@@ -2328,24 +2362,83 @@ body {
   height: 24px;
   border-radius: 9999px;
   background: transparent;
-  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
   z-index: 2;
+  transition: transform 0.18s cubic-bezier(0.25, 1.15, 0.35, 1.05);
 }
 
-/* 🌟 활성 탭: 배경은 대형 무빙 물방울 인디케이터가 담당하고 아이콘 미세 부각 */
+/* 🔍 핵심: 물방울 렌즈가 통과할 때의 구면 돋보기 굴절 효과 (Spherical Convex Magnification) */
+.tab-item.is-in-lens .tab-icon {
+  transform: translateY(-2px) scale(1.22);
+}
+
+.tab-item.is-in-lens .tab-label {
+  color: #0F172A;
+  font-weight: 700;
+  transform: scale(1.08);
+}
+
+/* 🌟 쓰레드(Threads) 시그니처 팝 바운스: 선택 시 톡- 하고 튀어 오르는 통통 튀는 애니메이션 */
 .tab-item.active .tab-icon {
-  background: transparent;
-  transform: translateY(-1px) scale(1.06);
+  animation: threadsIconPop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-/* 기본 비활성 아이콘: 깔끔한 라인 아웃라인 */
+@keyframes threadsIconPop {
+  0% { transform: scale(0.92); }
+  55% { transform: scale(1.22); }
+  100% { transform: scale(1.06); }
+}
+
+/* 기본 비활성 아이콘: 정갈한 라인 아웃라인 */
 .tab-icon-svg {
   display: block;
-  stroke: #475569;
+  stroke: #64748B;
   stroke-width: 2.2;
   fill: none;
   transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 🌟 활성 아이콘: 쓰레드 100% 시그니처 솔리드 블랙 Fill */
+.tab-item.active .tab-icon-svg {
+  stroke: #0F172A;
+  fill: #0F172A;
+  stroke-width: 0.5;
+}
+
+/* 1. 찬양/음원: 2개 원형 솔리드 채움, 기둥 라인 유지 */
+.tab-item.active[data-tab="praise"] .tab-icon-svg {
+  fill: none;
+  stroke: #0F172A;
+  stroke-width: 2.2;
+}
+.tab-item.active[data-tab="praise"] .tab-icon-svg circle {
+  fill: #0F172A;
+  stroke: #0F172A;
+}
+
+/* 2. 대원소개 (2인 커뮤니티): 이미지 100% 일치 실루엣 솔리드 채움 */
+.tab-item.active[data-tab="member"] .tab-icon-svg circle,
+.tab-item.active[data-tab="member"] .tab-icon-svg path {
+  fill: #0F172A;
+  stroke: #0F172A;
+}
+
+/* 3. 공지사항 (홈): 솔리드 채움 */
+.tab-item.active[data-tab="notice"] .tab-icon-svg .home-body {
+  fill: #0F172A;
+  stroke: #0F172A;
+}
+
+/* 4. 주요일정 (캘린더): 상단 바 솔리드 */
+.tab-item.active[data-tab="schedule"] .tab-icon-svg rect {
+  fill: rgba(15, 23, 42, 0.08);
+  stroke: #0F172A;
+}
+
+/* 5. 중보기도 (하트): 솔리드 하트 */
+.tab-item.active[data-tab="prayer"] .tab-icon-svg path {
+  fill: #0F172A;
+  stroke: #0F172A;
 }
 
 /* 🌟 활성 탭 아이콘: 영상과 100% 동일한 Solid Fill */
