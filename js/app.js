@@ -127,16 +127,34 @@ class ChoirApp {
     this.startAutoUpdateChecker();
     this.checkFirstVisitManual();
 
+    this.updateHeaderHeightVariable();
+
     // 슬라이딩 세그먼트 인디케이터 초기 배치 및 리사이즈 대응
     window.addEventListener('resize', () => {
+      this.updateHeaderHeightVariable();
       this.updateSegmentIndicator(document.getElementById('noticeSubTabBar'));
       this.updateSegmentIndicator(document.getElementById('praiseSubTabBar'));
     }, { passive: true });
 
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => this.updateHeaderHeightVariable(), 100);
+    }, { passive: true });
+
     setTimeout(() => {
+      this.updateHeaderHeightVariable();
       this.updateSegmentIndicator(document.getElementById('noticeSubTabBar'));
       this.updateSegmentIndicator(document.getElementById('praiseSubTabBar'));
     }, 150);
+  }
+
+  updateHeaderHeightVariable() {
+    const headerEl = document.querySelector('.app-header');
+    if (headerEl) {
+      const h = headerEl.offsetHeight;
+      if (h > 0) {
+        document.documentElement.style.setProperty('--header-height', `${h}px`);
+      }
+    }
   }
 
   updateCloudSyncBannerOffset() {
