@@ -410,7 +410,10 @@ class ChoirApp {
   }
 
   startAutoUpdateChecker() {
+    const CURRENT_APP_CODE_VERSION = 'v1129';
+
     const getLoadedScriptVersion = () => {
+      if (CURRENT_APP_CODE_VERSION) return CURRENT_APP_CODE_VERSION;
       try {
         const scriptEl = document.querySelector('script[src*="js/app.js"]');
         if (!scriptEl) return null;
@@ -439,8 +442,8 @@ class ChoirApp {
         const loadedNum = parseVerNum(loadedCodeVer);
         const localNum = parseVerNum(localVer);
 
-        // 현재 실행 중인 코드가 서버 버전 이상이면 이미 최신 상태이므로 불필요한 새로고침 완전 차단
-        if (loadedNum >= serverNum && serverNum > 0) {
+        // 1. 현재 실행 중인 코드 또는 로컬 저장 버전이 서버 버전 이상이면 즉시 종료 (새로고침 완전 차단)
+        if ((loadedNum >= serverNum || localNum >= serverNum) && serverNum > 0) {
           if (localVer !== serverVer) {
             localStorage.setItem('calvary_app_code_ver', serverVer);
           }
@@ -455,32 +458,33 @@ class ChoirApp {
           return;
         }
 
-        const alreadyReloadedForVer = sessionStorage.getItem('calvary_reloaded_for_ver');
-        const needsUpdateReload = (serverNum > loadedNum) || (serverNum > localNum && !loadedNum);
-
-        if (needsUpdateReload && alreadyReloadedForVer !== serverVer) {
-          this._isApplyingAppUpdate = true;
-          sessionStorage.setItem('calvary_reloaded_for_ver', serverVer);
+        // 2. 이미 해당 버전에 대해 업데이트 리로드를 실행했는지 localStorage로 영구 확인 (새 탭/재접속 시 반복 노출 차단)
+        const reloadedVer = localStorage.getItem('calvary_reloaded_for_ver');
+        if (reloadedVer === serverVer) {
           localStorage.setItem('calvary_app_code_ver', serverVer);
-
-          this.showCloudSyncBanner(
-            'updating',
-            '새로운 앱 기능을 적용하고 있습니다',
-            '잠시 후 최신 화면으로 자동 전환됩니다 ✨'
-          );
-
-          if ('caches' in window) {
-            try {
-              const names = await caches.keys();
-              await Promise.all(names.map(name => caches.delete(name)));
-            } catch (e) { }
-          }
-
-          await new Promise(resolve => setTimeout(resolve, 450));
-          window.location.reload();
-        } else if (!localVer) {
-          localStorage.setItem('calvary_app_code_ver', serverVer);
+          return;
         }
+
+        // 3. 실제 신규 버전이 배포되었고 아직 업데이트를 적용하지 않은 경우에만 1회 안내 후 새로고침
+        this._isApplyingAppUpdate = true;
+        localStorage.setItem('calvary_reloaded_for_ver', serverVer);
+        localStorage.setItem('calvary_app_code_ver', serverVer);
+
+        this.showCloudSyncBanner(
+          'updating',
+          '새로운 앱 기능을 적용하고 있습니다',
+          '잠시 후 최신 화면으로 자동 전환됩니다 ✨'
+        );
+
+        if ('caches' in window) {
+          try {
+            const names = await caches.keys();
+            await Promise.all(names.map(name => caches.delete(name)));
+          } catch (e) { }
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 450));
+        window.location.reload();
       } catch (e) {
         // silent catch
       }
