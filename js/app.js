@@ -152,6 +152,7 @@ class ChoirApp {
       this.updateSegmentIndicator(document.getElementById('praiseSubTabBar'));
       this.updateTabLiquidPill(null, true);
       this.initTabbarDragGestures();
+      this.initTabbarScrollAutoHide();
     }, 150);
   }
 
@@ -410,7 +411,7 @@ class ChoirApp {
   }
 
   startAutoUpdateChecker() {
-    const CURRENT_APP_CODE_VERSION = 'v1129';
+    const CURRENT_APP_CODE_VERSION = 'v1130';
 
     const getLoadedScriptVersion = () => {
       if (CURRENT_APP_CODE_VERSION) return CURRENT_APP_CODE_VERSION;
@@ -703,7 +704,14 @@ class ChoirApp {
   // 2. 탭 전환 및 화면 렌더링
   // ----------------------------------------------------
   switchTab(tabId) {
+    const bar = document.querySelector('.app-tabbar');
+    if (bar) bar.classList.remove('nav-hidden');
+
     if (tabId === 'member' && !this.storage.isMemberUnlocked() && !this.storage.isOfficer()) {
+      document.querySelectorAll('.tab-item').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === this.currentTab);
+      });
+      this.updateTabLiquidPill();
       this.openMemberPinModal();
       return;
     }
@@ -721,6 +729,7 @@ class ChoirApp {
       if (isActive) targetTabBtn = btn;
     });
     this.updateTabLiquidPill(targetTabBtn);
+    this.pulseBottomNavDock();
     document.querySelectorAll('.tab-pane').forEach(pane => {
       pane.classList.toggle('active', pane.id === `tab-${tabId}`);
     });
@@ -763,13 +772,31 @@ class ChoirApp {
     if (!btn) return;
 
     requestAnimationFrame(() => {
-      const barRect = bar.getBoundingClientRect();
-      const btnRect = btn.getBoundingClientRect();
-      if (!btnRect || btnRect.width <= 0 || btnRect.height <= 0) return;
+      const buttons = Array.from(bar.querySelectorAll('.tab-item'));
+      const btnIndex = buttons.indexOf(btn);
 
-      const pillWidth = Math.round(btnRect.width - 6);
-      const left = Math.round(btnRect.left - barRect.left + (btnRect.width - pillWidth) / 2);
-      const width = pillWidth;
+      let left, width;
+      if (btnIndex >= 0 && buttons.length === 5) {
+        // 5대 메인 카테고리 완전 균등 그리드 시스템:
+        // 독의 paddingLeft, paddingRight, gap과 1:1로 일치시켜
+        // 어떤 기기, 배율, 펄스 애니메이션 중에도 0.00px 오차 없는 완벽한 대칭 감싸기 보장
+        const computedBar = window.getComputedStyle(bar);
+        const padLeft = parseFloat(computedBar.paddingLeft) || 8;
+        const padRight = parseFloat(computedBar.paddingRight) || 8;
+        const gap = parseFloat(computedBar.gap) || 4;
+        const innerWidth = bar.clientWidth - padLeft - padRight;
+        const colWidth = (innerWidth - (gap * (buttons.length - 1))) / buttons.length;
+
+        left = padLeft + btnIndex * (colWidth + gap);
+        width = colWidth;
+      } else {
+        const barRect = bar.getBoundingClientRect();
+        const btnRect = btn.getBoundingClientRect();
+        if (!btnRect || btnRect.width <= 0 || btnRect.height <= 0) return;
+        const barBorderLeft = bar.clientLeft || 0;
+        left = btnRect.left - barRect.left - barBorderLeft;
+        width = btnRect.width;
+      }
 
       if (isInitial) {
         pill.classList.remove('is-dragging');
@@ -866,13 +893,13 @@ class ChoirApp {
 
       // 서리 알약이 손가락을 1:1로 부드럽게 추종
       const activeRectBtn = currentTargetBtn || bar.querySelector('.tab-item.active') || buttons[0];
-      const btnRect = activeRectBtn.getBoundingClientRect();
-      const pillWidth = Math.round(btnRect.width - 6);
-      const left = clientX - barRect.left - (pillWidth / 2);
+      const pillWidth = activeRectBtn.offsetWidth;
+      const barBorderLeft = bar.clientLeft || 0;
+      const left = (clientX - barRect.left - barBorderLeft) - (pillWidth / 2);
 
       // 탭 바 안에서 벗어나지 않도록 클램핑
       const minLeft = 4;
-      const maxLeft = barRect.width - pillWidth - 4;
+      const maxLeft = bar.clientWidth - pillWidth - 4;
       const clampedLeft = Math.max(minLeft, Math.min(maxLeft, left));
 
       pill.style.transition = 'none';
@@ -943,6 +970,80 @@ class ChoirApp {
     window.addEventListener('pointermove', onPointerMove, { passive: true });
     window.addEventListener('pointerup', onPointerUp);
     window.addEventListener('pointercancel', onPointerCancel);
+  }
+
+  // 📱 페이스북 & 쓰레드 스타일: 스크롤 다운 시 하단 메뉴 숨김 / 스크롤 업 시 즉각 노출
+  initTabbarScrollAutoHide() {
+    const bar = document.querySelector('.app-tabbar');
+    if (!bar) return;
+
+    let lastScrollTop = 0;
+    let isTicking = false;
+    const HIDE_THRESHOLD = 32; // 아래로 확실하게 내렸을 때(32px) 여유 있게 숨김
+    const SHOW_THRESHOLD = 20; // 위로 올렸을 때(20px) 부드럽게 복구
+
+    const handleScroll = (currentY, scrollHeight, clientHeight) => {
+      // 1. 최상단 근처(30px 이내)이거나 상단 오버스크롤(음수) 시 항상 하단 메뉴 노출
+      if (currentY <= 30) {
+        if (bar.classList.contains('nav-hidden')) {
+          bar.classList.remove('nav-hidden');
+        }
+        lastScrollTop = Math.max(0, currentY);
+        return;
+      }
+
+      // 2. 바닥 오버스크롤(iOS Safari 바운스) 방지
+      const maxScroll = scrollHeight - clientHeight;
+      if (maxScroll > 0 && currentY > maxScroll) {
+        return;
+      }
+
+      const delta = currentY - lastScrollTop;
+
+      // 3. 충분한 스크롤량에 도달했을 때만 여유롭게 상태 전환 (급작스러운 깜빡임/빠른 반응 완화)
+      if (delta > HIDE_THRESHOLD && currentY > 70) {
+        // 화면을 아래로 내릴 때: 하단 메뉴 부드럽게 숨김
+        if (!bar.classList.contains('nav-hidden')) {
+          bar.classList.add('nav-hidden');
+        }
+        lastScrollTop = currentY;
+      } else if (delta < -SHOW_THRESHOLD) {
+        // 반대로 화면을 위로 올릴 때: 하단 메뉴 부드럽고 여유롭게 등장
+        if (bar.classList.contains('nav-hidden')) {
+          bar.classList.remove('nav-hidden');
+        }
+        lastScrollTop = currentY;
+      }
+    };
+
+    // 윈도우 스크롤 감지
+    window.addEventListener('scroll', () => {
+      if (!isTicking) {
+        window.requestAnimationFrame(() => {
+          const winY = window.scrollY || document.documentElement.scrollTop || 0;
+          handleScroll(
+            winY,
+            document.documentElement.scrollHeight,
+            window.innerHeight
+          );
+          isTicking = false;
+        });
+        isTicking = true;
+      }
+    }, { passive: true });
+  }
+
+  // 💫 메뉴 선택 시 전체 둥근 테두리 독 탄성 팽창 효과
+  pulseBottomNavDock() {
+    const bar = document.querySelector('.app-tabbar');
+    if (!bar) return;
+    bar.classList.remove('dock-pulse');
+    void bar.offsetWidth; // reflow 강제로 애니메이션 재시작
+    bar.classList.add('dock-pulse');
+    if (this._dockPulseTimer) clearTimeout(this._dockPulseTimer);
+    this._dockPulseTimer = setTimeout(() => {
+      bar.classList.remove('dock-pulse');
+    }, 440);
   }
 
   renderCurrentTab() {
